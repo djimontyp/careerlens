@@ -1,5 +1,12 @@
 # CareerLens
 
+## Scoped instructions
+
+- `deploy/AGENTS.md` — production container, network, secrets and deployment verification contracts.
+- `src/config/settings/AGENTS.md` — Django settings architecture, environment and secret-loading contracts.
+
+Before changing either scope, read its `AGENTS.md`. After the change, re-read it and update instructions made stale by the change.
+
 ## Python dependencies
 
 `pyproject.toml` is the dependency source of truth. `uv.lock` is the generated exact resolution.

@@ -1,0 +1,9 @@
+*
+!.dockerignore
+!deploy/
+!deploy/docker/
+!deploy/docker/app.Dockerfile
+!pyproject.toml
+!uv.lock
+!src/
+!src/**

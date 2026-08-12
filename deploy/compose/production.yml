@@ -1,0 +1,103 @@
+name: careerlens
+
+services:
+  db:
+    image: postgres:18.6-bookworm@sha256:7d2695c3aa88e792e8b3b233e7e4adb296a20412c6c0ca361e3edaaacfada108
+    platform: linux/amd64
+    user: "999:999"
+    environment:
+      POSTGRES_DB: ${APP__DATABASE__DATABASE:?required}
+      POSTGRES_USER: ${APP__DATABASE__USER:?required}
+      POSTGRES_PASSWORD_FILE: /run/secrets/db_database_password
+    secrets:
+      - db_database_password
+    volumes:
+      - postgres_data:/var/lib/postgresql
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=64m
+      - /var/run/postgresql:rw,noexec,nosuid,size=16m
+    read_only: true
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    init: true
+    restart: unless-stopped
+    pids_limit: ${POSTGRES_PIDS_LIMIT:-128}
+    mem_limit: ${POSTGRES_MEMORY_LIMIT:-1g}
+    cpus: ${POSTGRES_CPU_LIMIT:-0.75}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready --username=$${POSTGRES_USER} --dbname=$${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 10s
+    stop_grace_period: 60s
+    networks:
+      - backend
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: "3"
+
+  app:
+    image: ${CAREERLENS_IMAGE:?required}
+    platform: linux/amd64
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      APP__ENVIRONMENT: ${APP__ENVIRONMENT:?required}
+      APP__DJANGO__SECRET_KEY_FILE: /run/secrets/django_secret_key
+      APP__DJANGO__ALLOWED_HOSTS: ${APP__DJANGO__ALLOWED_HOSTS:?required}
+      APP__CORE__SITE_URL: ${APP__CORE__SITE_URL:?required}
+      APP__DATABASE__DATABASE: ${APP__DATABASE__DATABASE:?required}
+      APP__DATABASE__USER: ${APP__DATABASE__USER:?required}
+      APP__DATABASE__PASSWORD_FILE: /run/secrets/app_database_password
+      APP__DATABASE__HOST: db
+      APP__DATABASE__PORT: "5432"
+    secrets:
+      - django_secret_key
+      - app_database_password
+    ports:
+      - name: http
+        target: 8000
+        published: ${CAREERLENS_HTTP_PORT:-9000}
+        host_ip: 127.0.0.1
+        protocol: tcp
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=64m
+    read_only: true
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    init: true
+    restart: unless-stopped
+    pids_limit: ${APP_PIDS_LIMIT:-128}
+    mem_limit: ${APP_MEMORY_LIMIT:-512m}
+    cpus: ${APP_CPU_LIMIT:-0.75}
+    stop_grace_period: 20s
+    networks:
+      - backend
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: "3"
+
+networks:
+  backend:
+    driver: bridge
+
+volumes:
+  postgres_data:
+
+secrets:
+  app_database_password:
+    file: ${CAREERLENS_SECRETS_DIR:?required}/app_database_password
+  db_database_password:
+    file: ${CAREERLENS_SECRETS_DIR:?required}/db_database_password
+  django_secret_key:
+    file: ${CAREERLENS_SECRETS_DIR:?required}/django_secret_key
