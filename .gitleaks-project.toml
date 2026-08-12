@@ -1,0 +1,14 @@
+title = "CareerLens project-specific Gitleaks configuration"
+
+[extend]
+useDefault = true
+
+[[rules]]
+id = "careerlens-mcp-token"
+description = "CareerLens MCP credential"
+regex = '''vp_[A-Za-z0-9_-]{20,}'''
+
+[[rules]]
+id = "careerlens-bearer-token"
+description = "Bearer credential"
+regex = '''Bearer[ \t]+[A-Za-z0-9._-]{16,}'''
