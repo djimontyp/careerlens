@@ -57,6 +57,9 @@ def test_bridge_enables_production_transport_security(monkeypatch: pytest.Monkey
     assert module.SESSION_COOKIE_SECURE is True
     assert module.CSRF_COOKIE_SECURE is True
     assert module.SECURE_SSL_REDIRECT is True
+    assert module.SECURE_HSTS_SECONDS == 31_536_000
+    assert module.SECURE_HSTS_INCLUDE_SUBDOMAINS is True
+    assert module.SECURE_HSTS_PRELOAD is True
     assert module.SECURE_PROXY_SSL_HEADER == ("HTTP_X_FORWARDED_PROTO", "https")
     assert module.SECURE_CONTENT_TYPE_NOSNIFF is True
     assert module.X_FRAME_OPTIONS == "DENY"

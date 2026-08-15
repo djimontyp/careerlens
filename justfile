@@ -23,6 +23,18 @@ typecheck:
         APP__DATABASE__HOST=db.invalid \
         uv run mypy
 
+deploy-check:
+    env \
+        APP__ENVIRONMENT=production \
+        APP__DJANGO__SECRET_KEY=deploy-check-only-secret-G7vQ2mN8xP4rT9kL6sW3cY5hF1jD0bA8uZ \
+        APP__DJANGO__ALLOWED_HOSTS='["app.example.invalid"]' \
+        APP__CORE__SITE_URL=https://app.example.invalid \
+        APP__DATABASE__DATABASE=careerlens_deploy_check \
+        APP__DATABASE__USER=careerlens_deploy_check \
+        APP__DATABASE__PASSWORD=deploy-check-only-password \
+        APP__DATABASE__HOST=db.invalid \
+        uv run python src/manage.py check --deploy --fail-level WARNING
+
 test *args:
     env \
         APP__ENVIRONMENT=test \
