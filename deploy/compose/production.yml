@@ -89,10 +89,12 @@ services:
 
 networks:
   backend:
+    name: ${COMPOSE_PROJECT_NAME:-careerlens-prod}-backend
     driver: bridge
 
 volumes:
   postgres_data:
+    name: ${COMPOSE_PROJECT_NAME:-careerlens-prod}-postgres-data
 
 secrets:
   app_database_password:
