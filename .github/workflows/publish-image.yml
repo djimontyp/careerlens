@@ -157,7 +157,7 @@ jobs:
         env:
           CAREERLENS_DOMAIN: ${{ vars.CAREERLENS_DOMAIN }}
           APP__ENVIRONMENT: production
-          APP__DJANGO__ALLOWED_HOSTS: '["${{ vars.CAREERLENS_DOMAIN }}"]'
+          APP__DJANGO__ALLOWED_HOSTS: '["${{ vars.CAREERLENS_DOMAIN }}","127.0.0.1"]'
           APP__CORE__SITE_URL: https://${{ vars.CAREERLENS_DOMAIN }}
           APP__AUTH__WORKOS__CLIENT_ID: ${{ vars.WORKOS_CLIENT_ID }}
           APP__AUTH__WORKOS__REDIRECT_URI: https://${{ vars.CAREERLENS_DOMAIN }}/callback/

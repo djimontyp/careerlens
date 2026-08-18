@@ -69,4 +69,4 @@ compose pull
 compose up --detach --wait db
 compose run --rm app python src/manage.py migrate --noinput
 compose up --detach --wait app
-curl --fail --silent --retry 5 --retry-all-errors --retry-delay 2 http://127.0.0.1:9000/health >/dev/null
+curl --fail --silent --header "X-Forwarded-Proto: https" --retry 5 --retry-all-errors --retry-delay 2 http://127.0.0.1:9000/health >/dev/null
