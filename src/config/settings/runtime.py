@@ -3,6 +3,7 @@ from typing import Literal, Self
 from pydantic import Field, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+from accounts.settings import AuthSettings
 from config.settings.domains import CoreSettings, DjangoSettings, PostgresDatabaseSettings
 
 
@@ -19,6 +20,7 @@ class AppSettings(BaseSettings):
 
     environment: Literal["development", "test", "production"]
     django: DjangoSettings
+    auth: AuthSettings = Field(default_factory=AuthSettings)
     core: CoreSettings = Field(default_factory=CoreSettings)
     database: PostgresDatabaseSettings
 
@@ -34,4 +36,9 @@ class AppSettings(BaseSettings):
             raise ValueError("APP__DJANGO__ALLOWED_HOSTS must contain explicit production hosts")
         if self.core.site_url.scheme != "https":
             raise ValueError("APP__CORE__SITE_URL must use HTTPS in production")
+        if not self.auth.workos.enabled:
+            raise ValueError("APP__AUTH__WORKOS__ENABLED must be true in production")
+        expected_redirect_uri = f"{self.core.site_url_value}/callback/"
+        if self.auth.workos.redirect_uri_value != expected_redirect_uri:
+            raise ValueError(f"APP__AUTH__WORKOS__REDIRECT_URI must equal {expected_redirect_uri}")
         return self

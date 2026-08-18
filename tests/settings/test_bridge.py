@@ -20,10 +20,15 @@ def import_settings(monkeypatch: pytest.MonkeyPatch) -> ModuleType:
         "APP__DJANGO__SECRET_KEY": TEST_SECRET,
         "APP__DJANGO__ALLOWED_HOSTS": '["app.example.com"]',
         "APP__CORE__SITE_URL": "https://app.example.com",
+        "APP__AUTH__WORKOS__ENABLED": "true",
+        "APP__AUTH__WORKOS__CLIENT_ID": "client_test",
+        "APP__AUTH__WORKOS__API_KEY": "sk_test",
+        "APP__AUTH__WORKOS__REDIRECT_URI": "https://app.example.com/callback/",
         "APP__DATABASE__DATABASE": "careerlens",
         "APP__DATABASE__USER": "careerlens",
         "APP__DATABASE__PASSWORD": "production-database-password",
         "APP__DATABASE__HOST": "db.invalid",
+        "APP__DATABASE__PORT": "5432",
     }
     for name, value in environment.items():
         monkeypatch.setenv(name, value)
@@ -40,6 +45,10 @@ def test_bridge_maps_validated_configuration(monkeypatch: pytest.MonkeyPatch) ->
     assert module.SECRET_KEY == TEST_SECRET
     assert module.ALLOWED_HOSTS == ["app.example.com"]
     assert module.SITE_URL == "https://app.example.com"
+    assert module.AUTH_WORKOS_ENABLED is True
+    assert module.WORKOS_CLIENT_ID == "client_test"
+    assert module.WORKOS_API_KEY == "sk_test"
+    assert module.WORKOS_REDIRECT_URI == "https://app.example.com/callback/"
     assert module.DATABASES["default"] == {
         "ENGINE": "django.db.backends.postgresql",
         "NAME": "careerlens",

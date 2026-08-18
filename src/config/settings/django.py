@@ -1,3 +1,4 @@
+from accounts.providers import login_url
 from config.settings.runtime import AppSettings
 
 app_config = AppSettings()
@@ -8,11 +9,22 @@ ALLOWED_HOSTS = list(app_config.django.allowed_hosts)
 SITE_URL = app_config.core.site_url_value
 DATABASES = {"default": app_config.database.django_config}
 
+AUTH_WORKOS_ENABLED = app_config.auth.workos.enabled
+WORKOS_CLIENT_ID = app_config.auth.workos.client_id or ""
+WORKOS_API_KEY = app_config.auth.workos.api_key.get_secret_value() if app_config.auth.workos.api_key else ""
+WORKOS_REDIRECT_URI = app_config.auth.workos.redirect_uri_value
+
 INSTALLED_APPS = [
     "django.contrib.auth",
     "django.contrib.contenttypes",
     "django.contrib.sessions",
+    "accounts",
 ]
+
+AUTH_USER_MODEL = "accounts.User"
+AUTHENTICATION_BACKENDS = ["accounts.backends.WorkOSBackend"]
+LOGIN_URL = login_url(workos_enabled=AUTH_WORKOS_ENABLED) or "/"
+LOGIN_REDIRECT_URL = "/"
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",

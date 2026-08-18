@@ -16,7 +16,6 @@ services:
     tmpfs:
       - /tmp:rw,noexec,nosuid,size=64m
       - /var/run/postgresql:rw,noexec,nosuid,size=16m
-    read_only: true
     cap_drop:
       - ALL
     security_opt:
@@ -52,6 +51,10 @@ services:
       APP__DJANGO__SECRET_KEY_FILE: /run/secrets/django_secret_key
       APP__DJANGO__ALLOWED_HOSTS: ${APP__DJANGO__ALLOWED_HOSTS:?required}
       APP__CORE__SITE_URL: ${APP__CORE__SITE_URL:?required}
+      APP__AUTH__WORKOS__ENABLED: "true"
+      APP__AUTH__WORKOS__CLIENT_ID: ${APP__AUTH__WORKOS__CLIENT_ID:?required}
+      APP__AUTH__WORKOS__API_KEY_FILE: /run/secrets/workos_api_key
+      APP__AUTH__WORKOS__REDIRECT_URI: ${APP__AUTH__WORKOS__REDIRECT_URI:?required}
       APP__DATABASE__DATABASE: ${APP__DATABASE__DATABASE:?required}
       APP__DATABASE__USER: ${APP__DATABASE__USER:?required}
       APP__DATABASE__PASSWORD_FILE: /run/secrets/app_database_password
@@ -60,6 +63,7 @@ services:
     secrets:
       - django_secret_key
       - app_database_password
+      - workos_api_key
     ports:
       - name: http
         target: 8000
@@ -68,7 +72,6 @@ services:
         protocol: tcp
     tmpfs:
       - /tmp:rw,noexec,nosuid,size=64m
-    read_only: true
     cap_drop:
       - ALL
     security_opt:
@@ -98,8 +101,10 @@ volumes:
 
 secrets:
   app_database_password:
-    file: ${CAREERLENS_SECRETS_DIR:?required}/app_database_password
+    environment: DATABASE_PASSWORD
   db_database_password:
-    file: ${CAREERLENS_SECRETS_DIR:?required}/db_database_password
+    environment: DATABASE_PASSWORD
   django_secret_key:
-    file: ${CAREERLENS_SECRETS_DIR:?required}/django_secret_key
+    environment: DJANGO_SECRET_KEY
+  workos_api_key:
+    environment: WORKOS_API_KEY
