@@ -12,6 +12,26 @@ COPY pyproject.toml uv.lock ./
 
 RUN uv sync --frozen --no-dev --no-install-project
 
+FROM python:3.14-slim-bookworm@sha256:23c59390fc717bf09f9336908199a0ae75d9c4264bf296123f94ad772fea3b52 AS dev
+
+ENV PATH="/app/.venv/bin:${PATH}" \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PYTHONPATH=/app/src
+
+WORKDIR /app
+
+COPY --from=uv /uv /usr/local/bin/uv
+COPY pyproject.toml uv.lock ./
+
+RUN uv sync --frozen
+
+COPY src /app/src
+
+EXPOSE 8000
+
+CMD ["uvicorn", "config.asgi:application", "--host", "0.0.0.0", "--port", "8000", "--reload", "--reload-dir", "/app/src"]
+
 FROM python:3.14-slim-bookworm@sha256:23c59390fc717bf09f9336908199a0ae75d9c4264bf296123f94ad772fea3b52 AS runtime
 
 ENV PATH="/app/.venv/bin:${PATH}" \

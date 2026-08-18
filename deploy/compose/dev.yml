@@ -1,0 +1,74 @@
+name: careerlens-release-dev
+
+services:
+  db:
+    image: postgres:17-bookworm
+    environment:
+      POSTGRES_DB: ${APP__DATABASE__DATABASE:-careerlens_dev}
+      POSTGRES_USER: ${APP__DATABASE__USER:-careerlens_dev}
+      POSTGRES_PASSWORD: ${APP__DATABASE__PASSWORD:-careerlens_dev_password}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "127.0.0.1:${CAREERLENS_DEV_DB_PORT:-5433}:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready --username=$${POSTGRES_USER} --dbname=$${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    networks:
+      - backend
+
+  app:
+    build:
+      context: ../..
+      dockerfile: deploy/docker/app.Dockerfile
+      target: dev
+    image: careerlens:release-dev
+    volumes:
+      - ../../src:/app/src
+    develop:
+      watch:
+        - action: sync
+          path: ../../src
+          target: /app/src
+          ignore:
+            - "**/__pycache__"
+            - "**/*.pyc"
+            - "**/.DS_Store"
+        - action: rebuild
+          path: ../../pyproject.toml
+        - action: rebuild
+          path: ../../uv.lock
+    environment:
+      APP__ENVIRONMENT: development
+      APP__DJANGO__DEBUG: "true"
+      APP__DJANGO__SECRET_KEY: ${APP__DJANGO__SECRET_KEY:-dev-secret-key-with-at-least-32-characters-long}
+      APP__DJANGO__ALLOWED_HOSTS: ${APP__DJANGO__ALLOWED_HOSTS:-["localhost","127.0.0.1","app"]}
+      APP__CORE__SITE_URL: ${APP__CORE__SITE_URL:-http://localhost:9090}
+      APP__AUTH__WORKOS__ENABLED: ${APP__AUTH__WORKOS__ENABLED:-false}
+      APP__AUTH__WORKOS__CLIENT_ID: ${APP__AUTH__WORKOS__CLIENT_ID:-}
+      APP__AUTH__WORKOS__API_KEY: ${APP__AUTH__WORKOS__API_KEY:-}
+      APP__AUTH__WORKOS__REDIRECT_URI: ${APP__AUTH__WORKOS__REDIRECT_URI:-http://localhost:9090/callback/}
+      APP__DATABASE__DATABASE: ${APP__DATABASE__DATABASE:-careerlens_dev}
+      APP__DATABASE__USER: ${APP__DATABASE__USER:-careerlens_dev}
+      APP__DATABASE__PASSWORD: ${APP__DATABASE__PASSWORD:-careerlens_dev_password}
+      APP__DATABASE__HOST: db
+      APP__DATABASE__PORT: "5432"
+    ports:
+      - "127.0.0.1:${CAREERLENS_HTTP_PORT:-9090}:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+    command: sh -c "until python -c \"import socket; s = socket.socket(); s.connect(('db', 5432)); s.close()\" 2>/dev/null; do sleep 0.5; done; uv run python src/manage.py migrate --noinput && exec uvicorn config.asgi:application --host 0.0.0.0 --port 8000 --reload --reload-dir /app/src"
+    networks:
+      - backend
+
+networks:
+  backend:
+    name: ${COMPOSE_PROJECT_NAME:-careerlens-dev}-backend
+    driver: bridge
+
+volumes:
+  postgres_data:
+    name: ${COMPOSE_PROJECT_NAME:-careerlens-dev}-postgres-data

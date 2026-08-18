@@ -3,14 +3,19 @@ set dotenv-load := false
 _default:
     @just --list --unsorted
 
+import 'just/dev.just'
+
+# Format Python code with Ruff
 fmt:
     uv run ruff check --fix .
     uv run ruff format .
 
+# Check Python code formatting and linting
 check:
     uv run ruff check .
     uv run ruff format --check .
 
+# Run static type checking with Mypy
 typecheck:
     env \
         APP__ENVIRONMENT=production \
@@ -27,6 +32,7 @@ typecheck:
         APP__DATABASE__HOST=db.invalid \
         uv run mypy
 
+# Run Django production deployment validation checks
 deploy-check:
     env \
         APP__ENVIRONMENT=production \
@@ -43,6 +49,7 @@ deploy-check:
         APP__DATABASE__HOST=db.invalid \
         uv run python src/manage.py check --deploy --fail-level WARNING
 
+# Run test suite with Pytest
 test *args:
     env \
         APP__ENVIRONMENT=test \
@@ -55,8 +62,10 @@ test *args:
         APP__DATABASE__DATABASE=careerlens_test \
         APP__DATABASE__USER=careerlens_test \
         APP__DATABASE__PASSWORD=test-only-password \
-        APP__DATABASE__HOST=db.invalid \
+        APP__DATABASE__HOST="${APP__DATABASE__HOST:-127.0.0.1}" \
+        APP__DATABASE__PORT="${APP__DATABASE__PORT:-5432}" \
         uv run pytest {{ args }}
 
+# Verify hardened production container security contracts
 container-test:
     bash tests/deploy/verify_container_test.sh
