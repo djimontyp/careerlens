@@ -1,12 +1,11 @@
 name: Publish image
 
 on:
-  workflow_dispatch:
-    inputs:
-      sha:
-        description: Exact reviewed 40-character commit SHA from main
-        required: true
-        type: string
+  workflow_run:
+    workflows:
+      - CI
+    types:
+      - completed
 
 permissions:
   contents: read
@@ -17,6 +16,9 @@ concurrency:
 
 jobs:
   validate:
+    if: >-
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.head_branch == github.event.repository.default_branch
     runs-on: ubuntu-latest
     timeout-minutes: 5
     outputs:
@@ -33,32 +35,27 @@ jobs:
         id: ref
         env:
           DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
-          REQUESTED_SHA: ${{ inputs.sha }}
-          WORKFLOW_REF: ${{ github.ref }}
+          REQUESTED_SHA: ${{ github.event.workflow_run.head_sha }}
         run: |
-          if [[ "${WORKFLOW_REF}" != "refs/heads/${DEFAULT_BRANCH}" ]]; then
-            echo "Run this workflow from ${DEFAULT_BRANCH}" >&2
-            exit 1
-          fi
           if [[ ! "${REQUESTED_SHA}" =~ ^[0-9a-f]{40}$ ]]; then
             echo "sha must be exactly 40 lowercase hexadecimal characters" >&2
             exit 1
           fi
           git cat-file -e "${REQUESTED_SHA}^{commit}"
           git merge-base --is-ancestor "${REQUESTED_SHA}" "origin/${DEFAULT_BRANCH}"
+          if [[ "${REQUESTED_SHA}" != "$(git rev-parse "origin/${DEFAULT_BRANCH}")" ]]; then
+            echo "A newer ${DEFAULT_BRANCH} commit already exists; skipping stale deployment" >&2
+            exit 1
+          fi
           printf 'sha=%s\n' "${REQUESTED_SHA}" >> "${GITHUB_OUTPUT}"
 
-  ci:
-    needs: validate
-    uses: ./.github/workflows/ci.yml
-    with:
-      ref: ${{ needs.validate.outputs.sha }}
-
   publish:
-    needs: [validate, ci]
+    needs: validate
     runs-on: ubuntu-latest
     timeout-minutes: 30
     environment: production
+    outputs:
+      digest: ${{ steps.image.outputs.digest }}
     env:
       IMAGE_REPOSITORY: docker.io/${{ vars.DOCKERHUB_REPOSITORY }}
       IMAGE_SHA: ${{ needs.validate.outputs.sha }}
@@ -88,6 +85,7 @@ jobs:
         run: printf '%s' "${DOCKERHUB_TOKEN}" | docker login --username "${DOCKERHUB_USERNAME}" --password-stdin
 
       - name: Build and publish immutable image
+        id: image
         env:
           METADATA_FILE: ${{ runner.temp }}/careerlens-build-metadata.json
         run: |
@@ -106,6 +104,7 @@ jobs:
             echo "BuildKit did not return a valid registry digest" >&2
             exit 1
           fi
+          printf 'digest=%s\n' "${digest}" >> "${GITHUB_OUTPUT}"
           {
             echo "### Published image"
             echo "- SHA: \`${IMAGE_SHA}\`"
@@ -117,3 +116,89 @@ jobs:
       - name: Log out from Docker Hub
         if: always()
         run: docker logout
+
+  deploy:
+    needs: [validate, publish]
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment: production
+    env:
+      CAREERLENS_IMAGE: docker.io/${{ vars.DOCKERHUB_REPOSITORY }}@${{ needs.publish.outputs.digest }}
+      COMPOSE_PROJECT_NAME: careerlens-prod
+
+    steps:
+      - name: Check out published commit
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ needs.validate.outputs.sha }}
+          persist-credentials: false
+
+      - name: Configure SSH
+        env:
+          SERVER_HOST: ${{ secrets.SERVER_HOST }}
+          SERVER_USER: ${{ secrets.SERVER_USER }}
+          SSH_KNOWN_HOSTS: ${{ vars.SSH_KNOWN_HOSTS }}
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+        run: |
+          if [[ ! "${SERVER_HOST}" =~ ^[a-zA-Z0-9.-]+$ ]] || [[ ! "${SERVER_USER}" =~ ^[a-z_][a-z0-9_-]*$ ]]; then
+            echo "Invalid production SSH target" >&2
+            exit 1
+          fi
+          mkdir --parents --mode 700 "${HOME}/.ssh"
+          printf '%s\n' "${SSH_KNOWN_HOSTS}" > "${HOME}/.ssh/known_hosts"
+          chmod 600 "${HOME}/.ssh/known_hosts"
+          eval "$(ssh-agent -s)"
+          printf 'SSH_AUTH_SOCK=%s\n' "${SSH_AUTH_SOCK}" >> "${GITHUB_ENV}"
+          printf 'SSH_AGENT_PID=%s\n' "${SSH_AGENT_PID}" >> "${GITHUB_ENV}"
+          printf '%s\n' "${SSH_PRIVATE_KEY}" | ssh-add -
+          printf 'DEPLOY_TARGET=%s@%s\n' "${SERVER_USER}" "${SERVER_HOST}" >> "${GITHUB_ENV}"
+
+      - name: Deploy immutable image
+        env:
+          CAREERLENS_DOMAIN: ${{ vars.CAREERLENS_DOMAIN }}
+          APP__ENVIRONMENT: production
+          APP__DJANGO__ALLOWED_HOSTS: '["${{ vars.CAREERLENS_DOMAIN }}"]'
+          APP__CORE__SITE_URL: https://${{ vars.CAREERLENS_DOMAIN }}
+          APP__AUTH__WORKOS__CLIENT_ID: ${{ vars.WORKOS_CLIENT_ID }}
+          APP__AUTH__WORKOS__REDIRECT_URI: https://${{ vars.CAREERLENS_DOMAIN }}/callback/
+          APP__DATABASE__DATABASE: ${{ secrets.DATABASE_NAME }}
+          APP__DATABASE__USER: ${{ secrets.DATABASE_USER }}
+          DATABASE_PASSWORD: ${{ secrets.DATABASE_PASSWORD }}
+          DJANGO_SECRET_KEY: ${{ secrets.DJANGO_SECRET_KEY }}
+          DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+          DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+          WORKOS_API_KEY: ${{ secrets.WORKOS_API_KEY }}
+        run: |
+          ssh "${DEPLOY_TARGET}" 'mkdir --parents --mode 700 "${HOME}/.careerlens"'
+          scp deploy/compose/production.yml "${DEPLOY_TARGET}:.careerlens/production.yml.new"
+          scp deploy/scripts/remote_deploy.sh "${DEPLOY_TARGET}:.careerlens/remote_deploy.sh.new"
+          ssh "${DEPLOY_TARGET}" 'mv "${HOME}/.careerlens/production.yml.new" "${HOME}/.careerlens/production.yml" && mv "${HOME}/.careerlens/remote_deploy.sh.new" "${HOME}/.careerlens/remote_deploy.sh"'
+          send_environment() {
+            for variable in \
+              CAREERLENS_IMAGE \
+              APP__DJANGO__ALLOWED_HOSTS \
+              APP__CORE__SITE_URL \
+              APP__AUTH__WORKOS__CLIENT_ID \
+              APP__AUTH__WORKOS__REDIRECT_URI \
+              APP__DATABASE__DATABASE \
+              APP__DATABASE__USER \
+              DATABASE_PASSWORD \
+              DJANGO_SECRET_KEY \
+              WORKOS_API_KEY \
+              DOCKERHUB_USERNAME \
+              DOCKERHUB_TOKEN
+            do
+              printf '%s\0' "${!variable}"
+            done
+          }
+          send_environment | ssh "${DEPLOY_TARGET}" 'bash "${HOME}/.careerlens/remote_deploy.sh"'
+          {
+            echo "### Production deployment"
+            echo "- Image: \`${CAREERLENS_IMAGE}\`"
+            echo "- Domain: \`${CAREERLENS_DOMAIN}\`"
+          } >> "${GITHUB_STEP_SUMMARY}"
+
+      - name: Clean up credentials
+        if: always()
+        run: |
+          ssh-agent -k || true
