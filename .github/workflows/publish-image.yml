@@ -1,0 +1,119 @@
+name: Publish image
+
+on:
+  workflow_dispatch:
+    inputs:
+      sha:
+        description: Exact reviewed 40-character commit SHA from main
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: production-image-publication
+  cancel-in-progress: false
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      sha: ${{ steps.ref.outputs.sha }}
+
+    steps:
+      - name: Check out repository history
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Validate reviewed main SHA
+        id: ref
+        env:
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+          REQUESTED_SHA: ${{ inputs.sha }}
+          WORKFLOW_REF: ${{ github.ref }}
+        run: |
+          if [[ "${WORKFLOW_REF}" != "refs/heads/${DEFAULT_BRANCH}" ]]; then
+            echo "Run this workflow from ${DEFAULT_BRANCH}" >&2
+            exit 1
+          fi
+          if [[ ! "${REQUESTED_SHA}" =~ ^[0-9a-f]{40}$ ]]; then
+            echo "sha must be exactly 40 lowercase hexadecimal characters" >&2
+            exit 1
+          fi
+          git cat-file -e "${REQUESTED_SHA}^{commit}"
+          git merge-base --is-ancestor "${REQUESTED_SHA}" "origin/${DEFAULT_BRANCH}"
+          printf 'sha=%s\n' "${REQUESTED_SHA}" >> "${GITHUB_OUTPUT}"
+
+  ci:
+    needs: validate
+    uses: ./.github/workflows/ci.yml
+    with:
+      ref: ${{ needs.validate.outputs.sha }}
+
+  publish:
+    needs: [validate, ci]
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment: production
+    env:
+      IMAGE_REPOSITORY: docker.io/${{ vars.DOCKERHUB_REPOSITORY }}
+      IMAGE_SHA: ${{ needs.validate.outputs.sha }}
+
+    steps:
+      - name: Check out reviewed commit
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ needs.validate.outputs.sha }}
+          persist-credentials: false
+
+      - name: Validate publication configuration
+        run: |
+          if [[ ! "${IMAGE_REPOSITORY}" =~ ^docker\.io/[a-z0-9]+([._-][a-z0-9]+)*/[a-z0-9]+([._-][a-z0-9]+)*$ ]]; then
+            echo "Set production environment variable DOCKERHUB_REPOSITORY to owner/repository" >&2
+            exit 1
+          fi
+          docker buildx version
+
+      - name: Verify container contract before registry access
+        run: bash tests/deploy/verify_container_test.sh
+
+      - name: Log in to Docker Hub
+        env:
+          DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+          DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+        run: printf '%s' "${DOCKERHUB_TOKEN}" | docker login --username "${DOCKERHUB_USERNAME}" --password-stdin
+
+      - name: Build and publish immutable image
+        env:
+          METADATA_FILE: ${{ runner.temp }}/careerlens-build-metadata.json
+        run: |
+          docker buildx create --name carelens-publish --driver docker-container --use
+          docker buildx build \
+            --file deploy/docker/app.Dockerfile \
+            --metadata-file "${METADATA_FILE}" \
+            --platform linux/amd64 \
+            --provenance=mode=max \
+            --push \
+            --sbom=true \
+            --tag "${IMAGE_REPOSITORY}:${IMAGE_SHA}" \
+            .
+          digest="$(jq --raw-output '."containerimage.digest"' "${METADATA_FILE}")"
+          if [[ ! "${digest}" =~ ^sha256:[0-9a-f]{64}$ ]]; then
+            echo "BuildKit did not return a valid registry digest" >&2
+            exit 1
+          fi
+          {
+            echo "### Published image"
+            echo "- SHA: \`${IMAGE_SHA}\`"
+            echo "- Tag: \`${IMAGE_REPOSITORY}:${IMAGE_SHA}\`"
+            echo "- Digest: \`${IMAGE_REPOSITORY}@${digest}\`"
+            echo "- Run: ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
+          } >> "${GITHUB_STEP_SUMMARY}"
+
+      - name: Log out from Docker Hub
+        if: always()
+        run: docker logout
