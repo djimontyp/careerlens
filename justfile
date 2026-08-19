@@ -5,6 +5,16 @@ _default:
 
 import 'just/dev.just'
 
+[no-cd]
+frontend-dev:
+    @cd {{ justfile_directory() }}/frontend && npm run dev -- --host
+
+[no-cd]
+frontend-storybook:
+    @cd {{ justfile_directory() }}/frontend && npm run storybook -- --no-open
+
+alias storybook := frontend-storybook
+
 # Format Python code with Ruff
 fmt:
     uv run ruff check --fix .
