@@ -1,0 +1,159 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "CareerLens API",
+    "version": "1.0.0",
+    "description": ""
+  },
+  "paths": {
+    "/health": {
+      "get": {
+        "operationId": "api_health_health",
+        "summary": "Health check probe",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HealthResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service Unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HealthResponse"
+                }
+              }
+            }
+          }
+        },
+        "description": "Unauthenticated probe for load balancers and uptime monitors. Returns 200 when the application and dependencies are healthy, 503 when unavailable."
+      }
+    },
+    "/api/v1/me": {
+      "get": {
+        "operationId": "config_api_v1_accounts_me",
+        "summary": "Current session user",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MeOut"
+                }
+              }
+            }
+          }
+        },
+        "description": "Returns the profile of the currently authenticated user.\n\nAlso rotates the CSRF token: the response carries an updated\n`Set-Cookie: csrftoken` header that clients must store and echo back\nas `X-CSRFToken` on subsequent state-changing requests.",
+        "tags": [
+          "accounts"
+        ],
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ]
+      }
+    },
+    "/api/v1/logout": {
+      "post": {
+        "operationId": "config_api_v1_accounts_logout",
+        "summary": "Log out",
+        "parameters": [],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          }
+        },
+        "description": "Terminates the current authenticated session and clears the session cookie.\n\nRequires the `X-CSRFToken` header matching the `csrftoken` cookie value.",
+        "tags": [
+          "accounts"
+        ],
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ]
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "HealthResponse": {
+        "examples": [
+          {
+            "status": "ok"
+          }
+        ],
+        "properties": {
+          "status": {
+            "enum": [
+              "ok",
+              "error"
+            ],
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "status"
+        ],
+        "title": "HealthResponse",
+        "type": "object"
+      },
+      "MeOut": {
+        "examples": [
+          {
+            "email": "john.doe@example.com",
+            "first_name": "John",
+            "id": 1,
+            "last_name": "Doe"
+          }
+        ],
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "email": {
+            "title": "Email",
+            "type": "string"
+          },
+          "first_name": {
+            "title": "First Name",
+            "type": "string"
+          },
+          "last_name": {
+            "title": "Last Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "email",
+          "first_name",
+          "last_name"
+        ],
+        "title": "MeOut",
+        "type": "object"
+      }
+    },
+    "securitySchemes": {
+      "SessionAuth": {
+        "type": "apiKey",
+        "in": "cookie",
+        "name": "sessionid"
+      }
+    }
+  },
+  "servers": []
+}

@@ -15,6 +15,24 @@ check:
     uv run ruff check .
     uv run ruff format --check .
 
+# Export OpenAPI schema of the Ninja API to openapi.json (for Postman import)
+api-schema:
+    @env \
+        APP__ENVIRONMENT=production \
+        APP__DJANGO__SECRET_KEY=api-schema-only-secret-key-with-at-least-32-characters \
+        APP__DJANGO__ALLOWED_HOSTS='["app.example.invalid"]' \
+        APP__CORE__SITE_URL=https://app.example.invalid \
+        APP__AUTH__WORKOS__ENABLED=true \
+        APP__AUTH__WORKOS__CLIENT_ID=client_api_schema \
+        APP__AUTH__WORKOS__API_KEY=sk_api_schema \
+        APP__AUTH__WORKOS__REDIRECT_URI=https://app.example.invalid/callback/ \
+        APP__DATABASE__DATABASE=careerlens_api_schema \
+        APP__DATABASE__USER=careerlens_api_schema \
+        APP__DATABASE__PASSWORD=api-schema-only-password \
+        APP__DATABASE__HOST=db.invalid \
+        PYTHONPATH=src \
+        uv run python -c "import django,os,json;os.environ.setdefault('DJANGO_SETTINGS_MODULE','config.settings.django');django.setup();from api.root import api;open('openapi.json','w').write(json.dumps(api.get_openapi_schema(),indent=2));print('openapi.json updated')"
+
 # Run static type checking with Mypy
 typecheck:
     env \
