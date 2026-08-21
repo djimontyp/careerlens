@@ -15,15 +15,18 @@ frontend-storybook:
 
 alias storybook := frontend-storybook
 
-# Format Python code with Ruff
+# Format Python and frontend code
 fmt:
     uv run ruff check --fix .
     uv run ruff format .
+    cd frontend && npm run fmt
 
-# Check Python code formatting and linting
+# Check Python and frontend code formatting and linting
 check:
     uv run ruff check .
     uv run ruff format --check .
+    cd frontend && npm run lint
+    cd frontend && npm run fmt:check
 
 # Export OpenAPI schema of the Ninja API to openapi.json (for Postman import)
 api-schema:
