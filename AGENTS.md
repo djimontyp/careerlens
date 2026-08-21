@@ -46,3 +46,11 @@ Before changing either scope, read its `AGENTS.md`. After the change, re-read it
 6. Run `uv sync --frozen --no-dev` for the production image.
 
 `uv add --frozen` is not the normal dependency workflow because it skips resolution. Use it only for a reviewed manifest-only recovery after an independent successful resolution.
+
+## API contracts
+
+- On API changes, update `openapi.json` via `just api-schema` to keep the schema up to date.
+
+
+
+

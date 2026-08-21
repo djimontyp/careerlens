@@ -24,7 +24,7 @@ INSTALLED_APPS = [
 AUTH_USER_MODEL = "accounts.User"
 AUTHENTICATION_BACKENDS = ["accounts.backends.WorkOSBackend"]
 LOGIN_URL = login_url(workos_enabled=AUTH_WORKOS_ENABLED) or "/"
-LOGIN_REDIRECT_URL = "/"
+LOGIN_REDIRECT_URL = app_config.core.site_url_value
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
