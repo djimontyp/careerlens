@@ -27,5 +27,12 @@ test.describe("Тема оформлення", () => {
       "Темна тема",
     )
     await expect(loginPage.html).toHaveClass(/dark/)
+
+    await loginPage.page.reload()
+    await expect(loginPage.html).toHaveClass(/dark/)
+    await expect(loginPage.themeToggle).toHaveAttribute(
+      "aria-label",
+      "Темна тема",
+    )
   })
 })

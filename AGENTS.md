@@ -47,6 +47,10 @@ Before changing either scope, read its `AGENTS.md`. After the change, re-read it
 
 `uv add --frozen` is not the normal dependency workflow because it skips resolution. Use it only for a reviewed manifest-only recovery after an independent successful resolution.
 
+## Frontend
+
+- Durable UI preferences live in a versioned Zustand store; primitives do not access storage.
+
 ## API contracts
 
 - On API changes, update `openapi.json` via `just api-schema` to keep the schema up to date.

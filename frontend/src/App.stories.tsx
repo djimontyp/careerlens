@@ -78,7 +78,9 @@ export const RetryAfterError: Story = {
 
     await userEvent.click(canvas.getByRole("button", { name: "Повторити" }))
 
-    await expect(await canvas.findByText("ada@example.com")).toBeVisible()
+    await expect(
+      await canvas.findByRole("button", { name: "Профіль Ada Lovelace" }),
+    ).toBeVisible()
   },
 }
 

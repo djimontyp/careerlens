@@ -1,10 +1,7 @@
 import { useEffect, useState } from "react"
 
-import {
-  THEME_STORAGE_KEY,
-  ThemeContext,
-  type Theme,
-} from "@/components/theme-context"
+import { ThemeContext, type Theme } from "@/components/theme-context"
+import { SHELL_STORAGE_KEY, useShellStore } from "@/features/shell/store"
 
 type ThemeProviderProps = {
   children: React.ReactNode
@@ -17,18 +14,23 @@ export function ThemeProvider({
   defaultTheme,
   onThemeChange,
 }: ThemeProviderProps) {
-  const [theme, setTheme] = useState<Theme>(() => {
-    if (defaultTheme) return defaultTheme
+  const storedTheme = useShellStore((state) => state.theme)
+  const setStoredTheme = useShellStore((state) => state.setTheme)
+  const [previewTheme, setPreviewTheme] = useState<Theme>(
+    defaultTheme ?? "system",
+  )
+  const theme = defaultTheme === undefined ? storedTheme : previewTheme
 
-    try {
-      const stored = localStorage.getItem(THEME_STORAGE_KEY)
-      return stored === "light" || stored === "dark" || stored === "system"
-        ? stored
-        : "system"
-    } catch {
-      return "system"
+  useEffect(() => {
+    const syncPreferences = (event: StorageEvent) => {
+      if (event.key === SHELL_STORAGE_KEY) {
+        void useShellStore.persist.rehydrate()
+      }
     }
-  })
+
+    window.addEventListener("storage", syncPreferences)
+    return () => window.removeEventListener("storage", syncPreferences)
+  }, [])
 
   useEffect(() => {
     const media = window.matchMedia("(prefers-color-scheme: dark)")
@@ -45,11 +47,10 @@ export function ThemeProvider({
 
   const changeTheme = (theme: Theme) => {
     if (defaultTheme === undefined) {
-      try {
-        localStorage.setItem(THEME_STORAGE_KEY, theme)
-      } catch {}
+      setStoredTheme(theme)
+    } else {
+      setPreviewTheme(theme)
     }
-    setTheme(theme)
     onThemeChange?.(theme)
   }
 

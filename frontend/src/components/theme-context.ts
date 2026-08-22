@@ -1,7 +1,8 @@
 import { createContext } from "react"
 
-export type Theme = "light" | "dark" | "system"
+import type { Theme } from "@/features/shell/store"
+
+export type { Theme } from "@/features/shell/store"
 export type ThemeContextValue = { theme: Theme; setTheme: (t: Theme) => void }
 
 export const ThemeContext = createContext<ThemeContextValue | null>(null)
-export const THEME_STORAGE_KEY = "careerlens-theme"
