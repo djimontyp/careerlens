@@ -15,7 +15,11 @@ import { ThemeToggle } from "@/components/theme-toggle"
  * Adapted from shadcnspace Login 01 (Free plan) - https://shadcnspace.com/blocks/marketing/login
  * Simplified for WorkOS OAuth flow with theme-aware layout and invitation notice.
  */
-export function LoginPage() {
+type LoginPageProps = {
+  authenticationFailed?: boolean
+}
+
+export function LoginPage({ authenticationFailed = false }: LoginPageProps) {
   return (
     <div className="relative flex min-h-svh w-full flex-col justify-between overflow-hidden bg-background p-4 select-none sm:p-6 md:p-8">
       {/* Decorative background shapes (Login 01 style) */}
@@ -62,6 +66,12 @@ export function LoginPage() {
             />
             Доступ тільки за запрошенням
           </Badge>
+
+          {authenticationFailed && (
+            <p role="alert" className="text-sm text-destructive">
+              Не вдалося завершити вхід. Спробуйте ще раз.
+            </p>
+          )}
 
           {/* Sign In Action */}
           <div className="w-full">

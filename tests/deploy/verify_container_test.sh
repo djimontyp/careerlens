@@ -81,6 +81,18 @@ curl \
 [[ "$(docker inspect --format '{{.HostConfig.Memory}}' "${db_container}")" == "1073741824" ]]
 [[ "$(docker inspect --format '{{.HostConfig.NanoCpus}}' "${db_container}")" == "750000000" ]]
 
+oauth_log_probe="oauth-code-must-not-appear"
+curl \
+    --silent \
+    --output /dev/null \
+    --header "X-Forwarded-Proto: https" \
+    "http://127.0.0.1:${http_port}/callback/?code=${oauth_log_probe}&state=invalid"
+
+if docker logs "${app_container}" 2>&1 | grep --quiet --fixed-strings "${oauth_log_probe}"; then
+    echo "Container logs expose OAuth callback parameters" >&2
+    exit 1
+fi
+
 inspect_output="$(docker inspect "${app_container}" "${db_container}")"
 grep --quiet --fixed-strings "APP__DJANGO__SECRET_KEY_FILE=/run/secrets/django_secret_key" <<<"${inspect_output}"
 grep --quiet --fixed-strings "APP__DATABASE__PASSWORD_FILE=/run/secrets/app_database_password" <<<"${inspect_output}"

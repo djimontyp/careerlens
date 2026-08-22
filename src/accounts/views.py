@@ -30,25 +30,30 @@ class CallbackView(View):
         oauth = request.session.pop("workos_oauth", None)
         state = request.GET.get("state", "")
         if not self.valid_state(oauth, state):
-            return HttpResponse("Invalid authentication state", status=400)
+            return self.retry()
+        if request.GET.get("error"):
+            return self.retry()
         code = request.GET.get("code", "")
         if not code:
-            return HttpResponse("Authentication failed", status=400)
+            return self.retry()
         try:
             user = authenticate(request, code=code)
         except RateLimitExceededError as error:
             self.log_workos_error(error)
-            return HttpResponse("Too many authentication attempts", status=429)
+            return self.retry()
         except ServerError as error:
             self.log_workos_error(error)
-            return HttpResponse("Authentication service unavailable", status=503)
+            return self.retry()
         except WorkOSError as error:
             self.log_workos_error(error)
-            return HttpResponse("Authentication failed", status=400)
+            return self.retry()
         if user is None:
-            return HttpResponse("Authentication failed", status=400)
+            return self.retry()
         django_login(request, user)
         return redirect(settings.LOGIN_REDIRECT_URL)
+
+    def retry(self) -> HttpResponse:
+        return redirect(f"{settings.LOGIN_REDIRECT_URL}?auth_error=1")
 
     def log_workos_error(self, error: WorkOSError) -> None:
         logger.warning(

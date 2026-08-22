@@ -42,7 +42,15 @@ function App() {
     )
   }
 
-  if (user === null) return <LoginPage />
+  if (user === null) {
+    return (
+      <LoginPage
+        authenticationFailed={new URLSearchParams(window.location.search).has(
+          "auth_error",
+        )}
+      />
+    )
+  }
 
   return (
     <AuthenticatedLayout

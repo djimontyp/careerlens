@@ -168,8 +168,10 @@ def test_callback_consumes_state_once(monkeypatch: pytest.MonkeyPatch) -> None:
     first = client.get("/callback/?state=valid_state&code=valid_code")
     second = client.get("/callback/?state=valid_state&code=valid_code")
 
-    assert first.status_code == 400
-    assert second.status_code == 400
+    assert first.status_code == 302
+    assert first["Location"] == f"{settings.LOGIN_REDIRECT_URL}?auth_error=1"
+    assert second.status_code == 302
+    assert second["Location"] == f"{settings.LOGIN_REDIRECT_URL}?auth_error=1"
     assert calls == ["valid_code"]
 
 
@@ -195,7 +197,27 @@ def test_callback_rejects_wrong_or_expired_state(
 
     response = client.get(f"/callback/?state={state}&code=valid_code")
 
-    assert response.status_code == 400
+    assert response.status_code == 302
+    assert response["Location"] == f"{settings.LOGIN_REDIRECT_URL}?auth_error=1"
+    assert called is False
+
+
+@pytest.mark.django_db
+def test_callback_recovers_from_workos_error_without_exchanging_code(monkeypatch: pytest.MonkeyPatch) -> None:
+    called = False
+
+    def authenticate(request, code: str):
+        nonlocal called
+        called = True
+
+    monkeypatch.setattr("accounts.views.authenticate", authenticate, raising=False)
+    client = Client()
+    store_oauth_state(client)
+
+    response = client.get("/callback/?state=valid_state&error=access_denied&error_description=denied")
+
+    assert response.status_code == 302
+    assert response["Location"] == f"{settings.LOGIN_REDIRECT_URL}?auth_error=1"
     assert called is False
 
 
@@ -222,14 +244,13 @@ def test_successful_callback_rotates_session_and_logs_in(monkeypatch: pytest.Mon
 
 @pytest.mark.django_db
 @pytest.mark.parametrize(
-    ("error", "status"),
-    ((RateLimitExceededError("rate"), 429), (ServerError("down"), 503), (WorkOSError("bad"), 400)),
+    "error",
+    (RateLimitExceededError("rate"), ServerError("down"), WorkOSError("bad")),
 )
 def test_callback_maps_workos_errors(
     monkeypatch: pytest.MonkeyPatch,
     caplog: pytest.LogCaptureFixture,
     error: WorkOSError,
-    status: int,
 ) -> None:
     def authenticate(request, code: str):
         raise error
@@ -241,7 +262,8 @@ def test_callback_maps_workos_errors(
     with caplog.at_level(logging.WARNING, logger="accounts.views"):
         response = client.get("/callback/?state=valid_state&code=valid_code")
 
-    assert response.status_code == status
+    assert response.status_code == 302
+    assert response["Location"] == f"{settings.LOGIN_REDIRECT_URL}?auth_error=1"
     assert "_auth_user_id" not in client.session
     assert f"WorkOS callback failed: type={type(error).__name__}" in caplog.text
     assert "valid_code" not in caplog.text
