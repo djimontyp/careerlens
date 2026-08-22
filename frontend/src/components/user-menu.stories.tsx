@@ -1,7 +1,17 @@
 import type { Meta, StoryObj } from "@storybook/react-vite"
 import { expect, fn, waitFor, within } from "storybook/test"
 
+import avatarDemoUrl from "@/assets/avatar-demo.svg"
 import { UserMenu } from "@/components/user-menu"
+import type { User } from "@/features/auth/api"
+
+const userWithAvatar = {
+  id: 1,
+  email: "ada@example.com",
+  first_name: "Ada",
+  last_name: "Lovelace",
+  avatar_url: avatarDemoUrl,
+} satisfies User
 
 const meta = {
   title: "Components/UserMenu",
@@ -12,6 +22,7 @@ const meta = {
       email: "ada@example.com",
       first_name: "Ada",
       last_name: "Lovelace",
+      avatar_url: null,
     },
     loggingOut: false,
     onLogout: fn(),
@@ -61,6 +72,7 @@ export const MissingName: Story = {
       email: "person@example.com",
       first_name: null,
       last_name: null,
+      avatar_url: null,
     },
   },
   play: async ({ canvasElement }) => {
@@ -69,6 +81,17 @@ export const MissingName: Story = {
     })
 
     await expect(trigger).toHaveTextContent("P")
+  },
+}
+
+export const WithAvatar: Story = {
+  args: { user: userWithAvatar },
+  play: async ({ canvasElement }) => {
+    const avatar = await within(canvasElement).findByRole("img", {
+      name: "Аватар Ada Lovelace",
+    })
+
+    await expect(avatar).toBeVisible()
   },
 }
 

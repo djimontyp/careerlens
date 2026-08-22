@@ -28,6 +28,7 @@ export class AppPage extends BasePage {
       email: "test@example.com",
       first_name: "Test",
       last_name: "User",
+      avatar_url: null,
     }
     await this.page.route("**/api/**/me", async (route) => {
       await route.fulfill({

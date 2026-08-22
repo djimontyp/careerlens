@@ -2,7 +2,7 @@ import { Logout01Icon, UnfoldMoreIcon } from "@hugeicons/core-free-icons"
 import { HugeiconsIcon } from "@hugeicons/react"
 
 import { ThemeToggle } from "@/components/theme-toggle"
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
@@ -38,6 +38,9 @@ export function UserMenu({ user, loggingOut, onLogout }: UserMenuProps) {
         }
       >
         <Avatar>
+          {user.avatar_url && (
+            <AvatarImage src={user.avatar_url} alt={`Аватар ${name}`} />
+          )}
           <AvatarFallback className="bg-accent text-accent-foreground">
             {initials}
           </AvatarFallback>
@@ -57,6 +60,9 @@ export function UserMenu({ user, loggingOut, onLogout }: UserMenuProps) {
           <DropdownMenuLabel className="font-normal">
             <div className="flex items-center gap-2 py-1">
               <Avatar>
+                {user.avatar_url && (
+                  <AvatarImage src={user.avatar_url} alt={`Аватар ${name}`} />
+                )}
                 <AvatarFallback className="bg-accent text-accent-foreground">
                   {initials}
                 </AvatarFallback>

@@ -50,6 +50,7 @@ Before changing either scope, read its `AGENTS.md`. After the change, re-read it
 ## API contracts
 
 - On API changes, update `openapi.json` via `just api-schema` to keep the schema up to date.
+- Every operation must fully describe inputs, types, examples, tags, success and error responses, authentication and relevant headers or cookies. The generated schema must match `openapi.json`.
 
 ## Authentication security
 

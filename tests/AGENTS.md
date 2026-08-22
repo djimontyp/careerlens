@@ -1,6 +1,7 @@
 # Backend tests
 
 - Cover CareerLens contracts and regressions, not Django, Ninja, Pydantic, PostgreSQL or stdlib internals.
+- Keep one generated-schema policy test that rejects incomplete or stale OpenAPI operations.
 - Use the real PostgreSQL test database. Each test owns its state and passes independently and in any order.
 - Prefer an observable HTTP, persistence or authorization outcome over assertions about calls and implementation details.
 - Keep mocks at external boundaries. Before mocking WorkOS, verify the installed public SDK contract and construct SDK values through its public APIs.

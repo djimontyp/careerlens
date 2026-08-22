@@ -62,6 +62,7 @@ export const RetryAfterError: Story = {
         email: "ada@example.com",
         first_name: "Ada",
         last_name: "Lovelace",
+        avatar_url: null,
       })
     }
 
@@ -90,6 +91,7 @@ export const SignedIn: Story = {
         email: "ada@example.com",
         first_name: "Ada",
         last_name: "Lovelace",
+        avatar_url: null,
       })
 
     return () => {

@@ -5,6 +5,7 @@ export type User = {
   email: string
   first_name: string | null
   last_name: string | null
+  avatar_url: string | null
 }
 
 export async function fetchCurrentUser(): Promise<User | null> {

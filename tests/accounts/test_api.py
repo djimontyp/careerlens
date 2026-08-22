@@ -36,7 +36,12 @@ def test_inactive_user_session_is_rejected() -> None:
 
 @pytest.mark.django_db
 def test_me_returns_user_and_sets_csrf_cookie() -> None:
-    user = User.objects.create_user(email="ada@example.com", first_name="Ada", last_name="Lovelace")
+    user = User.objects.create_user(
+        email="ada@example.com",
+        first_name="Ada",
+        last_name="Lovelace",
+        avatar_url="https://images.example.com/ada.jpg",
+    )
     client = Client()
     client.force_login(user)
 
@@ -48,6 +53,7 @@ def test_me_returns_user_and_sets_csrf_cookie() -> None:
         "email": "ada@example.com",
         "first_name": "Ada",
         "last_name": "Lovelace",
+        "avatar_url": "https://images.example.com/ada.jpg",
     }
     assert client.cookies["csrftoken"].value
 
