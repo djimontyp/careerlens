@@ -1,6 +1,7 @@
 import time
 
 import pytest
+from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.test import Client
 from workos import RateLimitExceededError, ServerError, WorkOSError
@@ -190,7 +191,7 @@ def test_successful_callback_rotates_session_and_logs_in(monkeypatch: pytest.Mon
     response = client.get("/callback/?state=valid_state&code=valid_code")
 
     assert response.status_code == 302
-    assert response["Location"] == "/"
+    assert response["Location"] == settings.LOGIN_REDIRECT_URL
     assert client.session.session_key != previous_session_key
     assert int(client.session["_auth_user_id"]) == user.pk
 

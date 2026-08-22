@@ -39,7 +39,7 @@ class WorkOSBackend(BaseBackend):
         return user
 
     def get_user(self, user_id: int) -> User | None:
-        return User.objects.filter(pk=user_id).first()
+        return User.objects.filter(pk=user_id, is_active=True).first()
 
     def authorization_url(self, redirect_uri: str, state: str) -> str:
         return self.client().user_management.get_authorization_url(

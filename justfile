@@ -105,6 +105,7 @@ test *args:
         APP__ENVIRONMENT=test \
         APP__DJANGO__SECRET_KEY=test-only-secret-key-with-at-least-32-characters \
         APP__DJANGO__ALLOWED_HOSTS='["testserver"]' \
+        APP__CORE__SITE_URL=http://testserver \
         APP__AUTH__WORKOS__ENABLED=true \
         APP__AUTH__WORKOS__CLIENT_ID=client_test \
         APP__AUTH__WORKOS__API_KEY=sk_test \

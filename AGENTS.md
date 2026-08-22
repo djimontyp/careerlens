@@ -51,6 +51,13 @@ Before changing either scope, read its `AGENTS.md`. After the change, re-read it
 
 - On API changes, update `openapi.json` via `just api-schema` to keep the schema up to date.
 
+## Authentication security
+
+- Ninja API is fail-closed: session authentication belongs on the root `NinjaAPI`. Public operations must opt out explicitly with `auth=None` and have a focused anonymous-access test.
+- Deactivating a user must invalidate existing Django sessions on their next request. Authentication backends must never restore inactive users.
+- Every endpoint that reads or mutates user-owned data must scope its queryset to `request.user` and include a cross-user denial test. Authentication alone does not prevent BOLA.
+- Invite-only access is enforced by WorkOS with public signup disabled. Do not duplicate invitations locally without a product-specific access policy.
+
 ## Testing
 
 - For test selection, test plans, coverage matrices or harness review, use `designing-test-strategy` when available.
@@ -60,4 +67,3 @@ Before changing either scope, read its `AGENTS.md`. After the change, re-read it
 - Keep the real WorkOS redirect and environment flow as an explicit manual smoke check unless a deterministic isolated provider environment exists.
 - Add infrastructure, helpers, matrices and coverage targets only for a current risk or demonstrated repetition.
 - Scoped rules live in `tests/AGENTS.md` and `frontend/AGENTS.md`.
-

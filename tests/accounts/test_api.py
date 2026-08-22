@@ -1,8 +1,18 @@
 import pytest
+from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.test import Client
+from ninja.security import SessionAuth
+
+from api.root import api
 
 User = get_user_model()
+
+
+def test_api_is_authenticated_by_default() -> None:
+    assert isinstance(api.auth, list)
+    assert len(api.auth) == 1
+    assert isinstance(api.auth[0], SessionAuth)
 
 
 def test_me_requires_session() -> None:
@@ -10,6 +20,18 @@ def test_me_requires_session() -> None:
 
     assert response.status_code == 401
     assert response.json() == {"detail": "Unauthorized"}
+
+
+@pytest.mark.django_db
+def test_inactive_user_session_is_rejected() -> None:
+    user = User.objects.create_user(email="inactive@example.com")
+    client = Client()
+    client.force_login(user)
+    User.objects.filter(pk=user.pk).update(is_active=False)
+
+    response = client.get("/api/v1/me")
+
+    assert response.status_code == 401
 
 
 @pytest.mark.django_db
@@ -63,5 +85,5 @@ def test_public_logout_is_post_only_and_requires_csrf() -> None:
     assert wrong_method.status_code == 405
     assert rejected.status_code == 403
     assert accepted.status_code == 302
-    assert accepted["Location"] == "/"
+    assert accepted["Location"] == settings.LOGIN_REDIRECT_URL
     assert "_auth_user_id" not in client.session
