@@ -18,9 +18,9 @@ export default defineConfig({
   },
   server: {
     proxy: {
-      "/api": "http://localhost:9090",
-      "/login": "http://localhost:9090",
-      "/callback": "http://localhost:9090",
+      "/api": "http://127.0.0.1:9090",
+      "/login": "http://127.0.0.1:9090",
+      "/callback": "http://127.0.0.1:9090",
     },
   },
   test: {

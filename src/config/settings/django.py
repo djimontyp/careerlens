@@ -7,6 +7,7 @@ DEBUG = app_config.django.debug
 SECRET_KEY = app_config.django.secret_key.get_secret_value()
 ALLOWED_HOSTS = list(app_config.django.allowed_hosts)
 SITE_URL = app_config.core.site_url_value
+CSRF_TRUSTED_ORIGINS = [SITE_URL]
 DATABASES = {"default": app_config.database.django_config}
 
 AUTH_WORKOS_ENABLED = app_config.auth.workos.enabled
