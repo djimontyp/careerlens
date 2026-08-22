@@ -40,8 +40,28 @@ fmt:
     uv run ruff format .
     cd frontend && npm run fmt
 
-# Check Python and frontend code formatting and linting
-check:
+# Check GitHub Actions workflows
+workflow-check:
+    docker run --rm --volume "{{ justfile_directory() }}:/repo" --workdir /repo rhysd/actionlint:1.7.12
+
+# Check production Compose configuration without printing secrets
+compose-check:
+    env \
+        CAREERLENS_IMAGE=careerlens:config-check \
+        APP__ENVIRONMENT=production \
+        APP__DJANGO__ALLOWED_HOSTS='["app.example.invalid"]' \
+        APP__CORE__SITE_URL=https://app.example.invalid \
+        APP__AUTH__WORKOS__CLIENT_ID=client_config_check \
+        APP__AUTH__WORKOS__REDIRECT_URI=https://app.example.invalid/callback/ \
+        APP__DATABASE__DATABASE=careerlens_config_check \
+        APP__DATABASE__USER=careerlens_config_check \
+        DATABASE_PASSWORD=config-check-only \
+        DJANGO_SECRET_KEY=config-check-only \
+        WORKOS_API_KEY=sk_config_check \
+        docker compose --file deploy/compose/production.yml config --quiet
+
+# Check code and delivery configuration
+check: workflow-check compose-check
     uv run ruff check .
     uv run ruff format --check .
     cd frontend && npm run lint

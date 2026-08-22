@@ -1,4 +1,5 @@
 name: Publish image
+run-name: Production image · ${{ github.event.workflow_run.head_branch }}
 
 on:
   workflow_run:
@@ -125,7 +126,6 @@ jobs:
     env:
       CAREERLENS_IMAGE: docker.io/${{ vars.DOCKERHUB_REPOSITORY }}@${{ needs.publish.outputs.digest }}
       COMPOSE_PROJECT_NAME: careerlens-prod
-      FRONTEND_ARCHIVE: ${{ runner.temp }}/careerlens-frontend.tar.gz
       IMAGE_SHA: ${{ needs.validate.outputs.sha }}
 
     steps:
@@ -146,7 +146,7 @@ jobs:
         run: |
           npm ci --prefix frontend
           npm run build --prefix frontend
-          tar --create --gzip --file "${FRONTEND_ARCHIVE}" --directory frontend/dist .
+          tar --create --gzip --file "${RUNNER_TEMP}/careerlens-frontend.tar.gz" --directory frontend/dist .
 
       - name: Configure SSH
         env:
@@ -159,7 +159,7 @@ jobs:
             echo "Invalid production SSH target" >&2
             exit 1
           fi
-          mkdir --parents --mode 700 "${HOME}/.ssh"
+          install --directory --mode 700 "${HOME}/.ssh"
           printf '%s\n' "${SSH_KNOWN_HOSTS}" > "${HOME}/.ssh/known_hosts"
           chmod 600 "${HOME}/.ssh/known_hosts"
           eval "$(ssh-agent -s)"
@@ -184,11 +184,11 @@ jobs:
           DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
           WORKOS_API_KEY: ${{ secrets.WORKOS_API_KEY }}
         run: |
-          ssh "${DEPLOY_TARGET}" 'mkdir --parents --mode 700 "${HOME}/.careerlens"'
+          ssh "${DEPLOY_TARGET}" 'install --directory --mode 700 "${HOME}/.careerlens"'
           scp deploy/compose/production.yml "${DEPLOY_TARGET}:.careerlens/production.yml.new"
           scp deploy/scripts/remote_deploy.sh "${DEPLOY_TARGET}:.careerlens/remote_deploy.sh.new"
           scp deploy/scripts/install_frontend.sh "${DEPLOY_TARGET}:.careerlens/install_frontend.sh.new"
-          scp "${FRONTEND_ARCHIVE}" "${DEPLOY_TARGET}:.careerlens/frontend.tar.gz.new"
+          scp "${RUNNER_TEMP}/careerlens-frontend.tar.gz" "${DEPLOY_TARGET}:.careerlens/frontend.tar.gz.new"
           ssh "${DEPLOY_TARGET}" 'mv "${HOME}/.careerlens/production.yml.new" "${HOME}/.careerlens/production.yml" && mv "${HOME}/.careerlens/remote_deploy.sh.new" "${HOME}/.careerlens/remote_deploy.sh" && mv "${HOME}/.careerlens/install_frontend.sh.new" "${HOME}/.careerlens/install_frontend.sh" && mv "${HOME}/.careerlens/frontend.tar.gz.new" "${HOME}/.careerlens/frontend.tar.gz"'
           send_environment() {
             for variable in \
@@ -209,7 +209,7 @@ jobs:
             done
           }
           send_environment | ssh "${DEPLOY_TARGET}" 'bash "${HOME}/.careerlens/remote_deploy.sh"'
-          ssh "${DEPLOY_TARGET}" "bash \"\${HOME}/.careerlens/install_frontend.sh\" \"\${HOME}/.careerlens/frontend.tar.gz\" '${IMAGE_SHA}' /var/www/careerlens"
+          printf '%s\n' "${IMAGE_SHA}" | ssh "${DEPLOY_TARGET}" 'read -r image_sha && bash "${HOME}/.careerlens/install_frontend.sh" "${HOME}/.careerlens/frontend.tar.gz" "${image_sha}" /var/www/careerlens'
           ssh "${DEPLOY_TARGET}" 'rm -f "${HOME}/.careerlens/frontend.tar.gz"'
           curl --fail --silent --show-error --retry 3 --retry-all-errors --retry-delay 2 "https://${CAREERLENS_DOMAIN}/" >/dev/null
           {
