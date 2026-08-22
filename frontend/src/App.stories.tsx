@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react-vite"
+import { MemoryRouter } from "react-router-dom"
 import { expect, waitFor, within } from "storybook/test"
 
 import App from "@/App"
@@ -7,6 +8,13 @@ const meta = {
   title: "App/Authentication",
   component: App,
   parameters: { layout: "fullscreen" },
+  decorators: [
+    (Story) => (
+      <MemoryRouter initialEntries={["/"]}>
+        <Story />
+      </MemoryRouter>
+    ),
+  ],
 } satisfies Meta<typeof App>
 
 export default meta

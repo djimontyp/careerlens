@@ -1,5 +1,6 @@
 import type { ReactNode } from "react"
 
+import { AppNavigation } from "@/components/app-navigation"
 import { AppSidebar } from "@/components/app-sidebar"
 import { UserMenu } from "@/components/user-menu"
 import {
@@ -45,6 +46,7 @@ export function AuthenticatedLayout({
         <div className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto bg-background md:rounded-2xl md:border">
           {children}
         </div>
+        <AppNavigation mobile />
       </SidebarInset>
     </SidebarProvider>
   )

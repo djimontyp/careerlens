@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react-vite"
+import { MemoryRouter } from "react-router-dom"
 import { expect, fn, waitFor, within } from "storybook/test"
 
 import { AuthenticatedLayout } from "@/components/authenticated-layout"
@@ -23,6 +24,13 @@ const meta = {
     onLogout: fn(),
     children: <div className="p-4">Route content</div>,
   },
+  decorators: [
+    (Story, context) => (
+      <MemoryRouter initialEntries={context.parameters.initialEntries ?? ["/"]}>
+        <Story />
+      </MemoryRouter>
+    ),
+  ],
 } satisfies Meta<typeof AuthenticatedLayout>
 
 export default meta
@@ -53,7 +61,21 @@ export const Desktop: Story = {
     await expect(canvas.getByRole("banner")).toBeVisible()
     await expect(canvas.getAllByText("CareerLens")[0]).toBeVisible()
     await expect(sidebar.getByText("ada@example.com")).toBeVisible()
-    await expect(canvas.queryByRole("navigation")).toBeNull()
+    const navigation = canvas.getByRole("navigation", {
+      name: "Основна навігація",
+    })
+
+    await expect(navigation).toBeVisible()
+    await expect(
+      within(navigation).getByRole("link", { name: "Стрічка" }),
+    ).toHaveAttribute("aria-current", "page")
+    for (const label of ["Інтереси", "Мій агент"]) {
+      const destination = within(navigation).getByRole("button", {
+        name: label,
+      })
+      await expect(destination).toHaveAttribute("aria-disabled", "true")
+      await expect(destination).toHaveAttribute("tabindex", "-1")
+    }
     await expect(main).toBeVisible()
     await expect(workspace.scrollHeight).toBe(workspace.clientHeight)
     const surfaceBox = sidebarSurface.getBoundingClientRect()
@@ -108,7 +130,33 @@ export const Mobile: Story = {
     await expect(
       canvas.queryByRole("button", { name: "Перемкнути бічну панель" }),
     ).toBeNull()
-    await expect(canvas.queryByRole("navigation")).toBeNull()
+    const navigation = canvas.getByRole("navigation", {
+      name: "Основна навігація",
+    })
+    const navigationBox = navigation.getBoundingClientRect()
+    const workspaceBox = workspace.getBoundingClientRect()
+    const feed = within(navigation).getByRole("link", { name: "Стрічка" })
+    const interests = within(navigation).getByRole("button", {
+      name: "Інтереси",
+    })
+    const agent = within(navigation).getByRole("button", {
+      name: "Мій агент",
+    })
+
+    await expect(navigation).toBeVisible()
+    await expect(feed).toHaveAttribute("aria-current", "page")
+    await expect(within(navigation).getByText("Інтереси")).toBeVisible()
+    await expect(within(navigation).getByText("Мій агент")).toBeVisible()
+    await expect(interests).toBeDisabled()
+    await expect(agent).toBeDisabled()
+    for (const destination of [feed, interests, agent]) {
+      await expect(
+        destination.getBoundingClientRect().height,
+      ).toBeGreaterThanOrEqual(44)
+    }
+    await expect(
+      Math.abs(navigationBox.bottom - workspaceBox.bottom),
+    ).toBeLessThanOrEqual(1)
     await expect(workspace.scrollWidth).toBeLessThanOrEqual(
       workspace.clientWidth,
     )
@@ -121,6 +169,21 @@ export const Mobile: Story = {
         brandBox.left - bannerBox.left - (bannerBox.right - avatarBox.right),
       ),
     ).toBeLessThanOrEqual(1)
+  },
+}
+
+export const NavigationRouting: Story = {
+  parameters: { initialEntries: ["/unknown"] },
+  play: async ({ canvasElement, userEvent }) => {
+    const navigation = within(canvasElement).getByRole("navigation", {
+      name: "Основна навігація",
+    })
+    const feed = within(navigation).getByRole("link", { name: "Стрічка" })
+
+    await expect(feed).toHaveAttribute("href", "/")
+    await expect(feed).not.toHaveAttribute("aria-current")
+    await userEvent.click(feed)
+    await waitFor(() => expect(feed).toHaveAttribute("aria-current", "page"))
   },
 }
 
