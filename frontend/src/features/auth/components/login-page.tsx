@@ -68,6 +68,7 @@ export function LoginPage() {
             <Button
               size="lg"
               className="w-full gap-2"
+              nativeButton={false}
               render={<a href="/login/" />}
             >
               <span>Увійти в акаунт</span>
@@ -78,7 +79,7 @@ export function LoginPage() {
       </main>
 
       {/* Bottom Footer Note */}
-      <footer className="relative z-10 text-center text-xs text-muted-foreground py-2">
+      <footer className="relative z-10 py-2 text-center text-xs text-foreground">
         CareerLens
       </footer>
     </div>

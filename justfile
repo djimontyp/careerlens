@@ -15,6 +15,25 @@ frontend-storybook:
 
 alias storybook := frontend-storybook
 
+[no-cd]
+frontend-test:
+    @cd {{ justfile_directory() }}/frontend && npm test
+
+# Run Playwright E2E tests in interactive UI mode
+[no-cd]
+frontend-e2e-ui *args:
+    @cd {{ justfile_directory() }}/frontend && npx playwright test --ui {{ args }}
+
+alias e2e-ui := frontend-e2e-ui
+alias test-ui := frontend-e2e-ui
+
+# Run Playwright E2E tests in headless mode
+[no-cd]
+frontend-e2e *args:
+    @cd {{ justfile_directory() }}/frontend && npx playwright test {{ args }}
+
+alias e2e := frontend-e2e
+
 # Format Python and frontend code
 fmt:
     uv run ruff check --fix .

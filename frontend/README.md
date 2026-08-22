@@ -33,7 +33,10 @@ npm run storybook
 npm run build-storybook
 
 # Run component and story tests
-npx vitest run
+npm test
+
+# Open Playwright Test UI for application-flow development and debugging
+npm run test:ui
 ```
 
 ## Project Structure
@@ -41,8 +44,9 @@ npx vitest run
 ```text
 frontend/
 ├── .storybook/       # Storybook configuration (addons: a11y, docs, vitest)
+├── e2e/              # Playwright application-flow tests
 ├── src/
-│   ├── stories/      # Storybook stories and UI components
+│   ├── features/     # Product features and colocated Storybook stories
 │   ├── App.tsx       # Root component
 │   └── main.tsx      # Application entry point
 ├── .oxlintrc.json    # Oxlint configuration

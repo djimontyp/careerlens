@@ -13,6 +13,9 @@ htmlcov/
 
 node_modules/
 dist/
+frontend/test-results/
+frontend/playwright-report/
+frontend/blob-report/
 staticfiles/
 media/
 
@@ -37,6 +40,7 @@ data/
 tmp/
 .runtime/
 .artifacts/
+graphify-out/
 
 *.pem
 *.key
