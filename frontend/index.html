@@ -7,7 +7,17 @@
     <title>CareerLens</title>
     <script>
       try {
-        const theme = localStorage.getItem("careerlens-theme")
+        let stored = null
+        try {
+          stored = JSON.parse(
+            localStorage.getItem("careerlens-shell") || "null",
+          )
+        } catch {}
+        const persistedTheme = stored?.state?.theme
+        const legacyTheme = localStorage.getItem("careerlens-theme")
+        const theme = ["light", "dark", "system"].includes(persistedTheme)
+          ? persistedTheme
+          : legacyTheme
         const dark =
           theme === "dark" ||
           (theme !== "light" &&

@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react"
 
 import { AuthenticatedLayout } from "@/components/authenticated-layout"
-import { UserMenu } from "@/components/user-menu"
 import { Button } from "@/components/ui/button"
 import { fetchCurrentUser, logout, type User } from "@/features/auth/api"
 import { LoginPage } from "@/features/auth/components/login-page"
@@ -54,22 +53,18 @@ function App() {
 
   return (
     <AuthenticatedLayout
-      header={
-        <UserMenu
-          user={user}
-          loggingOut={loggingOut}
-          onLogout={async () => {
-            setLoggingOut(true)
-            try {
-              await logout()
-              window.location.reload()
-            } catch (error) {
-              console.error(error)
-              setLoggingOut(false)
-            }
-          }}
-        />
-      }
+      user={user}
+      loggingOut={loggingOut}
+      onLogout={async () => {
+        setLoggingOut(true)
+        try {
+          await logout()
+          window.location.reload()
+        } catch (error) {
+          console.error(error)
+          setLoggingOut(false)
+        }
+      }}
     />
   )
 }

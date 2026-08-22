@@ -15,14 +15,21 @@ import {
 } from "@/components/ui/dropdown-menu"
 import type { User } from "@/features/auth/api"
 import { userFullName, userInitials } from "@/lib/user-display"
+import { cn } from "@/lib/utils"
 
 type UserMenuProps = {
   user: User
   loggingOut: boolean
   onLogout: () => void
+  sidebar?: boolean
 }
 
-export function UserMenu({ user, loggingOut, onLogout }: UserMenuProps) {
+export function UserMenu({
+  user,
+  loggingOut,
+  onLogout,
+  sidebar = false,
+}: UserMenuProps) {
   const name = userFullName(user)
   const initials = userInitials(user)
 
@@ -31,8 +38,14 @@ export function UserMenu({ user, loggingOut, onLogout }: UserMenuProps) {
       <DropdownMenuTrigger
         render={
           <Button
+            data-testid={sidebar ? "sidebar-user" : undefined}
             variant="ghost"
-            className="h-auto min-w-0 gap-2 px-2 py-1.5"
+            className={cn(
+              "h-auto min-w-0 gap-2 px-2 py-1.5",
+              !sidebar && "-mr-1.5 size-11 justify-center p-1.5!",
+              sidebar &&
+                "w-full justify-start group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0!",
+            )}
             aria-label={`Профіль ${name}`}
           />
         }
@@ -45,14 +58,22 @@ export function UserMenu({ user, loggingOut, onLogout }: UserMenuProps) {
             {initials}
           </AvatarFallback>
         </Avatar>
-        <span className="hidden min-w-0 text-left leading-tight md:grid">
+        <span
+          className={cn(
+            "hidden min-w-0 text-left leading-tight md:grid",
+            sidebar && "group-data-[collapsible=icon]:hidden",
+          )}
+        >
           <span className="truncate text-sm font-medium">{name}</span>
           <span className="truncate text-xs text-foreground">{user.email}</span>
         </span>
         <HugeiconsIcon
           icon={UnfoldMoreIcon}
           data-icon="inline-end"
-          className="hidden md:block"
+          className={cn(
+            "ml-auto hidden md:block",
+            sidebar && "group-data-[collapsible=icon]:hidden",
+          )}
         />
       </DropdownMenuTrigger>
       <DropdownMenuContent className="w-auto min-w-64" align="end">
