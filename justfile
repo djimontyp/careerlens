@@ -117,6 +117,7 @@ test *args:
         APP__DATABASE__PORT="${APP__DATABASE__PORT:-5432}" \
         uv run pytest {{ args }}
 
-# Verify hardened production container security contracts
+# Verify production deployment contracts
 container-test:
+    bash tests/deploy/verify_frontend_install_test.sh
     bash tests/deploy/verify_container_test.sh

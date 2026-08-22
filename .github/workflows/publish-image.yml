@@ -125,6 +125,8 @@ jobs:
     env:
       CAREERLENS_IMAGE: docker.io/${{ vars.DOCKERHUB_REPOSITORY }}@${{ needs.publish.outputs.digest }}
       COMPOSE_PROJECT_NAME: careerlens-prod
+      FRONTEND_ARCHIVE: ${{ runner.temp }}/careerlens-frontend.tar.gz
+      IMAGE_SHA: ${{ needs.validate.outputs.sha }}
 
     steps:
       - name: Check out published commit
@@ -132,6 +134,19 @@ jobs:
         with:
           ref: ${{ needs.validate.outputs.sha }}
           persist-credentials: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Build frontend
+        run: |
+          npm ci --prefix frontend
+          npm run build --prefix frontend
+          tar --create --gzip --file "${FRONTEND_ARCHIVE}" --directory frontend/dist .
 
       - name: Configure SSH
         env:
@@ -172,7 +187,9 @@ jobs:
           ssh "${DEPLOY_TARGET}" 'mkdir --parents --mode 700 "${HOME}/.careerlens"'
           scp deploy/compose/production.yml "${DEPLOY_TARGET}:.careerlens/production.yml.new"
           scp deploy/scripts/remote_deploy.sh "${DEPLOY_TARGET}:.careerlens/remote_deploy.sh.new"
-          ssh "${DEPLOY_TARGET}" 'mv "${HOME}/.careerlens/production.yml.new" "${HOME}/.careerlens/production.yml" && mv "${HOME}/.careerlens/remote_deploy.sh.new" "${HOME}/.careerlens/remote_deploy.sh"'
+          scp deploy/scripts/install_frontend.sh "${DEPLOY_TARGET}:.careerlens/install_frontend.sh.new"
+          scp "${FRONTEND_ARCHIVE}" "${DEPLOY_TARGET}:.careerlens/frontend.tar.gz.new"
+          ssh "${DEPLOY_TARGET}" 'mv "${HOME}/.careerlens/production.yml.new" "${HOME}/.careerlens/production.yml" && mv "${HOME}/.careerlens/remote_deploy.sh.new" "${HOME}/.careerlens/remote_deploy.sh" && mv "${HOME}/.careerlens/install_frontend.sh.new" "${HOME}/.careerlens/install_frontend.sh" && mv "${HOME}/.careerlens/frontend.tar.gz.new" "${HOME}/.careerlens/frontend.tar.gz"'
           send_environment() {
             for variable in \
               CAREERLENS_IMAGE \
@@ -192,9 +209,13 @@ jobs:
             done
           }
           send_environment | ssh "${DEPLOY_TARGET}" 'bash "${HOME}/.careerlens/remote_deploy.sh"'
+          ssh "${DEPLOY_TARGET}" "bash \"\${HOME}/.careerlens/install_frontend.sh\" \"\${HOME}/.careerlens/frontend.tar.gz\" '${IMAGE_SHA}' /var/www/careerlens"
+          ssh "${DEPLOY_TARGET}" 'rm -f "${HOME}/.careerlens/frontend.tar.gz"'
+          curl --fail --silent --show-error --retry 3 --retry-all-errors --retry-delay 2 "https://${CAREERLENS_DOMAIN}/" >/dev/null
           {
             echo "### Production deployment"
             echo "- Image: \`${CAREERLENS_IMAGE}\`"
+            echo "- Frontend SHA: \`${IMAGE_SHA}\`"
             echo "- Domain: \`${CAREERLENS_DOMAIN}\`"
           } >> "${GITHUB_STEP_SUMMARY}"
 
