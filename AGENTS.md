@@ -53,7 +53,7 @@ Before changing either scope, read its `AGENTS.md`. After the change, re-read it
 
 ## Authentication security
 
-- Ninja API is fail-closed: session authentication belongs on the root `NinjaAPI`. Public operations must opt out explicitly with `auth=None` and have a focused anonymous-access test.
+- Ninja API is fail-closed: a policy test must allow `auth=None` only for explicitly allowlisted public operations; each user-owned endpoint still requires its own cross-user denial test.
 - Deactivating a user must invalidate existing Django sessions on their next request. Authentication backends must never restore inactive users.
 - Every endpoint that reads or mutates user-owned data must scope its queryset to `request.user` and include a cross-user denial test. Authentication alone does not prevent BOLA.
 - Invite-only access is enforced by WorkOS with public signup disabled. Do not duplicate invitations locally without a product-specific access policy.
