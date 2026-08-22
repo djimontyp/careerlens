@@ -1,3 +1,4 @@
+import logging
 import time
 
 import pytest
@@ -73,10 +74,18 @@ def test_verified_workos_user_is_created_and_linked(monkeypatch: pytest.MonkeyPa
 
 
 @pytest.mark.django_db
-def test_unverified_workos_user_creates_nothing(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_unverified_workos_user_creates_nothing(
+    monkeypatch: pytest.MonkeyPatch,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
     install_response(monkeypatch, auth_response(email_verified=False))
 
-    assert WorkOSBackend().authenticate(request=None, code="valid_code") is None
+    with caplog.at_level(logging.WARNING, logger="accounts.backends"):
+        assert WorkOSBackend().authenticate(request=None, code="valid_code") is None
+
+    assert "WorkOS authentication rejected: reason=email_not_verified" in caplog.text
+    assert "ada@example.com" not in caplog.text
+    assert "valid_code" not in caplog.text
     assert User.objects.count() == 0
     assert WorkOSIdentity.objects.count() == 0
 
@@ -218,6 +227,7 @@ def test_successful_callback_rotates_session_and_logs_in(monkeypatch: pytest.Mon
 )
 def test_callback_maps_workos_errors(
     monkeypatch: pytest.MonkeyPatch,
+    caplog: pytest.LogCaptureFixture,
     error: WorkOSError,
     status: int,
 ) -> None:
@@ -228,7 +238,11 @@ def test_callback_maps_workos_errors(
     client = Client()
     store_oauth_state(client)
 
-    response = client.get("/callback/?state=valid_state&code=valid_code")
+    with caplog.at_level(logging.WARNING, logger="accounts.views"):
+        response = client.get("/callback/?state=valid_state&code=valid_code")
 
     assert response.status_code == status
     assert "_auth_user_id" not in client.session
+    assert f"WorkOS callback failed: type={type(error).__name__}" in caplog.text
+    assert "valid_code" not in caplog.text
+    assert str(error) not in caplog.text
