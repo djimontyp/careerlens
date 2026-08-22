@@ -57,38 +57,3 @@ export function apiPost<T = void>(
     headers,
   })
 }
-
-export function apiPostJson<T>(
-  path: string,
-  body: unknown,
-  init?: RequestInit,
-): Promise<T> {
-  const headers = new Headers(init?.headers)
-  headers.set("Content-Type", "application/json")
-  const token = csrfToken()
-  if (token) {
-    headers.set("X-CSRFToken", decodeURIComponent(token))
-  }
-  return request<T>(path, {
-    ...init,
-    method: "POST",
-    headers,
-    body: JSON.stringify(body),
-  })
-}
-
-export function apiDelete<T = void>(
-  path: string,
-  init?: RequestInit,
-): Promise<T> {
-  const headers = new Headers(init?.headers)
-  const token = csrfToken()
-  if (token) {
-    headers.set("X-CSRFToken", decodeURIComponent(token))
-  }
-  return request<T>(path, {
-    ...init,
-    method: "DELETE",
-    headers,
-  })
-}

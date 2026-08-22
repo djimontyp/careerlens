@@ -65,6 +65,7 @@ check: workflow-check compose-check
     uv run ruff check .
     uv run ruff format --check .
     cd frontend && npm run lint
+    cd frontend && npm run check:unused
     cd frontend && npm run fmt:check
 
 # Export OpenAPI schema of the Ninja API to openapi.json (for Postman import)
