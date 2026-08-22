@@ -1,3 +1,5 @@
+import logging
+
 from django.conf import settings
 from django.contrib.auth.backends import BaseBackend
 from django.db import transaction
@@ -5,6 +7,8 @@ from django.http import HttpRequest
 from workos import WorkOSClient
 
 from accounts.models import User, WorkOSIdentity
+
+logger = logging.getLogger(__name__)
 
 
 class WorkOSBackend(BaseBackend):
@@ -20,13 +24,21 @@ class WorkOSBackend(BaseBackend):
         workos_user = response.user
         subject = workos_user.id.strip()
         email = workos_user.email.strip().lower()
-        if not subject or not email or not workos_user.email_verified:
+        if not subject:
+            logger.warning("WorkOS authentication rejected: subject is missing")
+            return None
+        if not email:
+            logger.warning("WorkOS authentication rejected: reason=missing_email")
+            return None
+        if not workos_user.email_verified:
+            logger.warning("WorkOS authentication rejected: reason=email_not_verified")
             return None
 
         identity = WorkOSIdentity.objects.select_related("user").filter(subject=subject).first()
         if identity:
             user = identity.user
             if not user.is_active:
+                logger.warning("WorkOS authentication rejected: reason=inactive_user")
                 return None
             avatar_url = workos_user.profile_picture_url or ""
             if user.avatar_url != avatar_url:
@@ -34,6 +46,7 @@ class WorkOSBackend(BaseBackend):
                 user.save(update_fields=["avatar_url"])
             return user
         if User.objects.filter(email__iexact=email).exists():
+            logger.warning("WorkOS authentication rejected: reason=email_already_exists")
             return None
 
         with transaction.atomic():

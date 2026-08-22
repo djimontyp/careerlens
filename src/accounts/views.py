@@ -1,3 +1,4 @@
+import logging
 import secrets
 import time
 
@@ -11,6 +12,8 @@ from django.views import View
 from workos import RateLimitExceededError, ServerError, WorkOSError
 
 from accounts.backends import WorkOSBackend
+
+logger = logging.getLogger(__name__)
 
 
 class LoginView(View):
@@ -33,16 +36,28 @@ class CallbackView(View):
             return HttpResponse("Authentication failed", status=400)
         try:
             user = authenticate(request, code=code)
-        except RateLimitExceededError:
+        except RateLimitExceededError as error:
+            self.log_workos_error(error)
             return HttpResponse("Too many authentication attempts", status=429)
-        except ServerError:
+        except ServerError as error:
+            self.log_workos_error(error)
             return HttpResponse("Authentication service unavailable", status=503)
-        except WorkOSError:
+        except WorkOSError as error:
+            self.log_workos_error(error)
             return HttpResponse("Authentication failed", status=400)
         if user is None:
             return HttpResponse("Authentication failed", status=400)
         django_login(request, user)
         return redirect(settings.LOGIN_REDIRECT_URL)
+
+    def log_workos_error(self, error: WorkOSError) -> None:
+        logger.warning(
+            "WorkOS callback failed: type=%s status=%s request_id=%s code=%s",
+            type(error).__name__,
+            getattr(error, "status_code", None),
+            getattr(error, "request_id", None),
+            getattr(error, "code", None),
+        )
 
     def valid_state(self, oauth: object, state: str) -> bool:
         if not isinstance(oauth, dict):
