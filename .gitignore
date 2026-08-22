@@ -41,6 +41,8 @@ tmp/
 .runtime/
 .artifacts/
 graphify-out/
+docs/superpowers/plans/
+docs/superpowers/specs/
 
 *.pem
 *.key
