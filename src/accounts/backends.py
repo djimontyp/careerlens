@@ -25,7 +25,14 @@ class WorkOSBackend(BaseBackend):
 
         identity = WorkOSIdentity.objects.select_related("user").filter(subject=subject).first()
         if identity:
-            return identity.user if identity.user.is_active else None
+            user = identity.user
+            if not user.is_active:
+                return None
+            avatar_url = workos_user.profile_picture_url or ""
+            if user.avatar_url != avatar_url:
+                user.avatar_url = avatar_url
+                user.save(update_fields=["avatar_url"])
+            return user
         if User.objects.filter(email__iexact=email).exists():
             return None
 
@@ -34,12 +41,13 @@ class WorkOSBackend(BaseBackend):
                 email=email,
                 first_name=workos_user.first_name or "",
                 last_name=workos_user.last_name or "",
+                avatar_url=workos_user.profile_picture_url or "",
             )
             WorkOSIdentity.objects.create(user=user, subject=subject)
         return user
 
     def get_user(self, user_id: int) -> User | None:
-        return User.objects.filter(pk=user_id).first()
+        return User.objects.filter(pk=user_id, is_active=True).first()
 
     def authorization_url(self, redirect_uri: str, state: str) -> str:
         return self.client().user_management.get_authorization_url(

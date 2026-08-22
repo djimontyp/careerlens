@@ -1,8 +1,8 @@
-dev_compose := "docker compose -f deploy/compose/dev.yml"
+dev_compose := "docker compose --env-file .env -f deploy/compose/dev.yml"
 
 # Start local dev stack with Docker Compose Watch (hot reload & sync)
 dev *args:
-    {{ dev_compose }} up --watch {{ args }}
+    {{ dev_compose }} up --watch --force-recreate app {{ args }}
 
 # Run Docker Compose Watch for active file sync and dependency rebuilds
 dev-watch *args:

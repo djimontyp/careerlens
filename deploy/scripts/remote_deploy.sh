@@ -53,7 +53,11 @@ export DOCKER_CONFIG="${docker_config}"
 
 cleanup() {
     docker logout >/dev/null 2>&1 || true
-    rm -rf "${docker_config}"
+    if [[ "${docker_config}" != /dev/shm/careerlens-docker-config.* ]]; then
+        echo "Refusing unsafe cleanup path: ${docker_config}" >&2
+        return 1
+    fi
+    rm -rf -- "${docker_config}"
 }
 
 trap cleanup EXIT

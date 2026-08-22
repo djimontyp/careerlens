@@ -46,3 +46,25 @@ Before changing either scope, read its `AGENTS.md`. After the change, re-read it
 6. Run `uv sync --frozen --no-dev` for the production image.
 
 `uv add --frozen` is not the normal dependency workflow because it skips resolution. Use it only for a reviewed manifest-only recovery after an independent successful resolution.
+
+## API contracts
+
+- On API changes, update `openapi.json` via `just api-schema` to keep the schema up to date.
+- Every operation must fully describe inputs, types, examples, tags, success and error responses, authentication and relevant headers or cookies. The generated schema must match `openapi.json`.
+
+## Authentication security
+
+- Ninja API is fail-closed: a policy test must allow `auth=None` only for explicitly allowlisted public operations; each user-owned endpoint still requires its own cross-user denial test.
+- Deactivating a user must invalidate existing Django sessions on their next request. Authentication backends must never restore inactive users.
+- Every endpoint that reads or mutates user-owned data must scope its queryset to `request.user` and include a cross-user denial test. Authentication alone does not prevent BOLA.
+- Invite-only access is enforced by WorkOS with public signup disabled. Do not duplicate invitations locally without a product-specific access policy.
+
+## Testing
+
+- For test selection, test plans, coverage matrices or harness review, use `designing-test-strategy` when available.
+- Every test must cover a named product, security or regression risk with an observable oracle. Use the lowest level that can prove it; do not repeat the same assertion across layers.
+- Backend, API, session, CSRF, security and domain contracts belong in pytest. Rendered component states, interactions and accessibility belong in Storybook/Vitest Browser.
+- Use Playwright E2E only for a real SPA-Django boundary that lower levels cannot prove. When selected, apply `playwright-best-practices` to its implementation.
+- Keep the real WorkOS redirect and environment flow as an explicit manual smoke check unless a deterministic isolated provider environment exists.
+- Add infrastructure, helpers, matrices and coverage targets only for a current risk or demonstrated repetition.
+- Scoped rules live in `tests/AGENTS.md` and `frontend/AGENTS.md`.

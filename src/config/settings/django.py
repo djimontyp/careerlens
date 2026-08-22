@@ -7,6 +7,7 @@ DEBUG = app_config.django.debug
 SECRET_KEY = app_config.django.secret_key.get_secret_value()
 ALLOWED_HOSTS = list(app_config.django.allowed_hosts)
 SITE_URL = app_config.core.site_url_value
+CSRF_TRUSTED_ORIGINS = [SITE_URL]
 DATABASES = {"default": app_config.database.django_config}
 
 AUTH_WORKOS_ENABLED = app_config.auth.workos.enabled
@@ -24,7 +25,7 @@ INSTALLED_APPS = [
 AUTH_USER_MODEL = "accounts.User"
 AUTHENTICATION_BACKENDS = ["accounts.backends.WorkOSBackend"]
 LOGIN_URL = login_url(workos_enabled=AUTH_WORKOS_ENABLED) or "/"
-LOGIN_REDIRECT_URL = "/"
+LOGIN_REDIRECT_URL = app_config.core.site_url_value
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",

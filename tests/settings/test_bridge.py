@@ -45,6 +45,7 @@ def test_bridge_maps_validated_configuration(monkeypatch: pytest.MonkeyPatch) ->
     assert module.SECRET_KEY == TEST_SECRET
     assert module.ALLOWED_HOSTS == ["app.example.com"]
     assert module.SITE_URL == "https://app.example.com"
+    assert module.CSRF_TRUSTED_ORIGINS == ["https://app.example.com"]
     assert module.AUTH_WORKOS_ENABLED is True
     assert module.WORKOS_CLIENT_ID == "client_test"
     assert module.WORKOS_API_KEY == "sk_test"

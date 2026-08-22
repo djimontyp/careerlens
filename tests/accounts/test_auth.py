@@ -1,6 +1,7 @@
 import time
 
 import pytest
+from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.test import Client
 from workos import RateLimitExceededError, ServerError, WorkOSError
@@ -17,6 +18,7 @@ def auth_response(
     subject: str = "user_123",
     email: str = "ada@example.com",
     email_verified: bool = True,
+    profile_picture_url: str | None = "https://images.example.com/ada.jpg",
 ) -> AuthenticateResponse:
     return AuthenticateResponse.from_dict(
         {
@@ -26,7 +28,7 @@ def auth_response(
                 "email": email,
                 "first_name": "Ada",
                 "last_name": "Lovelace",
-                "profile_picture_url": None,
+                "profile_picture_url": profile_picture_url,
                 "email_verified": email_verified,
                 "external_id": None,
                 "last_sign_in_at": None,
@@ -66,6 +68,7 @@ def test_verified_workos_user_is_created_and_linked(monkeypatch: pytest.MonkeyPa
     assert user.email == "ada@example.com"
     assert user.first_name == "Ada"
     assert user.last_name == "Lovelace"
+    assert user.avatar_url == "https://images.example.com/ada.jpg"
     assert WorkOSIdentity.objects.get(user=user).subject == "user_123"
 
 
@@ -99,6 +102,19 @@ def test_existing_subject_is_the_canonical_identity(monkeypatch: pytest.MonkeyPa
     assert user == existing
     assert User.objects.count() == 1
     assert WorkOSIdentity.objects.count() == 1
+
+
+@pytest.mark.django_db
+def test_existing_subject_refreshes_avatar(monkeypatch: pytest.MonkeyPatch) -> None:
+    existing = User.objects.create_user(email="ada@example.com", avatar_url="https://images.example.com/old.jpg")
+    WorkOSIdentity.objects.create(user=existing, subject="user_123")
+    install_response(monkeypatch, auth_response(profile_picture_url="https://images.example.com/new.jpg"))
+
+    user = WorkOSBackend().authenticate(request=None, code="valid_code")
+
+    existing.refresh_from_db()
+    assert user == existing
+    assert existing.avatar_url == "https://images.example.com/new.jpg"
 
 
 @pytest.mark.django_db
@@ -190,7 +206,7 @@ def test_successful_callback_rotates_session_and_logs_in(monkeypatch: pytest.Mon
     response = client.get("/callback/?state=valid_state&code=valid_code")
 
     assert response.status_code == 302
-    assert response["Location"] == "/"
+    assert response["Location"] == settings.LOGIN_REDIRECT_URL
     assert client.session.session_key != previous_session_key
     assert int(client.session["_auth_user_id"]) == user.pk
 

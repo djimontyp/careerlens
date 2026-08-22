@@ -1,0 +1,300 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "CareerLens API",
+    "version": "1.0.0",
+    "description": "Session-authenticated HTTP API for the CareerLens web application."
+  },
+  "paths": {
+    "/health": {
+      "get": {
+        "operationId": "api_health_health",
+        "summary": "Health check probe",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HealthResponse"
+                },
+                "example": {
+                  "status": "ok"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service Unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HealthResponse"
+                },
+                "example": {
+                  "status": "error"
+                }
+              }
+            }
+          }
+        },
+        "description": "Unauthenticated probe for load balancers and uptime monitors. Returns 200 when the application and dependencies are healthy, 503 when unavailable.",
+        "tags": [
+          "health"
+        ]
+      }
+    },
+    "/api/v1/me": {
+      "get": {
+        "operationId": "config_api_v1_accounts_me",
+        "summary": "Current session user",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MeOut"
+                }
+              }
+            },
+            "headers": {
+              "Set-Cookie": {
+                "description": "Ensures the CSRF cookie is available for subsequent state-changing requests.",
+                "schema": {
+                  "type": "string"
+                },
+                "example": "csrftoken=token; Path=/; SameSite=Lax"
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                },
+                "example": {
+                  "detail": "Unauthorized"
+                }
+              }
+            }
+          }
+        },
+        "description": "Returns the profile of the currently authenticated user.\n\nAlso ensures the CSRF token is available: the response carries a\n`Set-Cookie: csrftoken` header that clients must store and echo back\nas `X-CSRFToken` on subsequent state-changing requests.",
+        "tags": [
+          "accounts"
+        ],
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ]
+      }
+    },
+    "/api/v1/logout": {
+      "post": {
+        "operationId": "config_api_v1_accounts_logout",
+        "summary": "Log out",
+        "parameters": [
+          {
+            "in": "cookie",
+            "name": "csrftoken",
+            "schema": {
+              "description": "CSRF cookie issued by GET /api/v1/me.",
+              "title": "Csrftoken",
+              "type": "string"
+            },
+            "required": true,
+            "description": "CSRF cookie issued by GET /api/v1/me."
+          },
+          {
+            "in": "header",
+            "name": "X-CSRFToken",
+            "schema": {
+              "description": "Value matching the csrftoken cookie.",
+              "title": "X-Csrftoken",
+              "type": "string"
+            },
+            "required": true,
+            "description": "Value matching the csrftoken cookie."
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content",
+            "headers": {
+              "Set-Cookie": {
+                "description": "Expires the Django session cookie.",
+                "schema": {
+                  "type": "string"
+                },
+                "example": "sessionid=; Max-Age=0; Path=/; SameSite=Lax"
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                },
+                "example": {
+                  "detail": "Unauthorized"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                },
+                "example": {
+                  "detail": "CSRF check Failed"
+                }
+              }
+            }
+          }
+        },
+        "description": "Terminates the current authenticated session and clears the session cookie.\n\nRequires the `X-CSRFToken` header matching the `csrftoken` cookie value.",
+        "tags": [
+          "accounts"
+        ],
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ]
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "HealthResponse": {
+        "examples": [
+          {
+            "status": "ok"
+          }
+        ],
+        "properties": {
+          "status": {
+            "description": "Overall application and dependency health.",
+            "enum": [
+              "ok",
+              "error"
+            ],
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "status"
+        ],
+        "title": "HealthResponse",
+        "type": "object"
+      },
+      "MeOut": {
+        "examples": [
+          {
+            "avatar_url": "https://images.example.com/john.jpg",
+            "email": "john.doe@example.com",
+            "first_name": "John",
+            "id": 1,
+            "last_name": "Doe"
+          }
+        ],
+        "properties": {
+          "id": {
+            "description": "CareerLens user identifier.",
+            "title": "Id",
+            "type": "integer"
+          },
+          "email": {
+            "description": "Verified sign-in email address.",
+            "format": "email",
+            "title": "Email",
+            "type": "string"
+          },
+          "first_name": {
+            "description": "Given name, or an empty string when unavailable.",
+            "title": "First Name",
+            "type": "string"
+          },
+          "last_name": {
+            "description": "Family name, or an empty string when unavailable.",
+            "title": "Last Name",
+            "type": "string"
+          },
+          "avatar_url": {
+            "anyOf": [
+              {
+                "format": "uri",
+                "maxLength": 2083,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "WorkOS profile image URL, or null when unavailable.",
+            "title": "Avatar Url"
+          }
+        },
+        "required": [
+          "id",
+          "email",
+          "first_name",
+          "last_name",
+          "avatar_url"
+        ],
+        "title": "MeOut",
+        "type": "object"
+      },
+      "ErrorOut": {
+        "examples": [
+          {
+            "detail": "Unauthorized"
+          }
+        ],
+        "properties": {
+          "detail": {
+            "description": "Human-readable reason the request was rejected.",
+            "title": "Detail",
+            "type": "string"
+          }
+        },
+        "required": [
+          "detail"
+        ],
+        "title": "ErrorOut",
+        "type": "object"
+      }
+    },
+    "securitySchemes": {
+      "SessionAuth": {
+        "type": "apiKey",
+        "in": "cookie",
+        "name": "sessionid"
+      }
+    }
+  },
+  "servers": [],
+  "tags": [
+    {
+      "name": "accounts",
+      "description": "Current-user session and account operations."
+    },
+    {
+      "name": "health",
+      "description": "Public service health probes."
+    }
+  ]
+}
