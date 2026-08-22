@@ -51,6 +51,13 @@ Before changing either scope, read its `AGENTS.md`. After the change, re-read it
 
 - On API changes, update `openapi.json` via `just api-schema` to keep the schema up to date.
 
+## Testing
 
-
+- For test selection, test plans, coverage matrices or harness review, use `designing-test-strategy` when available.
+- Every test must cover a named product, security or regression risk with an observable oracle. Use the lowest level that can prove it; do not repeat the same assertion across layers.
+- Backend, API, session, CSRF, security and domain contracts belong in pytest. Rendered component states, interactions and accessibility belong in Storybook/Vitest Browser.
+- Use Playwright E2E only for a real SPA-Django boundary that lower levels cannot prove. When selected, apply `playwright-best-practices` to its implementation.
+- Keep the real WorkOS redirect and environment flow as an explicit manual smoke check unless a deterministic isolated provider environment exists.
+- Add infrastructure, helpers, matrices and coverage targets only for a current risk or demonstrated repetition.
+- Scoped rules live in `tests/AGENTS.md` and `frontend/AGENTS.md`.
 
