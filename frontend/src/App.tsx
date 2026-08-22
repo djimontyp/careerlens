@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react"
 
+import { AuthenticatedLayout } from "@/components/authenticated-layout"
+import { UserMenu } from "@/components/user-menu"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { fetchCurrentUser, logout, type User } from "@/features/auth/api"
 import { LoginPage } from "@/features/auth/components/login-page"
 
@@ -15,12 +16,9 @@ function App() {
 
   if (failed) {
     return (
-      <main
-        role="alert"
-        className="grid min-h-svh place-items-center px-4 text-center"
-      >
+      <main className="grid min-h-svh place-items-center px-4 text-center">
         <div className="space-y-3">
-          <p>Не вдалося перевірити сесію.</p>
+          <p role="alert">Не вдалося перевірити сесію.</p>
           <Button
             variant="outline"
             onClick={() => {
@@ -47,32 +45,24 @@ function App() {
   if (user === null) return <LoginPage />
 
   return (
-    <main className="grid min-h-svh place-items-center bg-muted/40 px-4">
-      <Card className="w-full max-w-sm">
-        <CardHeader>
-          <CardTitle>CareerLens</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <p className="text-sm text-muted-foreground">{user.email}</p>
-          <Button
-            variant="outline"
-            disabled={loggingOut}
-            onClick={async () => {
-              setLoggingOut(true)
-              try {
-                await logout()
-                window.location.reload()
-              } catch (error) {
-                console.error(error)
-                setLoggingOut(false)
-              }
-            }}
-          >
-            {loggingOut ? "Вихід…" : "Вийти"}
-          </Button>
-        </CardContent>
-      </Card>
-    </main>
+    <AuthenticatedLayout
+      header={
+        <UserMenu
+          user={user}
+          loggingOut={loggingOut}
+          onLogout={async () => {
+            setLoggingOut(true)
+            try {
+              await logout()
+              window.location.reload()
+            } catch (error) {
+              console.error(error)
+              setLoggingOut(false)
+            }
+          }}
+        />
+      }
+    />
   )
 }
 

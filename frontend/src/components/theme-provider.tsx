@@ -6,8 +6,20 @@ import {
   type Theme,
 } from "@/components/theme-context"
 
-export function ThemeProvider({ children }: { children: React.ReactNode }) {
+type ThemeProviderProps = {
+  children: React.ReactNode
+  defaultTheme?: Theme
+  onThemeChange?: (theme: Theme) => void
+}
+
+export function ThemeProvider({
+  children,
+  defaultTheme,
+  onThemeChange,
+}: ThemeProviderProps) {
   const [theme, setTheme] = useState<Theme>(() => {
+    if (defaultTheme) return defaultTheme
+
     try {
       const stored = localStorage.getItem(THEME_STORAGE_KEY)
       return stored === "light" || stored === "dark" || stored === "system"
@@ -32,10 +44,13 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   }, [theme])
 
   const changeTheme = (theme: Theme) => {
-    try {
-      localStorage.setItem(THEME_STORAGE_KEY, theme)
-    } catch {}
+    if (defaultTheme === undefined) {
+      try {
+        localStorage.setItem(THEME_STORAGE_KEY, theme)
+      } catch {}
+    }
     setTheme(theme)
+    onThemeChange?.(theme)
   }
 
   return (

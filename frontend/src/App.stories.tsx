@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react-vite"
-import { expect, within } from "storybook/test"
+import { expect, waitFor, within } from "storybook/test"
 
 import App from "@/App"
 
@@ -33,7 +33,24 @@ export const SignedOut: Story = {
   },
 }
 
+export const SessionError: Story = {
+  beforeEach: () => {
+    const fetch = window.fetch
+    window.fetch = async () => new Response(null, { status: 500 })
+
+    return () => {
+      window.fetch = fetch
+    }
+  },
+  play: async ({ canvasElement }) => {
+    await expect(
+      await within(canvasElement).findByRole("alert"),
+    ).toHaveTextContent("Не вдалося перевірити сесію.")
+  },
+}
+
 export const RetryAfterError: Story = {
+  tags: ["!dev"],
   beforeEach: () => {
     const fetch = window.fetch
     let attempt = 0
@@ -79,9 +96,17 @@ export const SignedIn: Story = {
       window.fetch = fetch
     }
   },
-  play: async ({ canvasElement }) => {
+  play: async ({ canvasElement, userEvent }) => {
     const canvas = within(canvasElement)
-    await expect(await canvas.findByText("ada@example.com")).toBeVisible()
-    await expect(canvas.getByRole("button", { name: "Вийти" })).toBeVisible()
+    const profile = await canvas.findByRole("button", {
+      name: "Профіль Ada Lovelace",
+    })
+
+    await expect(canvas.getByRole("main")).toBeVisible()
+    await userEvent.click(profile)
+    await waitFor(() =>
+      expect(profile).toHaveAttribute("aria-expanded", "true"),
+    )
+    await userEvent.click(profile)
   },
 }
