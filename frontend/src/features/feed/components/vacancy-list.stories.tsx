@@ -1,12 +1,13 @@
 import type { Meta, StoryObj } from "@storybook/react-vite"
 import { MemoryRouter } from "react-router-dom"
-import { expect } from "storybook/test"
+import { expect, fn } from "storybook/test"
 
 import { VacancyList } from "@/features/feed/components/vacancy-list"
 
 const meta = {
   title: "Feed/VacancyList",
   component: VacancyList,
+  args: { selectedId: null, onSelect: fn() },
   decorators: [
     (Story) => (
       <MemoryRouter>
@@ -128,8 +129,9 @@ export const RetryAfterLoadMoreError: Story = {
 
 export const CardPresentation: Story = {
   ...LoadedAndInfinite,
-  play: async ({ canvas }) => {
-    const vacancy = await canvas.findByRole("link", {
+  args: { selectedId: 42, onSelect: fn() },
+  play: async ({ args, canvas, userEvent }) => {
+    const vacancy = await canvas.findByRole("button", {
       name: /Senior Python Developer/,
     })
     await expect(vacancy).toHaveTextContent("Acme · Remote")
@@ -140,11 +142,14 @@ export const CardPresentation: Story = {
       "/source-icons/dou.png",
     )
     await expect(vacancy).toHaveClass("focus-visible:ring-2")
-    const article = await canvas.findByRole("article", {
-      name: "Older Django Developer",
+    await expect(vacancy).toHaveAttribute("aria-pressed", "true")
+    const article = await canvas.findByRole("button", {
+      name: /Older Django Developer/,
     })
     await expect(article).toHaveTextContent("Telegram")
     await expect(article).toHaveTextContent("Дата невідома")
+    await userEvent.click(article)
+    await expect(args.onSelect).toHaveBeenCalledWith(41)
   },
 }
 

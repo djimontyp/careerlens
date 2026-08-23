@@ -18,7 +18,12 @@ import {
 } from "@hugeicons/core-free-icons"
 import { HugeiconsIcon } from "@hugeicons/react"
 import { Fragment, type ReactNode } from "react"
-import { NavLink, useLocation } from "react-router-dom"
+import {
+  NavLink,
+  useLocation,
+  useNavigate,
+  useSearchParams,
+} from "react-router-dom"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -52,11 +57,15 @@ export function FeedWorkspace() {
   const isMobile = useIsMobile()
   const canPinFilters = useMediaQuery("(min-width: 1024px)")
   const { pathname } = useLocation()
+  const navigate = useNavigate()
+  const [searchParams, setSearchParams] = useSearchParams()
+  const selectedId = Number(searchParams.get("vacancy")) || null
   const order = useFeedLayoutStore((state) => state.order)
   const visibility = useFeedLayoutStore((state) => state.visibility)
   const widths = useFeedLayoutStore((state) => state.widths)
   const movePanel = useFeedLayoutStore((state) => state.movePanel)
   const resizeBoundary = useFeedLayoutStore((state) => state.resizeBoundary)
+  const togglePanel = useFeedLayoutStore((state) => state.togglePanel)
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
     useSensor(KeyboardSensor, {
@@ -64,8 +73,28 @@ export function FeedWorkspace() {
     }),
   )
 
+  function handleSelect(id: number) {
+    const next = new URLSearchParams(searchParams)
+    if (id === selectedId) {
+      next.delete("vacancy")
+      if (!isMobile && visibility.detail) togglePanel("detail")
+      setSearchParams(next)
+      return
+    }
+    next.set("vacancy", String(id))
+    if (isMobile) navigate(`/feed/detail?${next}`)
+    else {
+      if (!visibility.detail) togglePanel("detail")
+      setSearchParams(next)
+    }
+  }
+
   if (isMobile) {
-    return pathname === "/feed/detail" ? <MobileDetail /> : <MobileList />
+    return pathname === "/feed/detail" ? (
+      <MobileDetail />
+    ) : (
+      <MobileList selectedId={selectedId} onSelect={handleSelect} />
+    )
   }
 
   const visibleOrder = order.filter(
@@ -107,7 +136,14 @@ export function FeedWorkspace() {
                       minWidth: PANEL_MIN_WIDTH[panel],
                     }}
                   >
-                    {(handle) => <EmptyPanel panel={panel} action={handle} />}
+                    {(handle) => (
+                      <EmptyPanel
+                        panel={panel}
+                        action={handle}
+                        selectedId={selectedId}
+                        onSelect={handleSelect}
+                      />
+                    )}
                   </SortablePanel>
                   {next && (
                     <ResizeHandle
@@ -154,9 +190,13 @@ export function FeedMobileActions() {
 function EmptyPanel({
   panel,
   action,
+  selectedId,
+  onSelect,
 }: {
   panel: FeedPanel
   action?: ReactNode
+  selectedId: number | null
+  onSelect: (id: number) => void
 }) {
   return (
     <section
@@ -168,7 +208,7 @@ function EmptyPanel({
         {action && <div className="ms-auto">{action}</div>}
       </header>
       {panel === "list" ? (
-        <VacancyList />
+        <VacancyList selectedId={selectedId} onSelect={onSelect} />
       ) : (
         <div
           data-testid="feed-scroll-region"
@@ -181,13 +221,19 @@ function EmptyPanel({
   )
 }
 
-function MobileList() {
+function MobileList({
+  selectedId,
+  onSelect,
+}: {
+  selectedId: number | null
+  onSelect: (id: number) => void
+}) {
   return (
     <section
       aria-label="Список вакансій"
       className="flex h-full min-h-0 flex-col bg-background"
     >
-      <VacancyList />
+      <VacancyList selectedId={selectedId} onSelect={onSelect} />
     </section>
   )
 }

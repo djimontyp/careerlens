@@ -6,7 +6,12 @@ import { fetchFeed, type FeedResponse } from "@/features/feed/api"
 import { SourceIdentity } from "@/features/vacancies/components/source-identity"
 import { formatPublicationDate } from "@/features/vacancies/presentation"
 
-export function VacancyList() {
+type VacancyListProps = {
+  selectedId: number | null
+  onSelect: (id: number) => void
+}
+
+export function VacancyList({ selectedId, onSelect }: VacancyListProps) {
   const sentinelRef = useRef<HTMLLIElement>(null)
   const [cursor, setCursor] = useState<string | null>(null)
   const [attempt, setAttempt] = useState(0)
@@ -149,25 +154,18 @@ export function VacancyList() {
                     </>
                   )
                   const className =
-                    "flex w-full flex-col gap-1.5 border-b px-4 py-3 text-left transition-colors hover:bg-accent"
+                    "flex w-full flex-col gap-1.5 border-b px-4 py-3 text-left transition-colors hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
 
                   return (
                     <li key={vacancy.id}>
-                      {vacancy.url ? (
-                        <a
-                          href={vacancy.url}
-                          className={`${className} focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none`}
-                        >
-                          {content}
-                        </a>
-                      ) : (
-                        <article
-                          aria-label={vacancy.title}
-                          className={className}
-                        >
-                          {content}
-                        </article>
-                      )}
+                      <button
+                        type="button"
+                        aria-pressed={vacancy.id === selectedId}
+                        onClick={() => onSelect(vacancy.id)}
+                        className={`${className} ${vacancy.id === selectedId ? "bg-accent/10 ring-1 ring-inset ring-border" : ""}`}
+                      >
+                        {content}
+                      </button>
                     </li>
                   )
                 })}
