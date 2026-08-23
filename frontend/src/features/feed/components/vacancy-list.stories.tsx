@@ -79,6 +79,10 @@ export const LoadedAndInfinite: Story = {
     await expect(
       await canvas.findByRole("heading", { name: "Older Django Developer" }),
     ).toBeVisible()
+    await expect(canvas.getByRole("group", { name: "Сьогодні" })).toBeVisible()
+    await expect(
+      canvas.getByRole("group", { name: "Дата невідома" }),
+    ).toBeVisible()
     await expect(
       canvas.queryByRole("navigation", { name: "Сторінки вакансій" }),
     ).not.toBeInTheDocument()
@@ -151,7 +155,11 @@ export const Loading: Story = {
     return () => (window.fetch = fetch)
   },
   play: async ({ canvas }) => {
-    await expect(canvas.getByText("Завантаження вакансій…")).toBeVisible()
+    const skeleton = canvas.getByRole("list", {
+      name: "Завантаження вакансій",
+    })
+    await expect(skeleton).toHaveAttribute("aria-busy", "true")
+    await expect(canvas.getAllByRole("listitem")).toHaveLength(8)
   },
 }
 
