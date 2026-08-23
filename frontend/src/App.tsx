@@ -1,9 +1,17 @@
 import { useEffect, useState } from "react"
+import { Route, Routes } from "react-router-dom"
+import { Monocle01Icon } from "@hugeicons/core-free-icons"
+import { HugeiconsIcon } from "@hugeicons/react"
 
 import { AuthenticatedLayout } from "@/components/authenticated-layout"
 import { Button } from "@/components/ui/button"
 import { fetchCurrentUser, logout, type User } from "@/features/auth/api"
 import { LoginPage } from "@/features/auth/components/login-page"
+import {
+  FeedDesktopActions,
+  FeedMobileActions,
+  FeedWorkspace,
+} from "@/features/feed/components/feed-workspace"
 
 function App() {
   const [user, setUser] = useState<User | null>()
@@ -55,6 +63,10 @@ function App() {
     <AuthenticatedLayout
       user={user}
       loggingOut={loggingOut}
+      headerTitle="Стрічка"
+      headerActions={<FeedDesktopActions />}
+      mobileHeaderIcon={<HugeiconsIcon icon={Monocle01Icon} />}
+      mobileHeaderActions={<FeedMobileActions />}
       onLogout={async () => {
         setLoggingOut(true)
         try {
@@ -65,7 +77,12 @@ function App() {
           setLoggingOut(false)
         }
       }}
-    />
+    >
+      <Routes>
+        <Route path="/" element={<FeedWorkspace />} />
+        <Route path="/feed/detail" element={<FeedWorkspace />} />
+      </Routes>
+    </AuthenticatedLayout>
   )
 }
 

@@ -4,7 +4,7 @@ import {
   Target01Icon,
 } from "@hugeicons/core-free-icons"
 import { HugeiconsIcon } from "@hugeicons/react"
-import { NavLink, useLocation } from "react-router-dom"
+import { Link, useLocation } from "react-router-dom"
 
 import {
   SidebarGroup,
@@ -35,6 +35,9 @@ export function AppNavigation({ mobile = false }: AppNavigationProps) {
         className="grid shrink-0 grid-cols-3 border-t bg-background pb-[env(safe-area-inset-bottom)] md:hidden"
       >
         {destinations.map(({ label, to, icon, enabled }) => {
+          const isActive =
+            enabled &&
+            (pathname === to || (to === "/" && pathname.startsWith("/feed/")))
           const content = (
             <>
               <HugeiconsIcon icon={icon} className="size-5" />
@@ -43,19 +46,17 @@ export function AppNavigation({ mobile = false }: AppNavigationProps) {
           )
 
           return enabled ? (
-            <NavLink
+            <Link
               key={to}
               to={to}
-              end
-              className={({ isActive }) =>
-                cn(
-                  "flex min-h-14 flex-col items-center justify-center gap-1 text-muted-foreground outline-none transition-colors focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary",
-                  isActive && "bg-accent text-accent-foreground",
-                )
-              }
+              aria-current={isActive ? "page" : undefined}
+              className={cn(
+                "flex min-h-14 flex-col items-center justify-center gap-1 text-muted-foreground outline-none transition-colors focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary",
+                isActive && "bg-accent text-accent-foreground",
+              )}
             >
               {content}
-            </NavLink>
+            </Link>
           ) : (
             <button
               key={to}
@@ -80,11 +81,22 @@ export function AppNavigation({ mobile = false }: AppNavigationProps) {
               <SidebarMenuItem key={to}>
                 <SidebarMenuButton
                   tooltip={label}
-                  isActive={enabled && pathname === to}
+                  isActive={
+                    enabled &&
+                    (pathname === to ||
+                      (to === "/" && pathname.startsWith("/feed/")))
+                  }
                   disabled={!enabled}
                   aria-disabled={!enabled || undefined}
+                  aria-current={
+                    enabled &&
+                    (pathname === to ||
+                      (to === "/" && pathname.startsWith("/feed/")))
+                      ? "page"
+                      : undefined
+                  }
                   tabIndex={enabled ? undefined : -1}
-                  render={enabled ? <NavLink to={to} end /> : undefined}
+                  render={enabled ? <Link to={to} /> : undefined}
                 >
                   <HugeiconsIcon icon={icon} />
                   <span>{label}</span>

@@ -29,7 +29,11 @@ export function ThemeToggle({ menu = false }: ThemeToggleProps) {
 
   if (menu) {
     return (
-      <DropdownMenuItem closeOnClick={false} onClick={cycleTheme}>
+      <DropdownMenuItem
+        className="min-h-[44px] md:min-h-0"
+        closeOnClick={false}
+        onClick={cycleTheme}
+      >
         <HugeiconsIcon icon={icon} />
         {label}
       </DropdownMenuItem>

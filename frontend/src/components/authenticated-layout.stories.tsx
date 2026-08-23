@@ -1,9 +1,20 @@
 import type { Meta, StoryObj } from "@storybook/react-vite"
+import { Monocle01Icon } from "@hugeicons/core-free-icons"
+import { HugeiconsIcon } from "@hugeicons/react"
 import { MemoryRouter } from "react-router-dom"
 import { expect, fn, waitFor, within } from "storybook/test"
 
 import { AuthenticatedLayout } from "@/components/authenticated-layout"
 import type { User } from "@/features/auth/api"
+import {
+  FeedDesktopActions,
+  FeedMobileActions,
+  FeedWorkspace,
+} from "@/features/feed/components/feed-workspace"
+import {
+  FEED_LAYOUT_STORAGE_KEY,
+  useFeedLayoutStore,
+} from "@/features/feed/layout/store"
 import { SHELL_STORAGE_KEY, useShellStore } from "@/features/shell/store"
 
 const user = {
@@ -187,12 +198,132 @@ export const NavigationRouting: Story = {
   },
 }
 
+export const FeedDetailNavigation: Story = {
+  parameters: { initialEntries: ["/feed/detail"] },
+  play: async ({ canvasElement }) => {
+    const navigation = within(canvasElement).getByRole("navigation", {
+      name: "Основна навігація",
+    })
+
+    await expect(
+      within(navigation).getByRole("link", { name: "Стрічка" }),
+    ).toHaveAttribute("aria-current", "page")
+  },
+}
+
+export const MobileFeedWorkspace: Story = {
+  globals: { viewport: { value: "mobile", isRotated: false } },
+  args: {
+    children: <FeedWorkspace />,
+    headerTitle: "Стрічка",
+    mobileHeaderIcon: <HugeiconsIcon icon={Monocle01Icon} />,
+    mobileHeaderActions: <FeedMobileActions />,
+  },
+  play: async ({ canvasElement, userEvent }) => {
+    const canvas = within(canvasElement)
+    const workspace = canvas.getByTestId("authenticated-workspace")
+    const scrollRegion = canvas.getByTestId("feed-scroll-region")
+    const [banner] = canvas.getAllByRole("banner")
+    const header = within(banner)
+
+    await expect(canvas.getAllByRole("banner")).toHaveLength(1)
+    await expect(header.getByRole("heading", { name: "Стрічка" })).toBeVisible()
+    const filters = header.getByRole("button", { name: "Фільтри" })
+
+    await expect(filters).toBeVisible()
+    await expect(filters.getBoundingClientRect().width).toBeGreaterThanOrEqual(
+      44,
+    )
+    await expect(filters.getBoundingClientRect().height).toBeGreaterThanOrEqual(
+      44,
+    )
+    await userEvent.click(filters)
+    await waitFor(() =>
+      expect(within(document.body).getByRole("dialog")).toBeVisible(),
+    )
+    const close = within(document.body).getByRole("button", { name: "Close" })
+    await expect(close.getBoundingClientRect().width).toBeGreaterThanOrEqual(44)
+    await expect(close.getBoundingClientRect().height).toBeGreaterThanOrEqual(
+      44,
+    )
+    await userEvent.keyboard("{Escape}")
+    await waitFor(() =>
+      expect(within(document.body).queryByRole("dialog")).toBeNull(),
+    )
+    await userEvent.click(
+      header.getByRole("button", { name: "Профіль Ada Lovelace" }),
+    )
+    const menuItems = await waitFor(() =>
+      within(document.body).getAllByRole("menuitem"),
+    )
+    for (const menuItem of menuItems) {
+      await expect(
+        Number.parseFloat(getComputedStyle(menuItem).minHeight),
+      ).toBeGreaterThanOrEqual(44)
+    }
+    await userEvent.keyboard("{Escape}")
+    await waitFor(() =>
+      expect(within(document.body).queryAllByRole("menuitem")).toHaveLength(0),
+    )
+
+    await expect(
+      scrollRegion.getBoundingClientRect().height /
+        workspace.getBoundingClientRect().height,
+    ).toBeGreaterThan(0.7)
+  },
+}
+
+export const DesktopFeedWorkspace: Story = {
+  globals: { viewport: { value: "desktop", isRotated: false } },
+  beforeEach: () => {
+    localStorage.removeItem(FEED_LAYOUT_STORAGE_KEY)
+    useFeedLayoutStore.getState().reset()
+    return () => useFeedLayoutStore.getState().reset()
+  },
+  args: {
+    children: <FeedWorkspace />,
+    headerTitle: "Стрічка",
+    headerActions: <FeedDesktopActions />,
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    const header = within(
+      canvas.getByRole("banner", { name: "Верхня навігація" }),
+    )
+
+    await expect(header.getByRole("heading", { name: "Стрічка" })).toBeVisible()
+    const headerBox = header
+      .getByRole("heading", { name: "Стрічка" })
+      .closest("header")!
+      .getBoundingClientRect()
+    const separatorBox = header.getByRole("separator").getBoundingClientRect()
+
+    await expect(
+      Math.abs(
+        separatorBox.top +
+          separatorBox.height / 2 -
+          (headerBox.top + headerBox.height / 2),
+      ),
+    ).toBeLessThanOrEqual(1)
+    await expect(header.getByRole("button", { name: "Фільтри" })).toBeVisible()
+    await expect(
+      header.getByRole("button", { name: "Налаштувати вигляд" }),
+    ).toBeVisible()
+    await expect(
+      canvas.getAllByRole("button", { name: "Фільтри" }),
+    ).toHaveLength(1)
+    await expect(
+      canvas.getByRole("region", { name: "Список вакансій" }),
+    ).toBeVisible()
+  },
+}
+
 export const PersistedCollapsed: Story = {
   globals: { viewport: { value: "desktop", isRotated: false } },
   beforeEach: async () => {
     localStorage.setItem(
       SHELL_STORAGE_KEY,
-      JSON.stringify({ state: { sidebarOpen: false }, version: 0 }),
+      JSON.stringify({ state: { sidebarOpen: false }, version: 1 }),
     )
     await useShellStore.persist.rehydrate()
 
@@ -208,8 +339,16 @@ export const PersistedCollapsed: Story = {
     const toggle = canvas.getByRole("button", {
       name: "Перемкнути бічну панель",
     })
+    const userMenu = sidebar.getByRole("button", {
+      name: "Профіль Ada Lovelace",
+    })
 
     await expect(sidebar.getByText("ada@example.com")).not.toBeVisible()
+    await userEvent.hover(userMenu)
+    await expect(getComputedStyle(userMenu).backgroundColor).toBe(
+      "rgba(0, 0, 0, 0)",
+    )
+    await userEvent.unhover(userMenu)
     await userEvent.click(toggle)
     await waitFor(() =>
       expect(sidebar.getByText("ada@example.com")).toBeVisible(),
