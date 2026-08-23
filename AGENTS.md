@@ -47,6 +47,10 @@ Before changing either scope, read its `AGENTS.md`. After the change, re-read it
 
 `uv add --frozen` is not the normal dependency workflow because it skips resolution. Use it only for a reviewed manifest-only recovery after an independent successful resolution.
 
+## Python code
+
+- Do not add private helper functions prefixed with `_`. Keep one-off logic inline; give reusable logic a domain name and place it in the owning module.
+
 ## Frontend
 
 - Durable UI preferences live in a versioned Zustand store; primitives do not access storage.
