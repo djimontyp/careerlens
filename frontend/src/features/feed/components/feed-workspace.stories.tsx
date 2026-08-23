@@ -14,7 +14,7 @@ const meta = {
   parameters: { layout: "fullscreen" },
   beforeEach: () => {
     const fetch = window.fetch
-    window.fetch = async () => Response.json({ items: [], count: 0 })
+    window.fetch = async () => Response.json({ items: [], next_cursor: null })
     localStorage.removeItem(FEED_LAYOUT_STORAGE_KEY)
     useFeedLayoutStore.getState().reset()
     return () => (window.fetch = fetch)

@@ -41,5 +41,5 @@ class VacancyOut(Schema):
 
 
 class FeedOut(Schema):
-    items: list[VacancyOut] = Field(description="Vacancies on the requested page.")
-    count: int = Field(description="Total number of vacancies.")
+    items: list[VacancyOut] = Field(description="Vacancies in stable newest-first order.")
+    next_cursor: str | None = Field(description="Opaque cursor for the next page, or null at the end.")

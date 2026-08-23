@@ -1,38 +1,59 @@
-import { useEffect, useState } from "react"
-import { useSearchParams } from "react-router-dom"
+import { useEffect, useRef, useState } from "react"
 
 import { Button } from "@/components/ui/button"
-import {
-  FEED_PAGE_SIZE,
-  fetchFeed,
-  type FeedResponse,
-} from "@/features/feed/api"
+import { fetchFeed, type FeedResponse } from "@/features/feed/api"
 
 export function VacancyList() {
-  const [searchParams, setSearchParams] = useSearchParams()
-  const page = Math.max(1, Number(searchParams.get("page")) || 1)
+  const sentinelRef = useRef<HTMLLIElement>(null)
+  const [cursor, setCursor] = useState<string | null>(null)
   const [attempt, setAttempt] = useState(0)
-  const requestKey = `${page}:${attempt}`
+  const requestKey = `${cursor ?? "initial"}:${attempt}`
   const [state, setState] = useState<{
     key: string
-    feed: FeedResponse | null
+    items: FeedResponse["items"]
+    nextCursor: string | null
     failed: boolean
-  }>({ key: "", feed: null, failed: false })
+  }>({ key: "", items: [], nextCursor: null, failed: false })
 
   useEffect(() => {
     const controller = new AbortController()
-    fetchFeed(page, controller.signal).then(
-      (feed) => setState({ key: requestKey, feed, failed: false }),
+    fetchFeed(cursor, controller.signal).then(
+      (feed) =>
+        setState((current) => ({
+          key: requestKey,
+          items: cursor ? [...current.items, ...feed.items] : feed.items,
+          nextCursor: feed.next_cursor,
+          failed: false,
+        })),
       () => {
         if (!controller.signal.aborted) {
-          setState({ key: requestKey, feed: null, failed: true })
+          setState((current) => ({ ...current, key: requestKey, failed: true }))
         }
       },
     )
     return () => controller.abort()
-  }, [page, requestKey])
+  }, [cursor, requestKey])
 
-  if (state.key === requestKey && state.failed) {
+  useEffect(() => {
+    const sentinel = sentinelRef.current
+    if (
+      !sentinel ||
+      state.key !== requestKey ||
+      state.failed ||
+      !state.nextCursor
+    )
+      return
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) setCursor(state.nextCursor)
+      },
+      { root: sentinel.closest("ul"), rootMargin: "240px" },
+    )
+    observer.observe(sentinel)
+    return () => observer.disconnect()
+  }, [requestKey, state.failed, state.key, state.nextCursor])
+
+  if (state.key === requestKey && state.failed && state.items.length === 0) {
     return (
       <div
         data-testid="feed-scroll-region"
@@ -52,7 +73,7 @@ export function VacancyList() {
     )
   }
 
-  if (state.key !== requestKey || !state.feed) {
+  if (state.key !== requestKey && state.items.length === 0) {
     return (
       <div
         data-testid="feed-scroll-region"
@@ -64,7 +85,7 @@ export function VacancyList() {
     )
   }
 
-  if (state.feed.items.length === 0) {
+  if (state.items.length === 0) {
     return (
       <div
         data-testid="feed-scroll-region"
@@ -75,14 +96,13 @@ export function VacancyList() {
     )
   }
 
-  const pages = Math.ceil(state.feed.count / FEED_PAGE_SIZE)
   return (
     <div
       data-testid="feed-scroll-region"
       className="flex min-h-0 flex-1 flex-col"
     >
       <ul className="min-h-0 flex-1 divide-y overflow-y-auto">
-        {state.feed.items.map((vacancy) => (
+        {state.items.map((vacancy) => (
           <li key={vacancy.id} className="px-3 py-3 hover:bg-state-hover">
             <article className="space-y-1.5">
               <h3 className="text-sm font-semibold leading-snug">
@@ -103,46 +123,25 @@ export function VacancyList() {
             </article>
           </li>
         ))}
-      </ul>
-      {pages > 1 && (
-        <nav
-          aria-label="Сторінки вакансій"
-          className="flex shrink-0 items-center justify-between border-t p-2"
+        <li
+          ref={sentinelRef}
+          className="flex min-h-14 items-center justify-center p-2 text-center text-xs text-muted-foreground"
         >
-          <Button
-            variant="outline"
-            size="sm"
-            disabled={page === 1}
-            onClick={() =>
-              setSearchParams((current) => {
-                const next = new URLSearchParams(current)
-                if (page === 2) next.delete("page")
-                else next.set("page", String(page - 1))
-                return next
-              })
-            }
-          >
-            Назад
-          </Button>
-          <span className="text-xs text-muted-foreground">
-            {page} з {pages}
-          </span>
-          <Button
-            variant="outline"
-            size="sm"
-            disabled={page >= pages}
-            onClick={() =>
-              setSearchParams((current) => {
-                const next = new URLSearchParams(current)
-                next.set("page", String(page + 1))
-                return next
-              })
-            }
-          >
-            Далі
-          </Button>
-        </nav>
-      )}
+          {state.failed ? (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setAttempt((value) => value + 1)}
+            >
+              Повторити завантаження
+            </Button>
+          ) : state.key !== requestKey ? (
+            "Завантажуємо старіші вакансії…"
+          ) : state.nextCursor ? null : (
+            "Ви переглянули всю стрічку"
+          )}
+        </li>
+      </ul>
     </div>
   )
 }

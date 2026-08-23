@@ -17,13 +17,13 @@ type Vacancy = {
 
 export type FeedResponse = {
   items: Vacancy[]
-  count: number
+  next_cursor: string | null
 }
 
-export const FEED_PAGE_SIZE = 20
+const FEED_PAGE_SIZE = 20
 
-export function fetchFeed(page: number, signal?: AbortSignal) {
-  return apiGet<FeedResponse>(`feed?page=${page}&page_size=${FEED_PAGE_SIZE}`, {
-    signal,
-  })
+export function fetchFeed(cursor: string | null, signal?: AbortSignal) {
+  const query = new URLSearchParams({ limit: String(FEED_PAGE_SIZE) })
+  if (cursor) query.set("cursor", cursor)
+  return apiGet<FeedResponse>(`feed?${query}`, { signal })
 }

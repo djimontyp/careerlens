@@ -181,35 +181,35 @@
         "parameters": [
           {
             "in": "query",
-            "name": "page",
-            "schema": {
-              "default": 1,
-              "description": "One-based page number.",
-              "minimum": 1,
-              "title": "Page",
-              "type": "integer"
-            },
-            "required": false,
-            "description": "One-based page number."
-          },
-          {
-            "in": "query",
-            "name": "page_size",
+            "name": "cursor",
             "schema": {
               "anyOf": [
                 {
-                  "minimum": 1,
-                  "type": "integer"
+                  "type": "string"
                 },
                 {
                   "type": "null"
                 }
               ],
-              "description": "Items per page, capped at 100.",
-              "title": "Page Size"
+              "description": "Opaque cursor returned by the previous response.",
+              "title": "Cursor"
             },
             "required": false,
-            "description": "Items per page, capped at 100."
+            "description": "Opaque cursor returned by the previous response."
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "default": 20,
+              "description": "Number of vacancies to return.",
+              "maximum": 100,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            },
+            "required": false,
+            "description": "Number of vacancies to return."
           }
         ],
         "responses": {
@@ -235,7 +235,7 @@
                       "url": "https://example.com/jobs/42"
                     }
                   ],
-                  "count": 1
+                  "next_cursor": null
                 }
               }
             }
@@ -249,6 +249,16 @@
                 },
                 "example": {
                   "detail": "Unauthorized"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Content",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
                 }
               }
             }
@@ -368,51 +378,58 @@
         "title": "ErrorOut",
         "type": "object"
       },
-      "Input": {
+      "FeedQuery": {
         "properties": {
-          "page": {
-            "default": 1,
-            "description": "One-based page number.",
-            "minimum": 1,
-            "title": "Page",
-            "type": "integer"
-          },
-          "page_size": {
+          "cursor": {
             "anyOf": [
               {
-                "minimum": 1,
-                "type": "integer"
+                "type": "string"
               },
               {
                 "type": "null"
               }
             ],
-            "description": "Items per page, capped at 100.",
-            "title": "Page Size"
+            "description": "Opaque cursor returned by the previous response.",
+            "title": "Cursor"
+          },
+          "limit": {
+            "default": 20,
+            "description": "Number of vacancies to return.",
+            "maximum": 100,
+            "minimum": 1,
+            "title": "Limit",
+            "type": "integer"
           }
         },
-        "title": "Input",
+        "title": "FeedQuery",
         "type": "object"
       },
       "FeedOut": {
         "properties": {
           "items": {
-            "description": "Vacancies on the requested page.",
+            "description": "Vacancies in stable newest-first order.",
             "items": {
               "$ref": "#/components/schemas/VacancyOut"
             },
             "title": "Items",
             "type": "array"
           },
-          "count": {
-            "description": "Total number of vacancies.",
-            "title": "Count",
-            "type": "integer"
+          "next_cursor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Opaque cursor for the next page, or null at the end.",
+            "title": "Next Cursor"
           }
         },
         "required": [
           "items",
-          "count"
+          "next_cursor"
         ],
         "title": "FeedOut",
         "type": "object"
