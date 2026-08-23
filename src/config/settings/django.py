@@ -20,6 +20,7 @@ INSTALLED_APPS = [
     "django.contrib.contenttypes",
     "django.contrib.sessions",
     "accounts",
+    "vacancies",
 ]
 
 AUTH_USER_MODEL = "accounts.User"
