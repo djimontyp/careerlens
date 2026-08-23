@@ -13,8 +13,11 @@ const meta = {
   component: FeedWorkspace,
   parameters: { layout: "fullscreen" },
   beforeEach: () => {
+    const fetch = window.fetch
+    window.fetch = async () => Response.json({ items: [], count: 0 })
     localStorage.removeItem(FEED_LAYOUT_STORAGE_KEY)
     useFeedLayoutStore.getState().reset()
+    return () => (window.fetch = fetch)
   },
   decorators: [
     (Story, context) => (

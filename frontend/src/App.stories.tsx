@@ -62,7 +62,10 @@ export const RetryAfterError: Story = {
   beforeEach: () => {
     const fetch = window.fetch
     let attempt = 0
-    window.fetch = async () => {
+    window.fetch = async (input) => {
+      if (!String(input).endsWith("/me")) {
+        return Response.json({ items: [], count: 0 })
+      }
       attempt += 1
       if (attempt === 1) return new Response(null, { status: 500 })
       return Response.json({
@@ -95,14 +98,16 @@ export const RetryAfterError: Story = {
 export const SignedIn: Story = {
   beforeEach: () => {
     const fetch = window.fetch
-    window.fetch = async () =>
-      Response.json({
-        id: 1,
-        email: "ada@example.com",
-        first_name: "Ada",
-        last_name: "Lovelace",
-        avatar_url: null,
-      })
+    window.fetch = async (input) =>
+      String(input).endsWith("/me")
+        ? Response.json({
+            id: 1,
+            email: "ada@example.com",
+            first_name: "Ada",
+            last_name: "Lovelace",
+            avatar_url: null,
+          })
+        : Response.json({ items: [], count: 0 })
 
     return () => {
       window.fetch = fetch

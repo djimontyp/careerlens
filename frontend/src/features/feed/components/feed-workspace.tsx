@@ -31,6 +31,7 @@ import {
 } from "@/components/ui/sheet"
 import { ResizeHandle } from "@/features/feed/components/resize-handle"
 import { SortablePanel } from "@/features/feed/components/sortable-panel"
+import { VacancyList } from "@/features/feed/components/vacancy-list"
 import { PanelVisibilityControls } from "@/features/feed/components/panel-visibility-controls"
 import {
   DEFAULT_PANEL_ORDER,
@@ -166,12 +167,16 @@ function EmptyPanel({
         <h2 className="text-sm font-semibold">{PANEL_LABELS[panel]}</h2>
         {action && <div className="ms-auto">{action}</div>}
       </header>
-      <div
-        data-testid="feed-scroll-region"
-        className="grid min-h-0 flex-1 place-items-center overflow-y-auto p-4 text-center text-sm text-muted-foreground"
-      >
-        Поки порожньо
-      </div>
+      {panel === "list" ? (
+        <VacancyList />
+      ) : (
+        <div
+          data-testid="feed-scroll-region"
+          className="grid min-h-0 flex-1 place-items-center overflow-y-auto p-4 text-center text-sm text-muted-foreground"
+        >
+          Поки порожньо
+        </div>
+      )}
     </section>
   )
 }
@@ -182,12 +187,7 @@ function MobileList() {
       aria-label="Список вакансій"
       className="flex h-full min-h-0 flex-col bg-background"
     >
-      <div
-        data-testid="feed-scroll-region"
-        className="grid min-h-0 flex-1 place-items-center overflow-y-auto p-4 text-center text-sm text-muted-foreground"
-      >
-        Список вакансій поки порожній
-      </div>
+      <VacancyList />
     </section>
   )
 }
