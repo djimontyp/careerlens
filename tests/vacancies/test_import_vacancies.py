@@ -29,8 +29,27 @@ def test_import_vacancies_is_idempotent_and_updates_existing_records() -> None:
     assert second_output.getvalue().strip() == "created=0 updated=4"
     assert vacancy_model.objects.count() == 4
     assert vacancy.title == "Python/Django Backend Engineer"
+    assert vacancy.location == "Remote, Ukraine"
     assert vacancy_model.objects.get(source__code="telegram").url is None
-    assert vacancy_model.objects.get(external_id="demo-004").company is None
+    vacancy_without_company = vacancy_model.objects.get(external_id="demo-004")
+    assert vacancy_without_company.company is None
+    assert vacancy_without_company.location is None
+
+
+@pytest.mark.django_db
+def test_import_vacancies_preserves_location_omitted_by_legacy_v1(tmp_path: Path) -> None:
+    vacancy_model = apps.get_model("vacancies", "Vacancy")
+    call_command("import_vacancies", DEMO_FIXTURE)
+    payload = json.loads(DEMO_FIXTURE.read_text(encoding="utf-8"))
+    for vacancy in payload["vacancies"]:
+        vacancy.pop("location")
+    legacy_fixture = tmp_path / "legacy-v1.json"
+    legacy_fixture.write_text(json.dumps(payload), encoding="utf-8")
+
+    call_command("import_vacancies", legacy_fixture)
+
+    vacancy = vacancy_model.objects.get(source__code="dou", external_id="demo-001")
+    assert vacancy.location == "Remote, Ukraine"
 
 
 @pytest.mark.django_db

@@ -7,6 +7,7 @@
       "title": "Python/Django Backend Engineer",
       "company": "Northstar Labs",
       "url": "https://example.test/jobs/demo-001",
+      "location": "Remote, Ukraine",
       "posted_date": "2026-08-20",
       "description": "Build and maintain Django services backed by PostgreSQL."
     },
@@ -16,6 +17,7 @@
       "title": "Senior Python Engineer",
       "company": "Orbit Software",
       "url": "https://example.test/jobs/demo-002",
+      "location": "Kyiv, Ukraine",
       "posted_date": null,
       "description": "Develop typed Python APIs and improve production reliability."
     },
@@ -25,6 +27,7 @@
       "title": "Django Developer",
       "company": "Harbor Tech",
       "url": null,
+      "location": "Remote",
       "posted_date": "2026-08-19",
       "description": "Implement backend features for a compact product team."
     },
@@ -34,6 +37,7 @@
       "title": "Python Backend Developer",
       "company": null,
       "url": "https://example.test/jobs/demo-004",
+      "location": null,
       "posted_date": "2026-08-18",
       "description": "Work on Django, PostgreSQL, and asynchronous jobs."
     }

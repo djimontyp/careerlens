@@ -29,6 +29,7 @@ class Vacancy(models.Model):
     external_id = models.CharField(max_length=50)
     title = models.CharField(max_length=200)
     url = models.URLField(blank=True, max_length=1000, null=True)
+    location = models.CharField(blank=True, max_length=500, null=True)
     posted_date = models.DateField(blank=True, null=True)
     description = models.TextField()
 

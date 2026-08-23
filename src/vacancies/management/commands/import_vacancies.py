@@ -24,6 +24,7 @@ class VacancyPayload(BaseModel):
     title: str = Field(min_length=1, max_length=200)
     company: str | None = Field(default=None, min_length=1, max_length=200)
     url: HttpUrl | None = Field(default=None, max_length=1000)
+    location: str | None = Field(default=None, min_length=1, max_length=500)
     posted_date: date | None = None
     description: str = Field(min_length=1)
 
@@ -56,16 +57,19 @@ class Command(BaseCommand):
                     company = None
                     if item.company:
                         company, _ = Company.objects.get_or_create(name=item.company)
+                    defaults = {
+                        "company": company,
+                        "title": item.title,
+                        "url": str(item.url) if item.url else None,
+                        "posted_date": item.posted_date,
+                        "description": item.description,
+                    }
+                    if "location" in item.model_fields_set:
+                        defaults["location"] = item.location
                     _, created = Vacancy.objects.update_or_create(
                         source=source,
                         external_id=item.external_id,
-                        defaults={
-                            "company": company,
-                            "title": item.title,
-                            "url": str(item.url) if item.url else None,
-                            "posted_date": item.posted_date,
-                            "description": item.description,
-                        },
+                        defaults=defaults,
                     )
                     created_count += created
                     updated_count += not created
