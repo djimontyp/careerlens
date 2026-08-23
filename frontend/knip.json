@@ -1,7 +1,4 @@
 {
   "$schema": "https://unpkg.com/knip@6/schema.json",
-  "treatConfigHintsAsErrors": true,
-  "rules": {
-    "exports": "warn"
-  }
+  "treatConfigHintsAsErrors": true
 }
