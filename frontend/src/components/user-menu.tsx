@@ -44,13 +44,18 @@ export function UserMenu({
               "h-auto min-w-0 gap-2 px-2 py-1.5",
               !sidebar && "-mr-1.5 size-11 justify-center p-1.5!",
               sidebar &&
-                "w-full justify-start group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0!",
+                "w-full justify-start focus-visible:ring-0 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0! group-data-[collapsible=icon]:hover:bg-transparent group-data-[collapsible=icon]:aria-expanded:bg-transparent",
             )}
             aria-label={`Профіль ${name}`}
           />
         }
       >
-        <Avatar>
+        <Avatar
+          className={cn(
+            sidebar &&
+              "group-focus-visible/button:ring-2 group-focus-visible/button:ring-primary",
+          )}
+        >
           {user.avatar_url && (
             <AvatarImage src={user.avatar_url} alt={`Аватар ${name}`} />
           )}
@@ -105,7 +110,11 @@ export function UserMenu({
         </DropdownMenuGroup>
         <DropdownMenuSeparator />
         <DropdownMenuGroup>
-          <DropdownMenuItem disabled={loggingOut} onClick={onLogout}>
+          <DropdownMenuItem
+            className="min-h-[44px] md:min-h-0"
+            disabled={loggingOut}
+            onClick={onLogout}
+          >
             <HugeiconsIcon icon={Logout01Icon} />
             {loggingOut ? "Вихід…" : "Вийти"}
           </DropdownMenuItem>

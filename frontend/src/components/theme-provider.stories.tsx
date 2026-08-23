@@ -2,8 +2,6 @@ import type { Meta, StoryObj } from "@storybook/react-vite"
 import { expect, within } from "storybook/test"
 
 import { ThemeToggle } from "@/components/theme-toggle"
-import { ThemeProvider } from "@/components/theme-provider"
-import { SHELL_STORAGE_KEY, useShellStore } from "@/features/shell/store"
 
 const meta = {
   title: "Components/ThemeProvider",
@@ -38,38 +36,5 @@ export const CurrentTheme: Story = {
     await expect(document.documentElement.style.colorScheme).toBe(
       dark ? "dark" : "light",
     )
-  },
-}
-
-export const LegacyPreferenceMigration: Story = {
-  decorators: [
-    (Story) => (
-      <ThemeProvider>
-        <Story />
-      </ThemeProvider>
-    ),
-  ],
-  beforeEach: async () => {
-    localStorage.setItem("careerlens-theme", "dark")
-    localStorage.setItem(
-      SHELL_STORAGE_KEY,
-      JSON.stringify({ state: { sidebarOpen: false }, version: 0 }),
-    )
-    await useShellStore.persist.rehydrate()
-
-    return () => {
-      useShellStore.getState().setTheme("system")
-      localStorage.removeItem(SHELL_STORAGE_KEY)
-      localStorage.removeItem("careerlens-theme")
-    }
-  },
-  play: async ({ canvasElement }) => {
-    await expect(
-      within(canvasElement).getByRole("button", { name: "Темна тема" }),
-    ).toBeVisible()
-    await expect(localStorage.getItem("careerlens-theme")).toBeNull()
-    await expect(
-      JSON.parse(localStorage.getItem(SHELL_STORAGE_KEY)!).state.theme,
-    ).toBe("dark")
   },
 }

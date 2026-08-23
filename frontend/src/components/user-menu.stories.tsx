@@ -16,6 +16,7 @@ const userWithAvatar = {
 const meta = {
   title: "Components/UserMenu",
   component: UserMenu,
+  globals: { viewport: { value: "mobile", isRotated: false } },
   args: {
     user: {
       id: 1,
@@ -39,7 +40,10 @@ const meta = {
 export default meta
 type Story = StoryObj<typeof meta>
 
-export const Default: Story = {
+export const Default: Story = {}
+
+export const Interaction: Story = {
+  tags: ["!dev"],
   play: async ({ canvasElement, userEvent, args }) => {
     const canvas = within(canvasElement)
     const trigger = canvas.getByRole("button", { name: "Профіль Ada Lovelace" })
@@ -96,6 +100,7 @@ export const WithAvatar: Story = {
 }
 
 export const LoggingOut: Story = {
+  tags: ["!dev"],
   args: { loggingOut: true },
   play: async ({ canvasElement, userEvent }) => {
     const trigger = within(canvasElement).getByRole("button", {

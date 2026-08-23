@@ -1,6 +1,7 @@
 import { Monocle01Icon } from "@hugeicons/core-free-icons"
 import { HugeiconsIcon } from "@hugeicons/react"
 
+import { AppNavigation } from "@/components/app-navigation"
 import { UserMenu } from "@/components/user-menu"
 import {
   Sidebar,
@@ -28,7 +29,9 @@ export function AppSidebar({ user, loggingOut, onLogout }: AppSidebarProps) {
           </span>
         </div>
       </SidebarHeader>
-      <SidebarContent />
+      <SidebarContent className="justify-center">
+        <AppNavigation />
+      </SidebarContent>
       <SidebarFooter>
         <UserMenu
           user={user}
