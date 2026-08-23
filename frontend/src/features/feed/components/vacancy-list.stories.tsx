@@ -110,6 +110,23 @@ export const RetryAfterLoadMoreError: Story = {
   },
 }
 
+export const CardPresentation: Story = {
+  ...LoadedAndInfinite,
+  play: async ({ canvas }) => {
+    const vacancy = await canvas.findByRole("link", {
+      name: /Senior Python Developer/,
+    })
+    await expect(vacancy).toHaveTextContent("Acme · Remote")
+    await expect(vacancy).toHaveTextContent("DOU · 2026-08-21")
+    await expect(vacancy).toHaveClass("focus-visible:ring-2")
+    await expect(
+      await canvas.findByRole("article", {
+        name: "Older Django Developer",
+      }),
+    ).toHaveTextContent("Telegram · Дата невідома")
+  },
+}
+
 export const Loading: Story = {
   beforeEach: () => {
     const fetch = window.fetch

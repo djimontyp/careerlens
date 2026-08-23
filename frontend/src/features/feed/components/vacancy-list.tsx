@@ -101,28 +101,42 @@ export function VacancyList() {
       data-testid="feed-scroll-region"
       className="flex min-h-0 flex-1 flex-col"
     >
-      <ul className="min-h-0 flex-1 divide-y overflow-y-auto">
-        {state.items.map((vacancy) => (
-          <li key={vacancy.id} className="px-3 py-3 hover:bg-state-hover">
-            <article className="space-y-1.5">
-              <h3 className="text-sm font-semibold leading-snug">
-                {vacancy.url ? (
-                  <a href={vacancy.url}>{vacancy.title}</a>
-                ) : (
-                  vacancy.title
-                )}
+      <ul className="min-h-0 flex-1 overflow-y-auto">
+        {state.items.map((vacancy) => {
+          const content = (
+            <>
+              <h3 className="line-clamp-2 text-sm leading-snug font-medium">
+                {vacancy.title}
               </h3>
-              <p className="text-sm text-muted-foreground">
-                {vacancy.company ?? "Компанію не вказано"}
+              <p className="truncate text-sm text-muted-foreground">
+                {vacancy.company ?? "Компанію не вказано"} ·{" "}
+                {vacancy.location ?? "Місце не вказано"}
               </p>
-              <p className="flex flex-wrap gap-x-2 text-xs text-muted-foreground">
-                <span>{vacancy.location ?? "Місце не вказано"}</span>
-                <span>{vacancy.posted_date ?? "Дата невідома"}</span>
-                <span>{vacancy.source.name}</span>
+              <p className="text-right text-xs text-muted-foreground">
+                {vacancy.source.name} · {vacancy.posted_date ?? "Дата невідома"}
               </p>
-            </article>
-          </li>
-        ))}
+            </>
+          )
+          const className =
+            "flex w-full flex-col gap-1.5 border-b px-4 py-3 text-left transition-colors hover:bg-accent"
+
+          return (
+            <li key={vacancy.id}>
+              {vacancy.url ? (
+                <a
+                  href={vacancy.url}
+                  className={`${className} focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none`}
+                >
+                  {content}
+                </a>
+              ) : (
+                <article aria-label={vacancy.title} className={className}>
+                  {content}
+                </article>
+              )}
+            </li>
+          )
+        })}
         <li
           ref={sentinelRef}
           className="flex min-h-14 items-center justify-center p-2 text-center text-xs text-muted-foreground"
