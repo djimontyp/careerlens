@@ -173,6 +173,97 @@
           }
         ]
       }
+    },
+    "/api/v1/feed": {
+      "get": {
+        "operationId": "config_api_v1_feed_feed",
+        "summary": "List vacancies",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "page",
+            "schema": {
+              "default": 1,
+              "description": "One-based page number.",
+              "minimum": 1,
+              "title": "Page",
+              "type": "integer"
+            },
+            "required": false,
+            "description": "One-based page number."
+          },
+          {
+            "in": "query",
+            "name": "page_size",
+            "schema": {
+              "anyOf": [
+                {
+                  "minimum": 1,
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Items per page, capped at 100.",
+              "title": "Page Size"
+            },
+            "required": false,
+            "description": "Items per page, capped at 100."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FeedOut"
+                },
+                "example": {
+                  "items": [
+                    {
+                      "id": 42,
+                      "title": "Python Developer",
+                      "company": "Acme",
+                      "location": "Remote",
+                      "posted_date": "2026-08-21",
+                      "source": {
+                        "code": "dou",
+                        "name": "DOU"
+                      },
+                      "url": "https://example.com/jobs/42"
+                    }
+                  ],
+                  "count": 1
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                },
+                "example": {
+                  "detail": "Unauthorized"
+                }
+              }
+            }
+          }
+        },
+        "description": "Returns vacancies in stable newest-first order.",
+        "tags": [
+          "feed"
+        ],
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ]
+      }
     }
   },
   "components": {
@@ -276,6 +367,170 @@
         ],
         "title": "ErrorOut",
         "type": "object"
+      },
+      "Input": {
+        "properties": {
+          "page": {
+            "default": 1,
+            "description": "One-based page number.",
+            "minimum": 1,
+            "title": "Page",
+            "type": "integer"
+          },
+          "page_size": {
+            "anyOf": [
+              {
+                "minimum": 1,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Items per page, capped at 100.",
+            "title": "Page Size"
+          }
+        },
+        "title": "Input",
+        "type": "object"
+      },
+      "FeedOut": {
+        "properties": {
+          "items": {
+            "description": "Vacancies on the requested page.",
+            "items": {
+              "$ref": "#/components/schemas/VacancyOut"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "count": {
+            "description": "Total number of vacancies.",
+            "title": "Count",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "items",
+          "count"
+        ],
+        "title": "FeedOut",
+        "type": "object"
+      },
+      "SourceOut": {
+        "properties": {
+          "code": {
+            "description": "Stable source code.",
+            "title": "Code",
+            "type": "string"
+          },
+          "name": {
+            "description": "Human-readable source name.",
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "code",
+          "name"
+        ],
+        "title": "SourceOut",
+        "type": "object"
+      },
+      "VacancyOut": {
+        "examples": [
+          {
+            "company": "Acme",
+            "id": 42,
+            "location": "Remote",
+            "posted_date": "2026-08-21",
+            "source": {
+              "code": "dou",
+              "name": "DOU"
+            },
+            "title": "Python Developer",
+            "url": "https://example.com/jobs/42"
+          }
+        ],
+        "properties": {
+          "id": {
+            "description": "CareerLens vacancy identifier.",
+            "title": "Id",
+            "type": "integer"
+          },
+          "title": {
+            "description": "Vacancy title.",
+            "title": "Title",
+            "type": "string"
+          },
+          "company": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Company name, or null when unavailable.",
+            "title": "Company"
+          },
+          "location": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Vacancy location, or null when unavailable.",
+            "title": "Location"
+          },
+          "posted_date": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Source publication date, or null when unavailable.",
+            "title": "Posted Date"
+          },
+          "source": {
+            "$ref": "#/components/schemas/SourceOut",
+            "description": "Vacancy source."
+          },
+          "url": {
+            "anyOf": [
+              {
+                "format": "uri",
+                "maxLength": 2083,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Original vacancy URL, or null when unavailable.",
+            "title": "Url"
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "company",
+          "location",
+          "posted_date",
+          "source",
+          "url"
+        ],
+        "title": "VacancyOut",
+        "type": "object"
       }
     },
     "securitySchemes": {
@@ -291,6 +546,10 @@
     {
       "name": "accounts",
       "description": "Current-user session and account operations."
+    },
+    {
+      "name": "feed",
+      "description": "Vacancy feed operations."
     },
     {
       "name": "health",
