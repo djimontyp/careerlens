@@ -16,7 +16,12 @@ import {
 import { cn } from "@/lib/utils"
 
 const destinations = [
-  { label: "Стрічка", to: "/", icon: BriefcaseBusinessIcon, enabled: true },
+  {
+    label: "Стрічка",
+    to: "/feed",
+    icon: BriefcaseBusinessIcon,
+    enabled: true,
+  },
   { label: "Інтереси", to: "/interests", icon: Target01Icon, enabled: false },
   { label: "Мій агент", to: "/agent", icon: BotIcon, enabled: false },
 ] as const
@@ -35,9 +40,7 @@ export function AppNavigation({ mobile = false }: AppNavigationProps) {
         className="grid shrink-0 grid-cols-3 border-t bg-background pb-[env(safe-area-inset-bottom)] md:hidden"
       >
         {destinations.map(({ label, to, icon, enabled }) => {
-          const isActive =
-            enabled &&
-            (pathname === to || (to === "/" && pathname.startsWith("/feed/")))
+          const isActive = enabled && pathname.startsWith(to)
           const content = (
             <>
               <HugeiconsIcon icon={icon} className="size-5" />
@@ -81,19 +84,11 @@ export function AppNavigation({ mobile = false }: AppNavigationProps) {
               <SidebarMenuItem key={to}>
                 <SidebarMenuButton
                   tooltip={label}
-                  isActive={
-                    enabled &&
-                    (pathname === to ||
-                      (to === "/" && pathname.startsWith("/feed/")))
-                  }
+                  isActive={enabled && pathname.startsWith(to)}
                   disabled={!enabled}
                   aria-disabled={!enabled || undefined}
                   aria-current={
-                    enabled &&
-                    (pathname === to ||
-                      (to === "/" && pathname.startsWith("/feed/")))
-                      ? "page"
-                      : undefined
+                    enabled && pathname.startsWith(to) ? "page" : undefined
                   }
                   tabIndex={enabled ? undefined : -1}
                   render={enabled ? <Link to={to} /> : undefined}

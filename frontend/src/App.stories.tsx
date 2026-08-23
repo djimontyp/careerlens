@@ -120,6 +120,12 @@ export const SignedIn: Story = {
     })
 
     await expect(canvas.getByRole("main")).toBeVisible()
+    await waitFor(() =>
+      expect(canvas.getByRole("link", { name: "Стрічка" })).toHaveAttribute(
+        "aria-current",
+        "page",
+      ),
+    )
     await userEvent.click(profile)
     await waitFor(() =>
       expect(profile).toHaveAttribute("aria-expanded", "true"),

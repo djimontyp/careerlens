@@ -37,7 +37,9 @@ const meta = {
   },
   decorators: [
     (Story, context) => (
-      <MemoryRouter initialEntries={context.parameters.initialEntries ?? ["/"]}>
+      <MemoryRouter
+        initialEntries={context.parameters.initialEntries ?? ["/feed"]}
+      >
         <Story />
       </MemoryRouter>
     ),
@@ -191,7 +193,7 @@ export const NavigationRouting: Story = {
     })
     const feed = within(navigation).getByRole("link", { name: "Стрічка" })
 
-    await expect(feed).toHaveAttribute("href", "/")
+    await expect(feed).toHaveAttribute("href", "/feed")
     await expect(feed).not.toHaveAttribute("aria-current")
     await userEvent.click(feed)
     await waitFor(() => expect(feed).toHaveAttribute("aria-current", "page"))

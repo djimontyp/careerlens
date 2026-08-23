@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react"
-import { Route, Routes } from "react-router-dom"
+import { Navigate, Route, Routes } from "react-router-dom"
 import { Monocle01Icon } from "@hugeicons/core-free-icons"
 import { HugeiconsIcon } from "@hugeicons/react"
 
@@ -79,7 +79,8 @@ function App() {
       }}
     >
       <Routes>
-        <Route path="/" element={<FeedWorkspace />} />
+        <Route path="/" element={<Navigate replace to="/feed" />} />
+        <Route path="/feed" element={<FeedWorkspace />} />
         <Route path="/feed/detail" element={<FeedWorkspace />} />
       </Routes>
     </AuthenticatedLayout>
