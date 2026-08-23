@@ -26,6 +26,10 @@ export const LoadedAndInfinite: Story = {
     const fetch = window.fetch
     window.fetch = async (input) => {
       const url = String(input)
+      const now = new Date()
+      const today = new Date(now.getTime() - now.getTimezoneOffset() * 60_000)
+        .toISOString()
+        .slice(0, 10)
       return Response.json(
         url.includes("cursor=next")
           ? {
@@ -36,7 +40,11 @@ export const LoadedAndInfinite: Story = {
                   company: null,
                   location: null,
                   posted_date: null,
-                  source: { code: "telegram", name: "Telegram" },
+                  source: {
+                    code: "telegram",
+                    name: "Telegram",
+                    icon_url: null,
+                  },
                   url: null,
                 },
               ],
@@ -49,8 +57,12 @@ export const LoadedAndInfinite: Story = {
                   title: "Senior Python Developer",
                   company: "Acme",
                   location: "Remote",
-                  posted_date: "2026-08-21",
-                  source: { code: "dou", name: "DOU" },
+                  posted_date: today,
+                  source: {
+                    code: "dou",
+                    name: "DOU",
+                    icon_url: "/source-icons/dou.png",
+                  },
                   url: "https://example.com/jobs/42",
                 },
               ],
@@ -91,7 +103,7 @@ export const RetryAfterLoadMoreError: Story = {
             company: "Acme",
             location: "Remote",
             posted_date: "2026-08-21",
-            source: { code: "dou", name: "DOU" },
+            source: { code: "dou", name: "DOU", icon_url: null },
             url: null,
           },
         ],
@@ -117,13 +129,18 @@ export const CardPresentation: Story = {
       name: /Senior Python Developer/,
     })
     await expect(vacancy).toHaveTextContent("Acme · Remote")
-    await expect(vacancy).toHaveTextContent("DOU · 2026-08-21")
+    await expect(vacancy).toHaveTextContent("DOU")
+    await expect(vacancy).toHaveTextContent("Сьогодні")
+    await expect(vacancy.querySelector("img")).toHaveAttribute(
+      "src",
+      "/source-icons/dou.png",
+    )
     await expect(vacancy).toHaveClass("focus-visible:ring-2")
-    await expect(
-      await canvas.findByRole("article", {
-        name: "Older Django Developer",
-      }),
-    ).toHaveTextContent("Telegram · Дата невідома")
+    const article = await canvas.findByRole("article", {
+      name: "Older Django Developer",
+    })
+    await expect(article).toHaveTextContent("Telegram")
+    await expect(article).toHaveTextContent("Дата невідома")
   },
 }
 

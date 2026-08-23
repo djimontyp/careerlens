@@ -445,11 +445,24 @@
             "description": "Human-readable source name.",
             "title": "Name",
             "type": "string"
+          },
+          "icon_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Source icon URL, or null when unavailable.",
+            "title": "Icon Url"
           }
         },
         "required": [
           "code",
-          "name"
+          "name",
+          "icon_url"
         ],
         "title": "SourceOut",
         "type": "object"

@@ -3,6 +3,7 @@ import { apiGet } from "@/lib/api"
 type VacancySource = {
   code: string
   name: string
+  icon_url: string | null
 }
 
 type Vacancy = {

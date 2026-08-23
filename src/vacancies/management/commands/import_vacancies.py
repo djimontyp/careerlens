@@ -8,12 +8,25 @@ from pydantic import BaseModel, ConfigDict, Field, HttpUrl, ValidationError
 
 from vacancies.models import Company, Source, Vacancy
 
+SOURCE_ICON_URLS = {
+    "rabota": "/source-icons/rabota.png",
+    "work": "/source-icons/work.png",
+    "dou": "/source-icons/dou.png",
+    "djinni": "/source-icons/djinni.png",
+    "remoteok": "/source-icons/remoteok.png",
+    "remotive": "/source-icons/remotive.png",
+    "wwr": "/source-icons/wwr.png",
+    "jooble": "/source-icons/jooble.png",
+    "jobsua": "/source-icons/jobsua.png",
+}
+
 
 class SourcePayload(BaseModel):
     model_config = ConfigDict(extra="forbid", strict=True)
 
     code: str = Field(min_length=1, max_length=20)
     name: str = Field(min_length=1, max_length=100)
+    icon_url: str | None = Field(default=None, min_length=1, max_length=1000)
 
 
 class VacancyPayload(BaseModel):
@@ -50,9 +63,13 @@ class Command(BaseCommand):
                 created_count = 0
                 updated_count = 0
                 for item in payload.vacancies:
+                    source_defaults: dict[str, str | None] = {
+                        "name": item.source.name,
+                        "icon_url": item.source.icon_url or SOURCE_ICON_URLS.get(item.source.code),
+                    }
                     source, _ = Source.objects.update_or_create(
                         code=item.source.code,
-                        defaults={"name": item.source.name},
+                        defaults=source_defaults,
                     )
                     company = None
                     if item.company:

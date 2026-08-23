@@ -18,7 +18,11 @@ def test_feed_requires_session() -> None:
 
 @pytest.mark.django_db
 def test_feed_returns_stable_cursor_pages_with_nullable_fields() -> None:
-    source = Source.objects.create(code="dou", name="DOU")
+    source = Source.objects.create(
+        code="dou",
+        name="DOU",
+        icon_url="/source-icons/dou.png",
+    )
     company = Company.objects.create(name="Acme")
     vacancies = [
         Vacancy.objects.create(
@@ -69,6 +73,7 @@ def test_feed_returns_stable_cursor_pages_with_nullable_fields() -> None:
     assert first.status_code == 200
     first_body = first.json()
     assert [item["id"] for item in first_body["items"]] == [vacancies[3].id, vacancies[2].id]
+    assert first_body["items"][0]["source"]["icon_url"] == "/source-icons/dou.png"
     assert first_body["next_cursor"]
 
     second = client.get("/api/v1/feed", {"limit": 2, "cursor": first_body["next_cursor"]})

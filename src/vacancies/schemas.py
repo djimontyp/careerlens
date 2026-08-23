@@ -8,6 +8,7 @@ from pydantic import ConfigDict, Field, HttpUrl
 class SourceOut(Schema):
     code: str = Field(description="Stable source code.")
     name: str = Field(description="Human-readable source name.")
+    icon_url: str | None = Field(description="Source icon URL, or null when unavailable.")
 
 
 class VacancyOut(Schema):

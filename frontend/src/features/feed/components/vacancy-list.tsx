@@ -2,6 +2,8 @@ import { useEffect, useRef, useState } from "react"
 
 import { Button } from "@/components/ui/button"
 import { fetchFeed, type FeedResponse } from "@/features/feed/api"
+import { SourceIdentity } from "@/features/vacancies/components/source-identity"
+import { formatPublicationDate } from "@/features/vacancies/presentation"
 
 export function VacancyList() {
   const sentinelRef = useRef<HTMLLIElement>(null)
@@ -112,8 +114,10 @@ export function VacancyList() {
                 {vacancy.company ?? "Компанію не вказано"} ·{" "}
                 {vacancy.location ?? "Місце не вказано"}
               </p>
-              <p className="text-right text-xs text-muted-foreground">
-                {vacancy.source.name} · {vacancy.posted_date ?? "Дата невідома"}
+              <p className="flex items-center justify-end gap-1.5 text-right text-xs text-muted-foreground">
+                <SourceIdentity source={vacancy.source} />
+                <span aria-hidden="true">·</span>
+                <span>{formatPublicationDate(vacancy.posted_date)}</span>
               </p>
             </>
           )

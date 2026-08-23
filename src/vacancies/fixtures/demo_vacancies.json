@@ -2,7 +2,11 @@
   "version": 1,
   "vacancies": [
     {
-      "source": { "code": "dou", "name": "DOU" },
+      "source": {
+        "code": "dou",
+        "name": "DOU",
+        "icon_url": "/source-icons/dou.png"
+      },
       "external_id": "demo-001",
       "title": "Python/Django Backend Engineer",
       "company": "Northstar Labs",

@@ -30,6 +30,8 @@ def test_import_vacancies_is_idempotent_and_updates_existing_records() -> None:
     assert vacancy_model.objects.count() == 4
     assert vacancy.title == "Python/Django Backend Engineer"
     assert vacancy.location == "Remote, Ukraine"
+    assert vacancy.source.icon_url == "/source-icons/dou.png"
+    assert vacancy_model.objects.get(source__code="djinni").source.icon_url == "/source-icons/djinni.png"
     assert vacancy_model.objects.get(source__code="telegram").url is None
     vacancy_without_company = vacancy_model.objects.get(external_id="demo-004")
     assert vacancy_without_company.company is None

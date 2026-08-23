@@ -5,6 +5,7 @@ from django.db import models
 class Source(models.Model):
     code = models.CharField(max_length=20, unique=True)
     name = models.CharField(max_length=100)
+    icon_url = models.CharField(blank=True, max_length=1000, null=True)
 
     def __str__(self) -> str:
         return self.name
