@@ -11,6 +11,7 @@ import {
 import { VacancyStateActions } from "@/features/feed/components/vacancy-state-actions"
 import { useFeedStateStore } from "@/features/feed/state/store"
 import { SourceIdentity } from "@/features/vacancies/components/source-identity"
+import { VacancyStatusIndicators } from "@/features/vacancies/components/vacancy-status-indicators"
 
 export function VacancyDetail({
   id,
@@ -24,8 +25,8 @@ export function VacancyDetail({
   const [vacancy, setVacancy] = useState<VacancyDetailData | null>(null)
   const [failedId, setFailedId] = useState<number | null>(null)
   const [version, setVersion] = useState(0)
-  const seen = useFeedStateStore((state) =>
-    id === null ? undefined : state.overrides[id]?.seen,
+  const override = useFeedStateStore((state) =>
+    id === null ? undefined : state.overrides[id],
   )
   const confirm = useFeedStateStore((state) => state.confirm)
 
@@ -45,12 +46,12 @@ export function VacancyDetail({
   }, [id, version])
 
   useEffect(() => {
-    if (vacancy?.id !== id || vacancy.seen || seen) return
+    if (vacancy?.id !== id || vacancy.seen || override?.seen) return
     markVacancySeen(id).then(
       () => confirm(id, { seen: true }),
       () => undefined,
     )
-  }, [confirm, id, seen, vacancy])
+  }, [confirm, id, override, vacancy])
 
   if (id === null) {
     return (
@@ -111,11 +112,19 @@ export function VacancyDetail({
             )}
           </div>
         </div>
-        <p className="mt-1 text-xs text-muted-foreground">
-          {[vacancy.company, vacancy.location, vacancy.source.name]
-            .filter(Boolean)
-            .join(" · ")}
-        </p>
+        <div className="mt-1 flex items-center justify-between gap-3">
+          <p className="text-xs text-muted-foreground">
+            {[vacancy.company, vacancy.location, vacancy.source.name]
+              .filter(Boolean)
+              .join(" · ")}
+          </p>
+          <VacancyStatusIndicators
+            hasNote={vacancy.has_note}
+            applicationSubmittedAt={vacancy.application_submitted_at}
+            saved={override?.saved ?? vacancy.saved}
+            hidden={override?.hidden ?? vacancy.hidden}
+          />
+        </div>
       </header>
       <div className="grid min-w-0 gap-6 p-4 @min-[760px]:grid-cols-[minmax(0,1fr)_18rem] @min-[760px]:items-start">
         <div className="min-w-0 whitespace-pre-wrap text-sm leading-6">

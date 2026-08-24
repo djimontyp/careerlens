@@ -235,6 +235,8 @@ export const MobileFeedWorkspace: Story = {
           saved: false,
           hidden: false,
           seen: false,
+          has_note: false,
+          application_submitted_at: null,
         },
       ],
       next_cursor: null,

@@ -10,6 +10,7 @@ import {
 import { useFeedStateStore } from "@/features/feed/state/store"
 import { SourceIdentity } from "@/features/vacancies/components/source-identity"
 import { VacancyUpdatedLabel } from "@/features/vacancies/components/vacancy-updated-label"
+import { VacancyStatusIndicators } from "@/features/vacancies/components/vacancy-status-indicators"
 import {
   formatPublicationDate,
   presentMatch,
@@ -231,20 +232,33 @@ export function VacancyList({
               <ul>
                 {group.vacancies.map((vacancy) => {
                   const selected = vacancy.id === selectedId
-                  const seen = overrides[vacancy.id]?.seen ?? vacancy.seen
+                  const override = overrides[vacancy.id]
+                  const seen = override?.seen ?? vacancy.seen
+                  const saved = override?.saved ?? vacancy.saved
+                  const hidden = override?.hidden ?? vacancy.hidden
                   const match = presentMatch(vacancy.match)
                   const content = (
                     <>
-                      <VacancyTitle
-                        className={`line-clamp-2 text-sm leading-snug ${selected || !seen ? "font-medium" : "font-normal text-muted-foreground"}`}
-                      >
-                        {vacancy.title}
-                        {vacancy.is_deftech && (
-                          <span className="ms-1 text-xs font-medium text-primary">
-                            DefTech
-                          </span>
-                        )}
-                      </VacancyTitle>
+                      <div className="flex items-start justify-between gap-2">
+                        <VacancyTitle
+                          className={`line-clamp-2 text-sm leading-snug ${selected || !seen ? "font-medium" : "font-normal text-muted-foreground"}`}
+                        >
+                          {vacancy.title}
+                          {vacancy.is_deftech && (
+                            <span className="ms-1 text-xs font-medium text-primary">
+                              DefTech
+                            </span>
+                          )}
+                        </VacancyTitle>
+                        <VacancyStatusIndicators
+                          hasNote={vacancy.has_note}
+                          applicationSubmittedAt={
+                            vacancy.application_submitted_at
+                          }
+                          saved={saved}
+                          hidden={hidden}
+                        />
+                      </div>
                       <p className="truncate text-sm text-muted-foreground">
                         {vacancy.company ?? "Компанію не вказано"} ·{" "}
                         {vacancy.location ?? "Місце не вказано"}

@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react-vite"
 import { MemoryRouter } from "react-router-dom"
-import { expect, fn, waitFor } from "storybook/test"
+import { expect, fn, waitFor, within } from "storybook/test"
 
 import { VacancyList } from "@/features/feed/components/vacancy-list"
 import { useFeedStateStore } from "@/features/feed/state/store"
@@ -56,6 +56,8 @@ export const LoadedAndInfinite: Story = {
                   saved: false,
                   hidden: false,
                   seen: true,
+                  has_note: false,
+                  application_submitted_at: null,
                 },
               ],
               next_cursor: null,
@@ -93,9 +95,11 @@ export const LoadedAndInfinite: Story = {
                     precise: true,
                     scored_at: new Date().toISOString(),
                   },
-                  saved: false,
+                  saved: true,
                   hidden: false,
                   seen: true,
+                  has_note: true,
+                  application_submitted_at: new Date().toISOString(),
                 },
               ],
               next_cursor: "next",
@@ -178,6 +182,15 @@ export const CardPresentation: Story = {
     await expect(vacancy).toHaveTextContent("DOU")
     await expect(vacancy).toHaveTextContent("Сьогодні")
     await expect(vacancy).toHaveTextContent("92% відповідність")
+    await expect(
+      within(vacancy).getByRole("img", { name: "Моя нотатка" }),
+    ).toBeVisible()
+    await expect(
+      within(vacancy).getByRole("img", { name: "Подано" }),
+    ).toBeVisible()
+    await expect(
+      within(vacancy).getByRole("img", { name: "Збережено" }),
+    ).toBeVisible()
     await expect(
       vacancy.querySelector('[data-match-tone="high"]'),
     ).toBeVisible()

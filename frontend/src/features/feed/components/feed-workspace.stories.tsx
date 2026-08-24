@@ -91,6 +91,8 @@ export const DetailAnalysis: Story = {
           saved: false,
           hidden: false,
           seen: false,
+          has_note: true,
+          application_submitted_at: "2026-08-22T09:30:00Z",
           match: {
             score: 86,
             reason: "Strong Python and Django overlap.",
@@ -131,6 +133,8 @@ export const DetailAnalysis: Story = {
     ).toBeVisible()
     await expect(detail.getByText("86%")).toBeVisible()
     await expect(detail.getByText("Покриття доказами 86%")).toBeVisible()
+    await expect(detail.getByRole("img", { name: "Моя нотатка" })).toBeVisible()
+    await expect(detail.getByRole("img", { name: "Подано" })).toBeVisible()
     await expect(
       detail.getByRole("link", { name: "Відкрити на DOU" }),
     ).toHaveAttribute("href", "https://example.com/jobs/42")

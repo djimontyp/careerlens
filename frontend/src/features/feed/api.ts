@@ -22,6 +22,8 @@ export type Vacancy = {
   saved: boolean
   hidden: boolean
   seen: boolean
+  has_note: boolean
+  application_submitted_at: string | null
 }
 
 export type VacancyDetail = Vacancy & {
