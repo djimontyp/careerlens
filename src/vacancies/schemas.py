@@ -72,6 +72,8 @@ class VacancyOut(Schema):
                     "saved": True,
                     "hidden": False,
                     "seen": True,
+                    "has_note": True,
+                    "application_submitted_at": "2026-08-22T09:30:00Z",
                     "match": {
                         "score": 86,
                         "reason": "Strong Python and Django overlap.",
@@ -107,6 +109,10 @@ class VacancyOut(Schema):
     saved: bool = Field(description="Whether the current user saved the vacancy.")
     hidden: bool = Field(description="Whether the current user hid the vacancy.")
     seen: bool = Field(description="Whether the current user opened the vacancy.")
+    has_note: bool = Field(description="Whether the current user has a note for the vacancy.")
+    application_submitted_at: datetime | None = Field(
+        description="When the current user submitted an application, or null when not submitted."
+    )
 
     @staticmethod
     def resolve_company(obj: Any) -> str | None:
@@ -139,6 +145,10 @@ class VacancyOut(Schema):
     @staticmethod
     def resolve_seen(obj: Any) -> bool:
         return obj.state_seen_at is not None
+
+    @staticmethod
+    def resolve_has_note(obj: Any) -> bool:
+        return obj.note_id is not None
 
 
 class FeedOut(Schema):

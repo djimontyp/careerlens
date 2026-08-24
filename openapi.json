@@ -257,6 +257,8 @@
                       "saved": true,
                       "hidden": false,
                       "seen": true,
+                      "has_note": true,
+                      "application_submitted_at": "2026-08-22T09:30:00Z",
                       "match": {
                         "score": 86,
                         "reason": "Strong Python and Django overlap.",
@@ -967,7 +969,9 @@
       "VacancyOut": {
         "examples": [
           {
+            "application_submitted_at": "2026-08-22T09:30:00Z",
             "company": "Acme",
+            "has_note": true,
             "hidden": false,
             "id": 42,
             "is_deftech": true,
@@ -1118,6 +1122,24 @@
             "description": "Whether the current user opened the vacancy.",
             "title": "Seen",
             "type": "boolean"
+          },
+          "has_note": {
+            "description": "Whether the current user has a note for the vacancy.",
+            "title": "Has Note",
+            "type": "boolean"
+          },
+          "application_submitted_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "When the current user submitted an application, or null when not submitted.",
+            "title": "Application Submitted At"
           }
         },
         "required": [
@@ -1134,7 +1156,9 @@
           "match",
           "saved",
           "hidden",
-          "seen"
+          "seen",
+          "has_note",
+          "application_submitted_at"
         ],
         "title": "VacancyOut",
         "type": "object"
@@ -1142,7 +1166,9 @@
       "VacancyDetailOut": {
         "examples": [
           {
+            "application_submitted_at": "2026-08-22T09:30:00Z",
             "company": "Acme",
+            "has_note": true,
             "hidden": false,
             "id": 42,
             "is_deftech": true,
@@ -1293,6 +1319,24 @@
             "description": "Whether the current user opened the vacancy.",
             "title": "Seen",
             "type": "boolean"
+          },
+          "has_note": {
+            "description": "Whether the current user has a note for the vacancy.",
+            "title": "Has Note",
+            "type": "boolean"
+          },
+          "application_submitted_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "When the current user submitted an application, or null when not submitted.",
+            "title": "Application Submitted At"
           },
           "description": {
             "description": "Vacancy description safe for direct text rendering.",
@@ -1324,6 +1368,8 @@
           "saved",
           "hidden",
           "seen",
+          "has_note",
+          "application_submitted_at",
           "description",
           "description_status"
         ],

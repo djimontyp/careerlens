@@ -60,6 +60,8 @@ def feed_queryset(request: HttpRequest) -> QuerySet[Vacancy]:
         Vacancy.objects.select_related("company", "source")
         .alias(own_match=FilteredRelation("matches", condition=Q(matches__user=request.user)))
         .alias(own_state=FilteredRelation("vacancystate", condition=Q(vacancystate__user=request.user)))
+        .alias(own_note=FilteredRelation("notes", condition=Q(notes__user=request.user)))
+        .alias(own_application=FilteredRelation("applications", condition=Q(applications__user=request.user)))
         .annotate(
             match_score=F("own_match__score"),
             match_reason=F("own_match__reason"),
@@ -69,6 +71,8 @@ def feed_queryset(request: HttpRequest) -> QuerySet[Vacancy]:
             state_saved=F("own_state__saved"),
             state_hidden=F("own_state__hidden"),
             state_seen_at=F("own_state__seen_at"),
+            note_id=F("own_note__id"),
+            application_submitted_at=F("own_application__submitted_at"),
         )
     )
 
@@ -102,6 +106,8 @@ def feed_queryset(request: HttpRequest) -> QuerySet[Vacancy]:
                                     "saved": True,
                                     "hidden": False,
                                     "seen": True,
+                                    "has_note": True,
+                                    "application_submitted_at": "2026-08-22T09:30:00Z",
                                     "match": {
                                         "score": 86,
                                         "reason": "Strong Python and Django overlap.",

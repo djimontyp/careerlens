@@ -1,8 +1,10 @@
+from datetime import UTC, datetime
+
 import pytest
 from django.contrib.auth import get_user_model
 from django.test import Client
 
-from vacancies.models import Source, Vacancy, VacancyState
+from vacancies.models import Source, Vacancy, VacancyApplication, VacancyNote, VacancyState
 
 User = get_user_model()
 
@@ -16,10 +18,30 @@ def test_feed_projects_only_the_current_users_state_without_extra_queries(django
         title="Python Developer",
         description="Build APIs.",
     )
+    private_vacancy = Vacancy.objects.create(
+        source=source,
+        external_id="private-state",
+        title="Django Developer",
+        description="Maintain APIs.",
+    )
     user = User.objects.create_user(email="ada@example.com")
     other_user = User.objects.create_user(email="grace@example.com")
     VacancyState.objects.create(user=user, vacancy=vacancy, saved=True, hidden=False)
     VacancyState.objects.create(user=other_user, vacancy=vacancy, saved=False, hidden=True)
+    VacancyNote.objects.create(user=user, vacancy=vacancy, text="Follow up")
+    VacancyNote.objects.create(user=other_user, vacancy=vacancy, text="Private note")
+    VacancyNote.objects.create(user=other_user, vacancy=private_vacancy, text="Private note")
+    VacancyApplication.objects.create(
+        user=user,
+        vacancy=vacancy,
+        cover_letter="Private letter",
+        submitted_at=datetime(2026, 8, 22, 9, 30, tzinfo=UTC),
+    )
+    VacancyApplication.objects.create(
+        user=other_user,
+        vacancy=private_vacancy,
+        cover_letter="Private letter",
+    )
     client = Client()
     client.force_login(user)
 
@@ -27,9 +49,15 @@ def test_feed_projects_only_the_current_users_state_without_extra_queries(django
         response = client.get("/api/v1/feed")
 
     assert response.status_code == 200
-    assert response.json()["items"][0]["saved"] is True
-    assert response.json()["items"][0]["hidden"] is False
-    assert response.json()["items"][0]["seen"] is False
+    items = {item["id"]: item for item in response.json()["items"]}
+    assert items[vacancy.id]["saved"] is True
+    assert items[vacancy.id]["hidden"] is False
+    assert items[vacancy.id]["seen"] is False
+    assert items[vacancy.id]["has_note"] is True
+    assert items[vacancy.id]["application_submitted_at"] == "2026-08-22T09:30:00Z"
+    assert items[private_vacancy.id]["has_note"] is False
+    assert items[private_vacancy.id]["application_submitted_at"] is None
+    assert "Private" not in response.content.decode()
 
 
 @pytest.mark.django_db
