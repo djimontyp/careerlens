@@ -5,15 +5,21 @@ import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import {
   fetchFeedDetail,
+  markVacancySeen,
   type VacancyDetail as VacancyDetailData,
 } from "@/features/feed/api"
 import { VacancyStateActions } from "@/features/feed/components/vacancy-state-actions"
+import { useFeedStateStore } from "@/features/feed/state/store"
 import { SourceIdentity } from "@/features/vacancies/components/source-identity"
 
 export function VacancyDetail({ id }: { id: number | null }) {
   const [vacancy, setVacancy] = useState<VacancyDetailData | null>(null)
   const [failedId, setFailedId] = useState<number | null>(null)
   const [version, setVersion] = useState(0)
+  const seen = useFeedStateStore((state) =>
+    id === null ? undefined : state.overrides[id]?.seen,
+  )
+  const confirm = useFeedStateStore((state) => state.confirm)
 
   useEffect(() => {
     if (id === null) {
@@ -29,6 +35,14 @@ export function VacancyDetail({ id }: { id: number | null }) {
       })
     return () => controller.abort()
   }, [id, version])
+
+  useEffect(() => {
+    if (vacancy?.id !== id || vacancy.seen || seen) return
+    markVacancySeen(id).then(
+      () => confirm(id, { seen: true }),
+      () => undefined,
+    )
+  }, [confirm, id, seen, vacancy])
 
   if (id === null) {
     return (

@@ -1,4 +1,4 @@
-import { apiGet, apiPostJson } from "@/lib/api"
+import { apiGet, apiPost, apiPostJson } from "@/lib/api"
 import type { VacancyMatch } from "@/features/vacancies/types"
 
 type VacancySource = {
@@ -58,4 +58,8 @@ export function setVacancyHidden(id: number, hidden: boolean) {
     `feed/${id}/hidden`,
     { hidden },
   )
+}
+
+export function markVacancySeen(id: number) {
+  return apiPost(`feed/${id}/seen`)
 }

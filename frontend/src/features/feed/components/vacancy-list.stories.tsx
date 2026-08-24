@@ -51,6 +51,9 @@ export const LoadedAndInfinite: Story = {
                   },
                   url: null,
                   match: null,
+                  saved: false,
+                  hidden: false,
+                  seen: true,
                 },
               ],
               next_cursor: null,
@@ -88,6 +91,9 @@ export const LoadedAndInfinite: Story = {
                     precise: true,
                     scored_at: new Date().toISOString(),
                   },
+                  saved: false,
+                  hidden: false,
+                  seen: true,
                 },
               ],
               next_cursor: "next",
@@ -179,6 +185,7 @@ export const CardPresentation: Story = {
     )
     await expect(vacancy).toHaveClass("focus-visible:ring-2")
     await expect(vacancy).toHaveAttribute("aria-pressed", "true")
+    await expect(vacancy.querySelector("h3")).toHaveClass("font-medium")
     await waitFor(() =>
       expect(args.onVisibleDateChange).toHaveBeenCalledWith(
         expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/),
@@ -190,6 +197,10 @@ export const CardPresentation: Story = {
     })
     await expect(article).toHaveTextContent("Telegram")
     await expect(article).toHaveTextContent("Дата невідома")
+    await expect(article.querySelector("h3")).toHaveClass(
+      "font-normal",
+      "text-muted-foreground",
+    )
     await expect(canvas.queryByText("Ще не оцінено")).not.toBeInTheDocument()
     await userEvent.click(article)
     await expect(args.onSelect).toHaveBeenCalledWith(41)

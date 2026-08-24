@@ -7,6 +7,7 @@ import {
   FEED_LAYOUT_STORAGE_KEY,
   useFeedLayoutStore,
 } from "@/features/feed/layout/store"
+import { useFeedStateStore } from "@/features/feed/state/store"
 
 const meta = {
   title: "Feed/Workspace",
@@ -17,6 +18,7 @@ const meta = {
     window.fetch = async () => Response.json({ items: [], next_cursor: null })
     localStorage.removeItem(FEED_LAYOUT_STORAGE_KEY)
     useFeedLayoutStore.getState().reset()
+    useFeedStateStore.setState({ overrides: {} })
     return () => (window.fetch = fetch)
   },
   decorators: [
@@ -65,6 +67,9 @@ export const DetailAnalysis: Story = {
       }
       if (String(input).includes("feed/42/hidden")) {
         return new Response(null, { status: 500 })
+      }
+      if (String(input).includes("feed/42/seen")) {
+        return new Response(null, { status: 204 })
       }
       if (String(input).includes("feed/42")) {
         return Response.json({
@@ -128,6 +133,9 @@ export const DetailAnalysis: Story = {
     ).toHaveAttribute("href", "https://example.com/jobs/42")
     await userEvent.click(detail.getByText("Показати деталі"))
     await expect(detail.getByText("Сильні збіги (1)")).toBeVisible()
+    await waitFor(() =>
+      expect(useFeedStateStore.getState().overrides[42]?.seen).toBeTruthy(),
+    )
     const save = detail.getByRole("button", { name: "Зберегти" })
     await userEvent.click(save)
     await expect(save).toHaveAttribute("aria-pressed", "true")

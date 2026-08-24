@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import { fetchFeed, type FeedResponse } from "@/features/feed/api"
+import { useFeedStateStore } from "@/features/feed/state/store"
 import { SourceIdentity } from "@/features/vacancies/components/source-identity"
 import { VacancyUpdatedLabel } from "@/features/vacancies/components/vacancy-updated-label"
 import {
@@ -34,6 +35,7 @@ export function VacancyList({
   const sentinelRef = useRef<HTMLLIElement>(null)
   const [cursor, setCursor] = useState<string | null>(null)
   const [attempt, setAttempt] = useState(0)
+  const overrides = useFeedStateStore((store) => store.overrides)
   const requestKey = `${cursor ?? "initial"}:${attempt}`
   const [state, setState] = useState<{
     key: string
@@ -209,10 +211,14 @@ export function VacancyList({
             >
               <ul>
                 {group.vacancies.map((vacancy) => {
+                  const selected = vacancy.id === selectedId
+                  const seen = overrides[vacancy.id]?.seen ?? vacancy.seen
                   const match = presentMatch(vacancy.match)
                   const content = (
                     <>
-                      <VacancyTitle className="line-clamp-2 text-sm leading-snug font-medium">
+                      <VacancyTitle
+                        className={`line-clamp-2 text-sm leading-snug ${selected || !seen ? "font-medium" : "font-normal text-muted-foreground"}`}
+                      >
                         {vacancy.title}
                         {vacancy.is_deftech && (
                           <span className="ms-1 text-xs font-medium text-primary">
@@ -255,9 +261,9 @@ export function VacancyList({
                     <li key={vacancy.id}>
                       <button
                         type="button"
-                        aria-pressed={vacancy.id === selectedId}
+                        aria-pressed={selected}
                         onClick={() => onSelect(vacancy.id)}
-                        className={`${className} ${vacancy.id === selectedId ? "bg-accent/10 ring-1 ring-inset ring-border" : ""}`}
+                        className={`${className} ${selected ? "bg-accent/10 ring-1 ring-inset ring-border" : ""}`}
                       >
                         {content}
                       </button>
