@@ -153,7 +153,7 @@ jobs:
           send_environment | ssh "${DEPLOY_TARGET}" 'ROLLBACK_ONLY=true bash "${HOME}/.careerlens/remote_deploy.sh"'
           printf '%s\n' "${FRONTEND_SHA}" | ssh "${DEPLOY_TARGET}" 'read -r frontend_sha && bash "${HOME}/.careerlens/install_frontend.sh" "${HOME}/.careerlens/frontend.tar.gz" "${frontend_sha}" /var/www/careerlens'
           ssh "${DEPLOY_TARGET}" 'rm -f "${HOME}/.careerlens/frontend.tar.gz"'
-          curl --fail --silent --show-error --retry 3 --retry-all-errors --retry-delay 2 "https://${CAREERLENS_DOMAIN}/" >/dev/null
+          bash deploy/scripts/verify_public_routes.sh "https://${CAREERLENS_DOMAIN}"
           {
             echo "### Production rollback"
             echo "- Image: \`${CAREERLENS_IMAGE}\`"

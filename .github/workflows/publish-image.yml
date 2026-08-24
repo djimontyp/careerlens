@@ -212,7 +212,7 @@ jobs:
           send_environment | ssh "${DEPLOY_TARGET}" 'bash "${HOME}/.careerlens/remote_deploy.sh"'
           printf '%s\n' "${IMAGE_SHA}" | ssh "${DEPLOY_TARGET}" 'read -r image_sha && bash "${HOME}/.careerlens/install_frontend.sh" "${HOME}/.careerlens/frontend.tar.gz" "${image_sha}" /var/www/careerlens'
           ssh "${DEPLOY_TARGET}" 'rm -f "${HOME}/.careerlens/frontend.tar.gz"'
-          curl --fail --silent --show-error --retry 3 --retry-all-errors --retry-delay 2 "https://${CAREERLENS_DOMAIN}/" >/dev/null
+          bash deploy/scripts/verify_public_routes.sh "https://${CAREERLENS_DOMAIN}"
           {
             echo "### Production deployment"
             echo "- Image: \`${CAREERLENS_IMAGE}\`"
