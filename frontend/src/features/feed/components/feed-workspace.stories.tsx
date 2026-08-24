@@ -149,16 +149,14 @@ export const DetailAnalysis: Story = {
     )
     await expect(hide).toHaveAttribute("aria-pressed", "false")
     await userEvent.click(hide)
-    await expect(
-      detail.getByRole("button", { name: "Повернути вакансію" }),
-    ).toHaveAttribute("aria-pressed", "true")
+    await expect(detail.getByText("Виберіть вакансію зі списку")).toBeVisible()
     const undo = await within(document.body).findByRole("button", {
       name: "Скасувати",
     })
     await userEvent.click(undo)
-    await expect(
-      detail.getByRole("button", { name: "Приховати" }),
-    ).toHaveAttribute("aria-pressed", "false")
+    await waitFor(() =>
+      expect(useFeedStateStore.getState().overrides[42]?.hidden).toBeFalsy(),
+    )
   },
 }
 
@@ -211,6 +209,34 @@ export const Refresh: Story = {
     await expect(dateJump).toHaveValue("")
     await userEvent.click(refresh)
     await waitFor(() => expect(window.fetch).toHaveBeenCalledTimes(2))
+  },
+}
+
+export const Modes: Story = {
+  parameters: { initialEntries: ["/?mode=saved"] },
+  play: async ({ canvasElement, userEvent }) => {
+    const canvas = within(canvasElement)
+    const mode = await canvas.findByRole("button", {
+      name: "Режим: Збережені",
+    })
+    await expect(
+      await canvas.findByText("Немає збережених вакансій"),
+    ).toBeVisible()
+    await userEvent.click(mode)
+    await userEvent.click(
+      await within(document.body).findByRole("menuitem", {
+        name: "Приховані",
+      }),
+    )
+    await waitFor(() =>
+      expect(within(document.body).queryAllByRole("menuitem")).toHaveLength(0),
+    )
+    await expect(
+      canvas.getByRole("button", { name: "Режим: Приховані" }),
+    ).toBeVisible()
+    await expect(
+      await canvas.findByText("Немає прихованих вакансій"),
+    ).toBeVisible()
   },
 }
 

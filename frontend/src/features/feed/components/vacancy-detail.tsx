@@ -12,7 +12,15 @@ import { VacancyStateActions } from "@/features/feed/components/vacancy-state-ac
 import { useFeedStateStore } from "@/features/feed/state/store"
 import { SourceIdentity } from "@/features/vacancies/components/source-identity"
 
-export function VacancyDetail({ id }: { id: number | null }) {
+export function VacancyDetail({
+  id,
+  onStateChange,
+}: {
+  id: number | null
+  onStateChange?: (
+    state: Partial<Pick<VacancyDetailData, "saved" | "hidden">>,
+  ) => void
+}) {
   const [vacancy, setVacancy] = useState<VacancyDetailData | null>(null)
   const [failedId, setFailedId] = useState<number | null>(null)
   const [version, setVersion] = useState(0)
@@ -86,7 +94,10 @@ export function VacancyDetail({ id }: { id: number | null }) {
             {vacancy.title}
           </h3>
           <div className="flex shrink-0 items-start gap-1">
-            <VacancyStateActions vacancy={vacancy} />
+            <VacancyStateActions
+              vacancy={vacancy}
+              onStateChange={onStateChange}
+            />
             {vacancy.url && (
               <a
                 href={vacancy.url}

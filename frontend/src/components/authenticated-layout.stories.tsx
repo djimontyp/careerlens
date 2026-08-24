@@ -261,8 +261,10 @@ export const MobileFeedWorkspace: Story = {
     ).toBeVisible()
     await expect(header.getByRole("heading", { name: "Стрічка" })).toBeVisible()
     const filters = header.getByRole("button", { name: "Фільтри" })
+    const mode = header.getByRole("button", { name: "Режим: Активні" })
 
     await expect(filters).toBeVisible()
+    await expect(mode.getBoundingClientRect().height).toBeGreaterThanOrEqual(44)
     await expect(filters.getBoundingClientRect().width).toBeGreaterThanOrEqual(
       44,
     )

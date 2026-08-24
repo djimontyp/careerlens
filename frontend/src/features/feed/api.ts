@@ -34,10 +34,19 @@ export type FeedResponse = {
   next_cursor: string | null
 }
 
+export type FeedMode = "active" | "saved" | "hidden"
+
 const FEED_PAGE_SIZE = 20
 
-export function fetchFeed(cursor: string | null, signal?: AbortSignal) {
-  const query = new URLSearchParams({ limit: String(FEED_PAGE_SIZE) })
+export function fetchFeed(
+  mode: FeedMode,
+  cursor: string | null,
+  signal?: AbortSignal,
+) {
+  const query = new URLSearchParams({
+    limit: String(FEED_PAGE_SIZE),
+    mode,
+  })
   if (cursor) query.set("cursor", cursor)
   return apiGet<FeedResponse>(`feed?${query}`, { signal })
 }

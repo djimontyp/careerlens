@@ -36,6 +36,7 @@ import {
 } from "@/components/ui/sheet"
 import { ResizeHandle } from "@/features/feed/components/resize-handle"
 import { FeedDateJump } from "@/features/feed/components/feed-date-jump"
+import { FeedModeControl } from "@/features/feed/components/feed-mode-control"
 import { FeedRefreshButton } from "@/features/feed/components/feed-refresh-button"
 import { SortablePanel } from "@/features/feed/components/sortable-panel"
 import { VacancyList } from "@/features/feed/components/vacancy-list"
@@ -47,6 +48,7 @@ import {
   type FeedPanel,
 } from "@/features/feed/layout/geometry"
 import { useFeedLayoutStore } from "@/features/feed/layout/store"
+import type { FeedMode, Vacancy } from "@/features/feed/api"
 import { useIsMobile } from "@/hooks/use-mobile"
 import { useMediaQuery } from "@/hooks/use-media-query"
 
@@ -63,6 +65,11 @@ export function FeedWorkspace() {
   const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
   const selectedId = Number(searchParams.get("vacancy")) || null
+  const requestedMode = searchParams.get("mode")
+  const mode: FeedMode =
+    requestedMode === "saved" || requestedMode === "hidden"
+      ? requestedMode
+      : "active"
   const [refreshVersion, setRefreshVersion] = useState(0)
   const [refreshing, setRefreshing] = useState(false)
   const [visibleDate, setVisibleDate] = useState<string | null>()
@@ -100,11 +107,25 @@ export function FeedWorkspace() {
     }
   }
 
+  function handleStateChange(
+    state: Partial<Pick<Vacancy, "saved" | "hidden">>,
+  ) {
+    const leavesMode =
+      (mode === "active" && state.hidden === true) ||
+      (mode === "saved" && state.saved === false) ||
+      (mode === "hidden" && state.hidden === false)
+    if (!leavesMode) return
+    const next = new URLSearchParams(searchParams)
+    next.delete("vacancy")
+    if (isMobile) navigate(`/feed?${next}`)
+    else setSearchParams(next)
+  }
+
   if (isMobile) {
     return pathname === "/feed/detail" ? (
-      <MobileDetail selectedId={selectedId} />
+      <MobileDetail selectedId={selectedId} onStateChange={handleStateChange} />
     ) : (
-      <MobileList selectedId={selectedId} onSelect={handleSelect} />
+      <MobileList selectedId={selectedId} onSelect={handleSelect} mode={mode} />
     )
   }
 
@@ -150,9 +171,11 @@ export function FeedWorkspace() {
                     {(handle) => (
                       <EmptyPanel
                         panel={panel}
+                        mode={mode}
                         action={handle}
                         selectedId={selectedId}
                         onSelect={handleSelect}
+                        onStateChange={handleStateChange}
                         refreshVersion={refreshVersion}
                         refreshing={refreshing}
                         onRefresh={() =>
@@ -205,14 +228,27 @@ export function FeedDesktopActions() {
 }
 
 export function FeedMobileActions() {
-  return <FilterSheet iconOnly />
+  const [searchParams] = useSearchParams()
+  const requestedMode = searchParams.get("mode")
+  const mode: FeedMode =
+    requestedMode === "saved" || requestedMode === "hidden"
+      ? requestedMode
+      : "active"
+  return (
+    <>
+      <FeedModeControl mode={mode} mobile />
+      <FilterSheet iconOnly />
+    </>
+  )
 }
 
 function EmptyPanel({
   panel,
+  mode,
   action,
   selectedId,
   onSelect,
+  onStateChange,
   refreshVersion,
   refreshing,
   onRefresh,
@@ -223,9 +259,11 @@ function EmptyPanel({
   onJump,
 }: {
   panel: FeedPanel
+  mode: FeedMode
   action?: ReactNode
   selectedId: number | null
   onSelect: (id: number) => void
+  onStateChange: (state: Partial<Pick<Vacancy, "saved" | "hidden">>) => void
   refreshVersion: number
   refreshing: boolean
   onRefresh: () => void
@@ -244,6 +282,7 @@ function EmptyPanel({
         <h2 className="text-sm font-semibold">{PANEL_LABELS[panel]}</h2>
         {panel === "list" && (
           <div className="ms-auto flex items-center gap-1">
+            <FeedModeControl mode={mode} />
             <FeedDateJump visibleDate={visibleDate} onJump={onJump} />
             <FeedRefreshButton refreshing={refreshing} onRefresh={onRefresh} />
             {action}
@@ -253,7 +292,8 @@ function EmptyPanel({
       </header>
       {panel === "list" ? (
         <VacancyList
-          key={refreshVersion}
+          key={`${mode}:${refreshVersion}`}
+          mode={mode}
           selectedId={selectedId}
           onSelect={onSelect}
           onLoadingChange={onLoadingChange}
@@ -262,7 +302,7 @@ function EmptyPanel({
           onJumpComplete={() => onJump(null)}
         />
       ) : panel === "detail" ? (
-        <VacancyDetail id={selectedId} />
+        <VacancyDetail id={selectedId} onStateChange={onStateChange} />
       ) : (
         <div
           data-testid="feed-scroll-region"
@@ -278,21 +318,35 @@ function EmptyPanel({
 function MobileList({
   selectedId,
   onSelect,
+  mode,
 }: {
   selectedId: number | null
   onSelect: (id: number) => void
+  mode: FeedMode
 }) {
   return (
     <section
       aria-label="Список вакансій"
       className="flex h-full min-h-0 flex-col bg-background"
     >
-      <VacancyList selectedId={selectedId} onSelect={onSelect} titleLevel={2} />
+      <VacancyList
+        key={mode}
+        mode={mode}
+        selectedId={selectedId}
+        onSelect={onSelect}
+        titleLevel={2}
+      />
     </section>
   )
 }
 
-function MobileDetail({ selectedId }: { selectedId: number | null }) {
+function MobileDetail({
+  selectedId,
+  onStateChange,
+}: {
+  selectedId: number | null
+  onStateChange: (state: Partial<Pick<Vacancy, "saved" | "hidden">>) => void
+}) {
   return (
     <section
       aria-label="Деталі вакансії"
@@ -307,7 +361,7 @@ function MobileDetail({ selectedId }: { selectedId: number | null }) {
           До списку
         </NavLink>
       </header>
-      <VacancyDetail id={selectedId} />
+      <VacancyDetail id={selectedId} onStateChange={onStateChange} />
     </section>
   )
 }

@@ -15,7 +15,13 @@ import {
 } from "@/features/feed/api"
 import { useFeedStateStore } from "@/features/feed/state/store"
 
-export function VacancyStateActions({ vacancy }: { vacancy: Vacancy }) {
+export function VacancyStateActions({
+  vacancy,
+  onStateChange,
+}: {
+  vacancy: Vacancy
+  onStateChange?: (state: Partial<Pick<Vacancy, "saved" | "hidden">>) => void
+}) {
   const toast = Toast.useToastManager()
   const override = useFeedStateStore((state) => state.overrides[vacancy.id])
   const confirm = useFeedStateStore((state) => state.confirm)
@@ -28,7 +34,9 @@ export function VacancyStateActions({ vacancy }: { vacancy: Vacancy }) {
     setPending("saved")
     setFailed(false)
     try {
-      confirm(vacancy.id, await setVacancySaved(vacancy.id, !saved))
+      const next = await setVacancySaved(vacancy.id, !saved)
+      confirm(vacancy.id, next)
+      onStateChange?.(next)
     } catch {
       setFailed(true)
     } finally {
@@ -42,6 +50,7 @@ export function VacancyStateActions({ vacancy }: { vacancy: Vacancy }) {
     try {
       const next = await setVacancyHidden(vacancy.id, !hidden)
       confirm(vacancy.id, next)
+      onStateChange?.(next)
       if (next.hidden) {
         const toastId = toast.add({
           title: "Вакансію приховано",
@@ -50,7 +59,9 @@ export function VacancyStateActions({ vacancy }: { vacancy: Vacancy }) {
             children: "Скасувати",
             onClick: async () => {
               try {
-                confirm(vacancy.id, await setVacancyHidden(vacancy.id, false))
+                const restored = await setVacancyHidden(vacancy.id, false)
+                confirm(vacancy.id, restored)
+                onStateChange?.(restored)
                 toast.close(toastId)
               } catch {
                 toast.update(toastId, {

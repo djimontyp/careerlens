@@ -2,7 +2,11 @@ import { useEffect, useRef, useState } from "react"
 
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
-import { fetchFeed, type FeedResponse } from "@/features/feed/api"
+import {
+  fetchFeed,
+  type FeedMode,
+  type FeedResponse,
+} from "@/features/feed/api"
 import { useFeedStateStore } from "@/features/feed/state/store"
 import { SourceIdentity } from "@/features/vacancies/components/source-identity"
 import { VacancyUpdatedLabel } from "@/features/vacancies/components/vacancy-updated-label"
@@ -12,6 +16,7 @@ import {
 } from "@/features/vacancies/presentation"
 
 type VacancyListProps = {
+  mode?: FeedMode
   selectedId: number | null
   onSelect: (id: number) => void
   onLoadingChange?: (loading: boolean) => void
@@ -22,6 +27,7 @@ type VacancyListProps = {
 }
 
 export function VacancyList({
+  mode = "active",
   selectedId,
   onSelect,
   onLoadingChange,
@@ -47,7 +53,7 @@ export function VacancyList({
   useEffect(() => {
     const controller = new AbortController()
     onLoadingChange?.(true)
-    fetchFeed(cursor, controller.signal).then(
+    fetchFeed(mode, cursor, controller.signal).then(
       (feed) => {
         setState((current) => ({
           key: requestKey,
@@ -65,7 +71,7 @@ export function VacancyList({
       },
     )
     return () => controller.abort()
-  }, [cursor, onLoadingChange, requestKey])
+  }, [cursor, mode, onLoadingChange, requestKey])
 
   useEffect(() => {
     const sentinel = sentinelRef.current
@@ -176,18 +182,31 @@ export function VacancyList({
     )
   }
 
-  if (state.items.length === 0) {
+  const visibleItems = state.items.filter((vacancy) => {
+    const override = overrides[vacancy.id]
+    const saved = override?.saved ?? vacancy.saved
+    const hidden = override?.hidden ?? vacancy.hidden
+    if (mode === "active") return !hidden
+    if (mode === "saved") return saved
+    return hidden
+  })
+
+  if (visibleItems.length === 0 && !state.nextCursor) {
     return (
       <div
         data-testid="feed-scroll-region"
         className="grid min-h-0 flex-1 place-items-center p-4 text-center text-sm text-muted-foreground"
       >
-        Вакансій поки немає
+        {mode === "saved"
+          ? "Немає збережених вакансій"
+          : mode === "hidden"
+            ? "Немає прихованих вакансій"
+            : "Вакансій поки немає"}
       </div>
     )
   }
 
-  const groups = state.items.reduce<
+  const groups = visibleItems.reduce<
     Array<{ date: string | null; vacancies: FeedResponse["items"] }>
   >((result, vacancy) => {
     const group = result.at(-1)

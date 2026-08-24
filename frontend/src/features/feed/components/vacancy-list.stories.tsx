@@ -3,11 +3,13 @@ import { MemoryRouter } from "react-router-dom"
 import { expect, fn, waitFor } from "storybook/test"
 
 import { VacancyList } from "@/features/feed/components/vacancy-list"
+import { useFeedStateStore } from "@/features/feed/state/store"
 
 const meta = {
   title: "Feed/VacancyList",
   component: VacancyList,
   args: { selectedId: null, onSelect: fn() },
+  beforeEach: () => useFeedStateStore.setState({ overrides: {} }),
   decorators: [
     (Story) => (
       <MemoryRouter>
@@ -204,6 +206,12 @@ export const CardPresentation: Story = {
     await expect(canvas.queryByText("Ще не оцінено")).not.toBeInTheDocument()
     await userEvent.click(article)
     await expect(args.onSelect).toHaveBeenCalledWith(41)
+    useFeedStateStore.getState().confirm(42, { hidden: true })
+    await waitFor(() =>
+      expect(
+        canvas.queryByRole("heading", { name: /Senior Python Developer/ }),
+      ).not.toBeInTheDocument(),
+    )
   },
 }
 
