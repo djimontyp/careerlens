@@ -75,43 +75,67 @@ def test_state_mutations_require_csrf_are_idempotent_and_keep_flags_independent(
     client = Client(enforce_csrf_checks=True)
     client.force_login(user)
 
-    rejected = client.post(
-        f"/api/v1/feed/{vacancy.id}/saved",
+    rejected = client.patch(
+        f"/api/v1/feed/{vacancy.id}/state",
         data={"saved": True},
         content_type="application/json",
     )
     client.get("/api/v1/me")
     csrf = client.cookies["csrftoken"].value
     headers = {"X-CSRFToken": csrf}
-    first_saved = client.post(
-        f"/api/v1/feed/{vacancy.id}/saved",
+    first_saved = client.patch(
+        f"/api/v1/feed/{vacancy.id}/state",
         data={"saved": True},
         content_type="application/json",
         headers=headers,
     )
-    second_saved = client.post(
-        f"/api/v1/feed/{vacancy.id}/saved",
+    second_saved = client.patch(
+        f"/api/v1/feed/{vacancy.id}/state",
         data={"saved": True},
         content_type="application/json",
         headers=headers,
     )
-    hidden = client.post(
-        f"/api/v1/feed/{vacancy.id}/hidden",
+    hidden = client.patch(
+        f"/api/v1/feed/{vacancy.id}/state",
         data={"hidden": True},
         content_type="application/json",
         headers=headers,
     )
-    first_seen = client.post(f"/api/v1/feed/{vacancy.id}/seen", headers=headers)
+    invalid_unseen = client.patch(
+        f"/api/v1/feed/{vacancy.id}/state",
+        data={"seen": False},
+        content_type="application/json",
+        headers=headers,
+    )
+    empty_patch = client.patch(
+        f"/api/v1/feed/{vacancy.id}/state",
+        data={},
+        content_type="application/json",
+        headers=headers,
+    )
+    first_seen = client.patch(
+        f"/api/v1/feed/{vacancy.id}/state",
+        data={"seen": True},
+        content_type="application/json",
+        headers=headers,
+    )
     state = VacancyState.objects.get(user=user, vacancy=vacancy)
     seen_at = state.seen_at
-    second_seen = client.post(f"/api/v1/feed/{vacancy.id}/seen", headers=headers)
+    second_seen = client.patch(
+        f"/api/v1/feed/{vacancy.id}/state",
+        data={"seen": True},
+        content_type="application/json",
+        headers=headers,
+    )
     state.refresh_from_db()
     other_state.refresh_from_db()
 
     assert rejected.status_code == 403
-    assert first_saved.json() == second_saved.json() == {"saved": True}
-    assert hidden.json() == {"hidden": True}
-    assert first_seen.status_code == second_seen.status_code == 204
+    assert first_saved.json() == second_saved.json() == {"saved": True, "hidden": False, "seen": False}
+    assert hidden.json() == {"saved": True, "hidden": True, "seen": False}
+    assert invalid_unseen.status_code == 422
+    assert empty_patch.status_code == 422
+    assert first_seen.json() == second_seen.json() == {"saved": True, "hidden": True, "seen": True}
     assert state.saved is True
     assert state.hidden is True
     assert state.seen_at == seen_at

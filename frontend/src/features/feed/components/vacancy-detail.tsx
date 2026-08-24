@@ -5,8 +5,8 @@ import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import {
   fetchFeedDetail,
-  markVacancySeen,
   type VacancyDetail as VacancyDetailData,
+  updateVacancyState,
 } from "@/features/feed/api"
 import { VacancyStateActions } from "@/features/feed/components/vacancy-state-actions"
 import { useFeedStateStore } from "@/features/feed/state/store"
@@ -47,8 +47,8 @@ export function VacancyDetail({
 
   useEffect(() => {
     if (vacancy?.id !== id || vacancy.seen || override?.seen) return
-    markVacancySeen(id).then(
-      () => confirm(id, { seen: true }),
+    updateVacancyState(id, { seen: true }).then(
+      (state) => confirm(id, state),
       () => undefined,
     )
   }, [confirm, id, override, vacancy])

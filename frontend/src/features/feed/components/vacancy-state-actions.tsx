@@ -8,11 +8,7 @@ import { Toast } from "@base-ui/react/toast"
 import { useState } from "react"
 
 import { Button } from "@/components/ui/button"
-import {
-  setVacancyHidden,
-  setVacancySaved,
-  type Vacancy,
-} from "@/features/feed/api"
+import { type Vacancy, updateVacancyState } from "@/features/feed/api"
 import { useFeedStateStore } from "@/features/feed/state/store"
 
 export function VacancyStateActions({
@@ -34,7 +30,7 @@ export function VacancyStateActions({
     setPending("saved")
     setFailed(false)
     try {
-      const next = await setVacancySaved(vacancy.id, !saved)
+      const next = await updateVacancyState(vacancy.id, { saved: !saved })
       confirm(vacancy.id, next)
       onStateChange?.(next)
     } catch {
@@ -48,7 +44,7 @@ export function VacancyStateActions({
     setPending("hidden")
     setFailed(false)
     try {
-      const next = await setVacancyHidden(vacancy.id, !hidden)
+      const next = await updateVacancyState(vacancy.id, { hidden: !hidden })
       confirm(vacancy.id, next)
       onStateChange?.(next)
       if (next.hidden) {
@@ -59,7 +55,9 @@ export function VacancyStateActions({
             children: "Скасувати",
             onClick: async () => {
               try {
-                const restored = await setVacancyHidden(vacancy.id, false)
+                const restored = await updateVacancyState(vacancy.id, {
+                  hidden: false,
+                })
                 confirm(vacancy.id, restored)
                 onStateChange?.(restored)
                 toast.close(toastId)

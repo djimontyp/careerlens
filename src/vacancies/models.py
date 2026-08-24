@@ -1,7 +1,38 @@
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
 from django.conf import settings
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
+from django.db.models import F, FilteredRelation, Q
 from django.utils import timezone
+
+if TYPE_CHECKING:
+    from accounts.models import User
+
+
+class VacancyQuerySet(models.QuerySet["Vacancy"]):
+    def for_user(self, user: User) -> VacancyQuerySet:
+        return (
+            self.select_related("company", "source")
+            .alias(own_match=FilteredRelation("matches", condition=Q(matches__user=user)))
+            .alias(own_state=FilteredRelation("vacancystate", condition=Q(vacancystate__user=user)))
+            .alias(own_note=FilteredRelation("notes", condition=Q(notes__user=user)))
+            .alias(own_application=FilteredRelation("applications", condition=Q(applications__user=user)))
+            .annotate(
+                match_score=F("own_match__score"),
+                match_reason=F("own_match__reason"),
+                match_evidence=F("own_match__evidence"),
+                match_precise=F("own_match__precise"),
+                match_scored_at=F("own_match__scored_at"),
+                state_saved=F("own_state__saved"),
+                state_hidden=F("own_state__hidden"),
+                state_seen_at=F("own_state__seen_at"),
+                note_id=F("own_note__id"),
+                application_submitted_at=F("own_application__submitted_at"),
+            )
+        )
 
 
 class Source(models.Model):
@@ -39,6 +70,9 @@ class Vacancy(models.Model):
     scraped_at = models.DateTimeField(default=timezone.now)
     source_updated_at = models.DateTimeField(blank=True, null=True)
     description = models.TextField()
+
+    objects = models.Manager()
+    feed = VacancyQuerySet.as_manager()
 
     class Meta:
         constraints = [

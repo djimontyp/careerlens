@@ -135,7 +135,7 @@ class Command(BaseCommand):
                             name=item.company,
                             defaults=company_defaults,
                         )
-                    defaults = {
+                    defaults: dict[str, Any] = {
                         "company": company,
                         "title": item.title,
                         "url": str(item.url) if item.url else None,

@@ -58,9 +58,15 @@ export function apiPost<T = void>(
   })
 }
 
-export function apiPostJson<T, B>(path: string, body: B): Promise<T> {
-  return apiPost<T>(path, {
-    headers: { "Content-Type": "application/json" },
+export function apiPatchJson<T, B>(path: string, body: B): Promise<T> {
+  const headers = new Headers({ "Content-Type": "application/json" })
+  const token = csrfToken()
+  if (token) {
+    headers.set("X-CSRFToken", decodeURIComponent(token))
+  }
+  return request<T>(path, {
+    method: "PATCH",
+    headers,
     body: JSON.stringify(body),
   })
 }

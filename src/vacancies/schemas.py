@@ -2,7 +2,7 @@ from datetime import date, datetime
 from typing import Any, Literal
 
 from ninja import Schema
-from pydantic import ConfigDict, Field, HttpUrl
+from pydantic import ConfigDict, Field, HttpUrl, model_validator
 
 
 class SourceOut(Schema):
@@ -30,28 +30,30 @@ class MatchOut(Schema):
     scored_at: datetime = Field(description="Time when this result was produced.")
 
 
-class SavedIn(Schema):
-    model_config = ConfigDict(json_schema_extra={"examples": [{"saved": True}]})
+class VacancyStateIn(Schema):
+    model_config = ConfigDict(json_schema_extra={"examples": [{"saved": True}, {"hidden": False}, {"seen": True}]})
 
-    saved: bool = Field(description="Whether the vacancy is saved.")
+    saved: bool | None = Field(None, description="New saved state when supplied.")
+    hidden: bool | None = Field(None, description="New hidden state when supplied.")
+    seen: Literal[True] | None = Field(None, description="Marks the vacancy as seen; this cannot be reverted.")
+
+    @model_validator(mode="after")
+    def require_change(self) -> VacancyStateIn:
+        if self.saved is None and self.hidden is None and self.seen is None:
+            raise ValueError("At least one state field is required")
+        return self
 
 
-class SavedOut(Schema):
-    model_config = ConfigDict(json_schema_extra={"examples": [{"saved": True}]})
+class VacancyStateOut(Schema):
+    model_config = ConfigDict(json_schema_extra={"examples": [{"saved": True, "hidden": False, "seen": True}]})
 
     saved: bool = Field(description="Confirmed saved state.")
-
-
-class HiddenIn(Schema):
-    model_config = ConfigDict(json_schema_extra={"examples": [{"hidden": True}]})
-
-    hidden: bool = Field(description="Whether the vacancy is hidden.")
-
-
-class HiddenOut(Schema):
-    model_config = ConfigDict(json_schema_extra={"examples": [{"hidden": True}]})
-
     hidden: bool = Field(description="Confirmed hidden state.")
+    seen: bool = Field(description="Whether the vacancy has been opened.")
+
+    @staticmethod
+    def resolve_seen(obj: Any) -> bool:
+        return obj.seen_at is not None
 
 
 class VacancyOut(Schema):

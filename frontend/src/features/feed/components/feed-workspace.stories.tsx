@@ -104,17 +104,19 @@ export const DetailAnalysis: Story = {
   beforeEach: () => {
     const fetch = window.fetch
     let hiddenCalls = 0
-    window.fetch = async (input) => {
-      if (String(input).includes("feed/42/saved")) {
-        return Response.json({ saved: true })
-      }
-      if (String(input).includes("feed/42/hidden")) {
-        hiddenCalls += 1
-        if (hiddenCalls === 1) return new Response(null, { status: 500 })
-        return Response.json({ hidden: hiddenCalls === 2 })
-      }
-      if (String(input).includes("feed/42/seen")) {
-        return new Response(null, { status: 204 })
+    let state = { saved: false, hidden: false, seen: false }
+    window.fetch = async (input, init) => {
+      if (String(input).includes("feed/42/state")) {
+        if (init?.method !== "PATCH") {
+          return new Response(null, { status: 405 })
+        }
+        const payload = JSON.parse(String(init?.body)) as Partial<typeof state>
+        if (payload.hidden !== undefined) {
+          hiddenCalls += 1
+          if (hiddenCalls === 1) return new Response(null, { status: 500 })
+        }
+        state = { ...state, ...payload }
+        return Response.json(state)
       }
       if (String(input).includes("feed/42")) {
         return Response.json({

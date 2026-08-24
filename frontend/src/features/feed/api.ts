@@ -1,4 +1,4 @@
-import { apiGet, apiPost, apiPostJson } from "@/lib/api"
+import { apiGet, apiPatchJson } from "@/lib/api"
 import type { VacancyMatch } from "@/features/vacancies/types"
 
 type VacancySource = {
@@ -37,6 +37,9 @@ export type FeedResponse = {
 }
 
 export type FeedMode = "active" | "saved" | "hidden"
+export type VacancyState = Pick<Vacancy, "saved" | "hidden" | "seen">
+export type VacancyStatePatch =
+  { saved: boolean } | { hidden: boolean } | { seen: true }
 
 const FEED_PAGE_SIZE = 20
 
@@ -57,20 +60,9 @@ export function fetchFeedDetail(id: number, signal?: AbortSignal) {
   return apiGet<VacancyDetail>(`feed/${id}`, { signal })
 }
 
-export function setVacancySaved(id: number, saved: boolean) {
-  return apiPostJson<{ saved: boolean }, { saved: boolean }>(
-    `feed/${id}/saved`,
-    { saved },
+export function updateVacancyState(id: number, patch: VacancyStatePatch) {
+  return apiPatchJson<VacancyState, VacancyStatePatch>(
+    `feed/${id}/state`,
+    patch,
   )
-}
-
-export function setVacancyHidden(id: number, hidden: boolean) {
-  return apiPostJson<{ hidden: boolean }, { hidden: boolean }>(
-    `feed/${id}/hidden`,
-    { hidden },
-  )
-}
-
-export function markVacancySeen(id: number) {
-  return apiPost(`feed/${id}/seen`)
 }
