@@ -301,7 +301,7 @@ function FilterSheet({ iconOnly = false }: { iconOnly?: boolean }) {
       <SheetTrigger
         render={
           <Button
-            variant="outline"
+            variant="ghost"
             size={iconOnly ? "icon" : "sm"}
             className={iconOnly ? "size-[44px]" : undefined}
             aria-label={iconOnly ? "Фільтри" : undefined}
