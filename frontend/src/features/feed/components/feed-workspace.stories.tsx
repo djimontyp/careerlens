@@ -149,6 +149,12 @@ export const DetailAnalysis: Story = {
       detail.getByText("Build reliable Django services."),
     ).toBeVisible()
     await expect(
+      Number.parseFloat(
+        getComputedStyle(detail.getByText("Build reliable Django services."))
+          .maxWidth,
+      ),
+    ).toBeLessThanOrEqual(720)
+    await expect(
       detail.getByRole("region", { name: "AI-аналіз відповідності" }),
     ).toBeVisible()
     await expect(detail.getByText("86%")).toBeVisible()

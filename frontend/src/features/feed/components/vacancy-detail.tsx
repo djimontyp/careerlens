@@ -127,7 +127,7 @@ export function VacancyDetail({
         </div>
       </header>
       <div className="grid min-w-0 gap-6 p-4 @min-[760px]:grid-cols-[minmax(0,1fr)_18rem] @min-[760px]:items-start">
-        <div className="min-w-0 whitespace-pre-wrap text-sm leading-6">
+        <div className="min-w-0 max-w-[80ch] whitespace-pre-wrap text-sm leading-6">
           {vacancy.description}
         </div>
         {match && (
