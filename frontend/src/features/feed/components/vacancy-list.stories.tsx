@@ -122,6 +122,7 @@ export const LoadedAndInfinite: Story = {
     await expect(
       canvas.queryByRole("navigation", { name: "Сторінки вакансій" }),
     ).not.toBeInTheDocument()
+    await expect(canvas.getAllByRole("option")).toHaveLength(2)
   },
 }
 
@@ -160,6 +161,10 @@ export const RetryAfterLoadMoreError: Story = {
     await expect(
       await canvas.findByRole("heading", { name: "Older Django Developer" }),
     ).toBeVisible()
+    await expect(
+      canvas.getByRole("heading", { name: "Senior Python Developer" }),
+    ).toBeVisible()
+    await expect(canvas.getAllByRole("option")).toHaveLength(2)
   },
 }
 
@@ -173,7 +178,7 @@ export const CardPresentation: Story = {
     onJumpComplete: fn(),
   },
   play: async ({ args, canvas, userEvent }) => {
-    const vacancy = await canvas.findByRole("button", {
+    const vacancy = await canvas.findByRole("option", {
       name: /Senior Python Developer/,
     })
     await expect(vacancy).toHaveTextContent("Acme · Remote")
@@ -199,7 +204,7 @@ export const CardPresentation: Story = {
       "/source-icons/dou.png",
     )
     await expect(vacancy).toHaveClass("focus-visible:ring-2")
-    await expect(vacancy).toHaveAttribute("aria-pressed", "true")
+    await expect(vacancy).toHaveAttribute("aria-selected", "true")
     await expect(vacancy.querySelector("h3")).toHaveClass("font-medium")
     await waitFor(() =>
       expect(args.onVisibleDateChange).toHaveBeenCalledWith(
@@ -207,7 +212,7 @@ export const CardPresentation: Story = {
       ),
     )
     await waitFor(() => expect(args.onJumpComplete).toHaveBeenCalledOnce())
-    const article = await canvas.findByRole("button", {
+    const article = await canvas.findByRole("option", {
       name: /Older Django Developer/,
     })
     await expect(article).toHaveTextContent("Telegram")
@@ -219,12 +224,33 @@ export const CardPresentation: Story = {
     await expect(canvas.queryByText("Ще не оцінено")).not.toBeInTheDocument()
     await userEvent.click(article)
     await expect(args.onSelect).toHaveBeenCalledWith(41)
+    vacancy.focus()
+    await userEvent.keyboard("{ArrowDown}")
+    await expect(article).toHaveFocus()
+    await userEvent.keyboard("{Home}")
+    await expect(vacancy).toHaveFocus()
     useFeedStateStore.getState().confirm(42, { hidden: true })
     await waitFor(() =>
       expect(
         canvas.queryByRole("heading", { name: /Senior Python Developer/ }),
       ).not.toBeInTheDocument(),
     )
+  },
+}
+
+export const SelectedPresentation: Story = {
+  ...LoadedAndInfinite,
+  args: { selectedId: 42, onSelect: fn() },
+  play: async ({ canvas }) => {
+    const selected = await canvas.findByRole("option", {
+      name: /Senior Python Developer/,
+    })
+
+    await expect(selected).toHaveAttribute("aria-selected", "true")
+    await expect(selected.querySelector("h3")).toHaveClass("font-medium")
+    await expect(
+      selected.getBoundingClientRect().height,
+    ).toBeGreaterThanOrEqual(44)
   },
 }
 
@@ -268,9 +294,9 @@ export const MatchStates: Story = {
     return () => (window.fetch = fetch)
   },
   play: async ({ canvas }) => {
-    const high = await canvas.findByRole("button", { name: /High match/ })
-    const medium = canvas.getByRole("button", { name: /Medium match/ })
-    const low = canvas.getByRole("button", { name: /Low match/ })
+    const high = await canvas.findByRole("option", { name: /High match/ })
+    const medium = canvas.getByRole("option", { name: /Medium match/ })
+    const low = canvas.getByRole("option", { name: /Low match/ })
 
     await expect(high).toHaveTextContent("92% відповідність")
     await expect(high.querySelector('[data-match-tone="high"]')).toBeVisible()

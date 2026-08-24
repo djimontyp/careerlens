@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react"
+import { type KeyboardEvent, useEffect, useRef, useState } from "react"
 
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -216,20 +216,49 @@ export function VacancyList({
     return result
   }, [])
 
+  function handleListKeyDown(event: KeyboardEvent<HTMLUListElement>) {
+    if (!["ArrowDown", "ArrowUp", "Home", "End"].includes(event.key)) return
+    const options = Array.from(
+      event.currentTarget.querySelectorAll<HTMLElement>("[role=option]"),
+    )
+    const current = options.indexOf(document.activeElement as HTMLElement)
+    if (current === -1) return
+    event.preventDefault()
+    const next =
+      event.key === "Home"
+        ? 0
+        : event.key === "End"
+          ? options.length - 1
+          : Math.max(
+              0,
+              Math.min(
+                options.length - 1,
+                current + (event.key === "ArrowDown" ? 1 : -1),
+              ),
+            )
+    options[next]?.focus()
+  }
+
   return (
     <div
       data-testid="feed-scroll-region"
       className="flex min-h-0 flex-1 flex-col"
     >
-      <ul ref={listRef} className="min-h-0 flex-1 overflow-y-auto">
+      <ul
+        ref={listRef}
+        role="listbox"
+        aria-label="Вакансії"
+        className="min-h-0 flex-1 overflow-y-auto"
+        onKeyDown={handleListKeyDown}
+      >
         {groups.map((group) => (
-          <li key={group.date ?? "unknown"}>
+          <li key={group.date ?? "unknown"} role="none">
             <section
               role="group"
               aria-label={formatPublicationDate(group.date)}
               data-feed-date={group.date ?? ""}
             >
-              <ul>
+              <ul role="none">
                 {group.vacancies.map((vacancy) => {
                   const selected = vacancy.id === selectedId
                   const override = overrides[vacancy.id]
@@ -291,10 +320,18 @@ export function VacancyList({
                     "flex w-full flex-col gap-1.5 border-b px-4 py-3 text-left transition-colors hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
 
                   return (
-                    <li key={vacancy.id}>
+                    <li key={vacancy.id} role="none">
                       <button
                         type="button"
-                        aria-pressed={selected}
+                        role="option"
+                        aria-selected={selected}
+                        tabIndex={
+                          selected ||
+                          (selectedId === null &&
+                            vacancy.id === visibleItems[0]?.id)
+                            ? 0
+                            : -1
+                        }
                         onClick={() => onSelect(vacancy.id)}
                         className={`${className} ${selected ? "bg-accent/10 ring-1 ring-inset ring-border" : ""}`}
                       >
@@ -309,6 +346,7 @@ export function VacancyList({
         ))}
         <li
           ref={sentinelRef}
+          role="none"
           className="flex min-h-14 items-center justify-center p-2 text-center text-xs text-muted-foreground"
         >
           {state.failed ? (
