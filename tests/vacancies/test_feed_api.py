@@ -16,6 +16,13 @@ def test_feed_requires_session() -> None:
     assert response.json() == {"detail": "Unauthorized"}
 
 
+def test_feed_detail_requires_session() -> None:
+    response = Client().get("/api/v1/feed/42")
+
+    assert response.status_code == 401
+    assert response.json() == {"detail": "Unauthorized"}
+
+
 @pytest.mark.django_db
 def test_feed_returns_stable_cursor_pages_with_nullable_fields() -> None:
     source = Source.objects.create(
@@ -211,3 +218,14 @@ def test_feed_detail_returns_description_and_only_the_current_users_match() -> N
     assert body["description_status"] == "source"
     assert body["match"]["score"] == 86
     assert body["match"]["reason"] == "Strong Python overlap."
+
+
+@pytest.mark.django_db
+def test_feed_detail_returns_404_for_unknown_vacancy() -> None:
+    user = User.objects.create_user(email="ada@example.com")
+    client = Client()
+    client.force_login(user)
+
+    response = client.get("/api/v1/feed/404")
+
+    assert response.status_code == 404

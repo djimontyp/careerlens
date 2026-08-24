@@ -164,6 +164,53 @@ export const DetailAnalysis: Story = {
   },
 }
 
+export const DetailWithNullableFields: Story = {
+  globals: { viewport: { value: "desktop", isRotated: false } },
+  parameters: { initialEntries: ["/?vacancy=43"] },
+  beforeEach: () => {
+    const fetch = window.fetch
+    window.fetch = async (input) =>
+      Response.json(
+        String(input).includes("feed/43")
+          ? {
+              id: 43,
+              title: "Backend Developer",
+              company: null,
+              location: null,
+              posted_date: null,
+              scraped_at: "2026-08-21T10:30:00Z",
+              source_updated_at: null,
+              is_deftech: false,
+              source: { code: "telegram", name: "Telegram", icon_url: null },
+              url: null,
+              description: "Вакансія з Telegram.",
+              description_status: "source",
+              saved: false,
+              hidden: false,
+              seen: true,
+              has_note: false,
+              application_submitted_at: null,
+              match: null,
+            }
+          : { items: [], next_cursor: null },
+      )
+    return () => (window.fetch = fetch)
+  },
+  play: async ({ canvasElement }) => {
+    const detail = within(
+      within(canvasElement).getByRole("region", {
+        name: "Деталі вакансії",
+      }),
+    )
+
+    await expect(await detail.findByText("Backend Developer")).toBeVisible()
+    await expect(detail.getByText("Вакансія з Telegram.")).toBeVisible()
+    await expect(
+      detail.queryByRole("link", { name: /Відкрити на/ }),
+    ).not.toBeInTheDocument()
+  },
+}
+
 export const Refresh: Story = {
   globals: { viewport: { value: "desktop", isRotated: false } },
   beforeEach: () => {
@@ -282,8 +329,9 @@ export const MobileList: Story = {
 }
 
 export const MobileDetail: Story = {
+  ...DetailWithNullableFields,
   globals: { viewport: { value: "mobile", isRotated: false } },
-  parameters: { initialEntries: ["/feed/detail"] },
+  parameters: { initialEntries: ["/feed/detail?mode=saved&vacancy=43"] },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
 
@@ -295,7 +343,8 @@ export const MobileDetail: Story = {
     ).toBeNull()
     const back = canvas.getByRole("link", { name: "До списку" })
 
-    await expect(back).toHaveAttribute("href", "/")
+    await expect(await canvas.findByText("Backend Developer")).toBeVisible()
+    await expect(back).toHaveAttribute("href", "/feed?mode=saved")
     await expect(back.getBoundingClientRect().height).toBeGreaterThanOrEqual(44)
   },
 }

@@ -122,8 +122,14 @@ export function FeedWorkspace() {
   }
 
   if (isMobile) {
+    const listSearchParams = new URLSearchParams(searchParams)
+    listSearchParams.delete("vacancy")
     return pathname === "/feed/detail" ? (
-      <MobileDetail selectedId={selectedId} onStateChange={handleStateChange} />
+      <MobileDetail
+        selectedId={selectedId}
+        backTo={listSearchParams.size ? `/feed?${listSearchParams}` : "/feed"}
+        onStateChange={handleStateChange}
+      />
     ) : (
       <MobileList selectedId={selectedId} onSelect={handleSelect} mode={mode} />
     )
@@ -342,9 +348,11 @@ function MobileList({
 
 function MobileDetail({
   selectedId,
+  backTo,
   onStateChange,
 }: {
   selectedId: number | null
+  backTo: string
   onStateChange: (state: Partial<Pick<Vacancy, "saved" | "hidden">>) => void
 }) {
   return (
@@ -354,7 +362,7 @@ function MobileDetail({
     >
       <header className="flex h-12 shrink-0 items-center border-b px-2">
         <NavLink
-          to="/"
+          to={backTo}
           className="inline-flex h-[44px] items-center gap-1.5 rounded-lg px-2.5 text-sm font-medium outline-none hover:bg-state-hover focus-visible:ring-2 focus-visible:ring-primary"
         >
           <HugeiconsIcon icon={ArrowLeft02Icon} />
