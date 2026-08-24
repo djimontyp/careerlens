@@ -231,6 +231,7 @@ export const MobileFeedWorkspace: Story = {
           is_deftech: false,
           source: { code: "dou", name: "DOU", icon_url: null },
           url: null,
+          match: null,
         },
       ],
       next_cursor: null,

@@ -14,7 +14,7 @@
     "storybook": "storybook dev -p 6006",
     "build-storybook": "storybook build",
     "test": "npm run test:unit && vitest --project=storybook --run",
-    "test:unit": "node --test src/features/feed/layout/*.test.ts",
+    "test:unit": "node --test src/features/feed/layout/*.test.ts src/features/vacancies/*.test.ts",
     "test:e2e": "playwright test",
     "test:ui": "playwright test --ui"
   },

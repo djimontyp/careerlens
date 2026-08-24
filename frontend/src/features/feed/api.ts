@@ -1,4 +1,5 @@
 import { apiGet } from "@/lib/api"
+import type { VacancyMatch } from "@/features/vacancies/types"
 
 type VacancySource = {
   code: string
@@ -17,6 +18,7 @@ type Vacancy = {
   is_deftech: boolean
   source: VacancySource
   url: string | null
+  match: VacancyMatch | null
 }
 
 export type FeedResponse = {
