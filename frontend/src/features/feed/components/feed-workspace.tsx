@@ -285,9 +285,11 @@ function EmptyPanel({
       className="flex h-full min-h-0 flex-col overflow-hidden rounded-2xl border bg-background"
     >
       <header className="flex h-12 shrink-0 items-center border-b px-3">
-        <h2 className="text-sm font-semibold">{PANEL_LABELS[panel]}</h2>
+        <h2 className="min-w-0 truncate text-sm font-semibold">
+          {PANEL_LABELS[panel]}
+        </h2>
         {panel === "list" && (
-          <div className="ms-auto flex items-center gap-1">
+          <div className="ms-auto flex shrink-0 items-center gap-1">
             <FeedModeControl mode={mode} />
             <FeedDateJump visibleDate={visibleDate} onJump={onJump} />
             <FeedRefreshButton refreshing={refreshing} onRefresh={onRefresh} />

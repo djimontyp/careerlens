@@ -56,6 +56,26 @@ export const Desktop: Story = {
   },
 }
 
+export const ListMinimumWidth: Story = {
+  globals: { viewport: { value: "desktopBoundary", isRotated: false } },
+  beforeEach: () => {
+    useFeedLayoutStore.setState((state) => ({
+      widths: { ...state.widths, list: 280 },
+    }))
+  },
+  play: async ({ canvasElement }) => {
+    const list = within(canvasElement).getByRole("region", {
+      name: "Список вакансій",
+    })
+    const header = within(list)
+      .getByRole("heading", { name: "Список вакансій" })
+      .closest("header")!
+
+    await expect(list.getBoundingClientRect().width).toBe(280)
+    await expect(header.scrollWidth).toBeLessThanOrEqual(header.clientWidth)
+  },
+}
+
 export const DetailAnalysis: Story = {
   globals: { viewport: { value: "desktop", isRotated: false } },
   parameters: { initialEntries: ["/?vacancy=42"] },
