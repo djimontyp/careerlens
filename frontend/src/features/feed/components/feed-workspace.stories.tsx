@@ -49,6 +49,8 @@ export const Desktop: Story = {
     await expect(
       canvas.getByRole("region", { name: "Фільтри вакансій" }),
     ).toBeVisible()
+    const filters = canvas.getByRole("region", { name: "Фільтри вакансій" })
+    await expect(filters.scrollHeight).toBe(filters.clientHeight)
     await expect(canvas.getAllByRole("separator")).toHaveLength(2)
     await expect(
       canvas.getAllByRole("button", { name: /Перетягнути панель/ }),
@@ -73,6 +75,26 @@ export const ListMinimumWidth: Story = {
 
     await expect(list.getBoundingClientRect().width).toBe(280)
     await expect(header.scrollWidth).toBeLessThanOrEqual(header.clientWidth)
+    await expect(
+      within(canvasElement).queryByRole("region", {
+        name: "Фільтри вакансій",
+      }),
+    ).not.toBeInTheDocument()
+  },
+}
+
+export const PinnedFiltersBoundary: Story = {
+  globals: { viewport: { value: "compactWorkspace", isRotated: false } },
+  play: async ({ canvasElement }) => {
+    const filters = within(canvasElement).getByRole("region", {
+      name: "Фільтри вакансій",
+    })
+
+    await expect(filters).toBeVisible()
+    await expect(filters.scrollHeight).toBe(filters.clientHeight)
+    await expect(filters.getBoundingClientRect().width).toBeGreaterThanOrEqual(
+      240,
+    )
   },
 }
 
