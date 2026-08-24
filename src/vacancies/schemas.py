@@ -1,5 +1,5 @@
 from datetime import date, datetime
-from typing import Any
+from typing import Any, Literal
 
 from ninja import Schema
 from pydantic import ConfigDict, Field, HttpUrl
@@ -11,10 +11,21 @@ class SourceOut(Schema):
     icon_url: str | None = Field(description="Source icon URL, or null when unavailable.")
 
 
+class MatchEvidenceItemOut(Schema):
+    type: Literal["strong", "partial", "gaps", "unknown"] = Field(description="Evidence category.")
+    label: str = Field(description="Short evidence label.")
+    explanation: str = Field(description="Evidence explanation, or an empty string when unavailable.")
+
+
+class MatchEvidenceOut(Schema):
+    items: list[MatchEvidenceItemOut] = Field(description="Structured evidence supporting the match result.")
+    evidence_coverage: float = Field(ge=0, le=1, description="Share of requirements covered by evidence.")
+
+
 class MatchOut(Schema):
     score: int = Field(ge=0, le=100, description="Personal match percentage.")
     reason: str = Field(description="Short explanation of the score.")
-    evidence: dict[str, Any] = Field(description="Structured evidence supporting the score.")
+    evidence: MatchEvidenceOut = Field(description="Structured evidence supporting the score.")
     precise: bool = Field(description="Whether the score meets the precise-match evidence contract.")
     scored_at: datetime = Field(description="Time when this result was produced.")
 
@@ -37,7 +48,16 @@ class VacancyOut(Schema):
                     "match": {
                         "score": 86,
                         "reason": "Strong Python and Django overlap.",
-                        "evidence": {"items": [{"type": "strong", "label": "Python"}]},
+                        "evidence": {
+                            "items": [
+                                {
+                                    "type": "strong",
+                                    "label": "Python",
+                                    "explanation": "Five years of experience.",
+                                }
+                            ],
+                            "evidence_coverage": 0.86,
+                        },
                         "precise": True,
                         "scored_at": "2026-08-21T12:00:00Z",
                     },

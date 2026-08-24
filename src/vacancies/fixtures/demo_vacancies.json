@@ -21,7 +21,10 @@
       "match": {
         "score": 92,
         "reason": "Сильний збіг за Python, Django та PostgreSQL.",
-        "evidence": { "items": [{ "type": "strong", "label": "Django" }] },
+        "evidence": {
+          "items": [{ "type": "strong", "label": "Django", "explanation": "Комерційний досвід підтверджено." }],
+          "evidence_coverage": 0.92
+        },
         "precise": true,
         "scored_at": "2026-08-21T12:00:00Z"
       }
@@ -42,7 +45,10 @@
       "match": {
         "score": 68,
         "reason": "Python збігається, але доменний досвід підтверджено частково.",
-        "evidence": { "items": [{ "type": "partial", "label": "Production APIs" }] },
+        "evidence": {
+          "items": [{ "type": "partial", "label": "Production APIs", "explanation": "Python підтверджено, доменний досвід частковий." }],
+          "evidence_coverage": 0.68
+        },
         "precise": true,
         "scored_at": "2026-08-21T12:01:00Z"
       }
@@ -63,7 +69,10 @@
       "match": {
         "score": 34,
         "reason": "Опис надто короткий для точної оцінки.",
-        "evidence": { "items": [{ "type": "unknown", "label": "Вимоги" }] },
+        "evidence": {
+          "items": [{ "type": "unknown", "label": "Вимоги", "explanation": "Опис не містить достатньо деталей." }],
+          "evidence_coverage": 0.34
+        },
         "precise": false,
         "scored_at": "2026-08-21T12:02:00Z"
       }

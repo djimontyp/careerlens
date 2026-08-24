@@ -75,7 +75,16 @@ feed_router = Router(tags=["feed"])
                                     "match": {
                                         "score": 86,
                                         "reason": "Strong Python and Django overlap.",
-                                        "evidence": {"items": [{"type": "strong", "label": "Python"}]},
+                                        "evidence": {
+                                            "items": [
+                                                {
+                                                    "type": "strong",
+                                                    "label": "Python",
+                                                    "explanation": "Five years of experience.",
+                                                }
+                                            ],
+                                            "evidence_coverage": 0.86,
+                                        },
                                         "precise": True,
                                         "scored_at": "2026-08-21T12:00:00Z",
                                     },

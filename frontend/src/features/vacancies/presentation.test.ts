@@ -8,7 +8,7 @@ const match = (score: number, precise = true): VacancyMatch => ({
   score,
   precise,
   reason: "",
-  evidence: {},
+  evidence: { items: [], evidence_coverage: 0 },
   scored_at: "2026-08-21T12:00:00Z",
 })
 

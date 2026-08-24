@@ -244,9 +244,11 @@
                           "items": [
                             {
                               "type": "strong",
-                              "label": "Python"
+                              "label": "Python",
+                              "explanation": "Five years of experience."
                             }
-                          ]
+                          ],
+                          "evidence_coverage": 0.86
                         },
                         "precise": true,
                         "scored_at": "2026-08-21T12:00:00Z"
@@ -452,6 +454,63 @@
         "title": "FeedOut",
         "type": "object"
       },
+      "MatchEvidenceItemOut": {
+        "properties": {
+          "type": {
+            "description": "Evidence category.",
+            "enum": [
+              "strong",
+              "partial",
+              "gaps",
+              "unknown"
+            ],
+            "title": "Type",
+            "type": "string"
+          },
+          "label": {
+            "description": "Short evidence label.",
+            "title": "Label",
+            "type": "string"
+          },
+          "explanation": {
+            "description": "Evidence explanation, or an empty string when unavailable.",
+            "title": "Explanation",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "label",
+          "explanation"
+        ],
+        "title": "MatchEvidenceItemOut",
+        "type": "object"
+      },
+      "MatchEvidenceOut": {
+        "properties": {
+          "items": {
+            "description": "Structured evidence supporting the match result.",
+            "items": {
+              "$ref": "#/components/schemas/MatchEvidenceItemOut"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "evidence_coverage": {
+            "description": "Share of requirements covered by evidence.",
+            "maximum": 1,
+            "minimum": 0,
+            "title": "Evidence Coverage",
+            "type": "number"
+          }
+        },
+        "required": [
+          "items",
+          "evidence_coverage"
+        ],
+        "title": "MatchEvidenceOut",
+        "type": "object"
+      },
       "MatchOut": {
         "properties": {
           "score": {
@@ -467,10 +526,8 @@
             "type": "string"
           },
           "evidence": {
-            "additionalProperties": true,
-            "description": "Structured evidence supporting the score.",
-            "title": "Evidence",
-            "type": "object"
+            "$ref": "#/components/schemas/MatchEvidenceOut",
+            "description": "Structured evidence supporting the score."
           },
           "precise": {
             "description": "Whether the score meets the precise-match evidence contract.",
@@ -536,8 +593,10 @@
             "location": "Remote",
             "match": {
               "evidence": {
+                "evidence_coverage": 0.86,
                 "items": [
                   {
+                    "explanation": "Five years of experience.",
                     "label": "Python",
                     "type": "strong"
                   }

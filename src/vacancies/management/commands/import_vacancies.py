@@ -1,11 +1,11 @@
 from datetime import date, datetime
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal, Self
 
 from django.contrib.auth import get_user_model
 from django.core.management.base import BaseCommand, CommandError
 from django.db import transaction
-from pydantic import BaseModel, ConfigDict, Field, HttpUrl, ValidationError
+from pydantic import BaseModel, ConfigDict, Field, HttpUrl, ValidationError, model_validator
 
 from vacancies.models import Company, Source, Vacancy, VacancyMatch
 
@@ -30,14 +30,35 @@ class SourcePayload(BaseModel):
     icon_url: str | None = Field(default=None, min_length=1, max_length=1000)
 
 
+class EvidenceItemPayload(BaseModel):
+    model_config = ConfigDict(extra="forbid", strict=True)
+
+    type: Literal["strong", "partial", "gaps", "unknown"]
+    label: str = Field(min_length=1)
+    explanation: str = ""
+
+
+class EvidencePayload(BaseModel):
+    model_config = ConfigDict(extra="forbid", strict=True)
+
+    items: list[EvidenceItemPayload]
+    evidence_coverage: float = Field(ge=0, le=1)
+
+
 class MatchPayload(BaseModel):
     model_config = ConfigDict(extra="forbid", strict=True)
 
     score: int = Field(ge=0, le=100)
     reason: str = ""
-    evidence: dict[str, Any] = Field(default_factory=dict)
+    evidence: EvidencePayload
     precise: bool = False
     scored_at: datetime
+
+    @model_validator(mode="after")
+    def validate_precise_evidence(self) -> Self:
+        if self.precise and not self.evidence.items:
+            raise ValueError("Precise match requires evidence")
+        return self
 
 
 class VacancyPayload(BaseModel):

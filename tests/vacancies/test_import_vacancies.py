@@ -87,6 +87,20 @@ def test_import_vacancies_requires_an_explicit_user_for_demo_matches() -> None:
 
 
 @pytest.mark.django_db
+def test_import_vacancies_rejects_precise_match_without_evidence(tmp_path: Path) -> None:
+    payload = json.loads(DEMO_FIXTURE.read_text(encoding="utf-8"))
+    payload["vacancies"][0]["match"]["evidence"]["items"] = []
+    fixture = tmp_path / "invalid-match.json"
+    fixture.write_text(json.dumps(payload), encoding="utf-8")
+    user = get_user_model().objects.create_user(email="demo@example.com")
+
+    with pytest.raises(CommandError, match="Precise match requires evidence"):
+        call_command("import_vacancies", fixture, user_email=user.email)
+
+    assert apps.get_model("vacancies", "Vacancy").objects.count() == 0
+
+
+@pytest.mark.django_db
 def test_import_vacancies_rolls_back_invalid_payload(tmp_path: Path) -> None:
     vacancy_model = apps.get_model("vacancies", "Vacancy")
     payload = {

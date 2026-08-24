@@ -150,7 +150,10 @@ def test_feed_returns_only_the_current_users_match(django_assert_num_queries: ob
         vacancy=vacancy,
         score=86,
         reason="Strong Python overlap.",
-        evidence={"items": [{"type": "strong", "label": "Python"}]},
+        evidence={
+            "items": [{"type": "strong", "label": "Python", "explanation": "Five years of experience."}],
+            "evidence_coverage": 0.86,
+        },
         precise=True,
     )
     VacancyMatch.objects.create(user=other_user, vacancy=unmatched, score=99, reason="Must stay private.")
@@ -164,7 +167,10 @@ def test_feed_returns_only_the_current_users_match(django_assert_num_queries: ob
     assert items[vacancy.id]["match"] == {
         "score": 86,
         "reason": "Strong Python overlap.",
-        "evidence": {"items": [{"type": "strong", "label": "Python"}]},
+        "evidence": {
+            "items": [{"type": "strong", "label": "Python", "explanation": "Five years of experience."}],
+            "evidence_coverage": 0.86,
+        },
         "precise": True,
         "scored_at": items[vacancy.id]["match"]["scored_at"],
     }

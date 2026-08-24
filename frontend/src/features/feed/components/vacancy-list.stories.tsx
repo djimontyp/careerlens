@@ -75,7 +75,16 @@ export const LoadedAndInfinite: Story = {
                   match: {
                     score: 92,
                     reason: "Strong Python and Django overlap.",
-                    evidence: {},
+                    evidence: {
+                      items: [
+                        {
+                          type: "strong",
+                          label: "Python",
+                          explanation: "Five years of experience.",
+                        },
+                      ],
+                      evidence_coverage: 0.92,
+                    },
                     precise: true,
                     scored_at: new Date().toISOString(),
                   },
