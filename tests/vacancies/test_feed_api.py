@@ -4,7 +4,7 @@ import pytest
 from django.contrib.auth import get_user_model
 from django.test import Client
 
-from vacancies.models import Company, Source, Vacancy
+from vacancies.models import Company, Source, Vacancy, VacancyMatch
 
 User = get_user_model()
 
@@ -126,3 +126,46 @@ def test_feed_cursor_continues_within_null_dates() -> None:
     assert [item["id"] for item in first["items"]] == [vacancies[2].id, vacancies[1].id]
     assert [item["id"] for item in second["items"]] == [vacancies[0].id]
     assert second["next_cursor"] is None
+
+
+@pytest.mark.django_db
+def test_feed_returns_only_the_current_users_match(django_assert_num_queries: object) -> None:
+    source = Source.objects.create(code="dou", name="DOU")
+    vacancy = Vacancy.objects.create(
+        source=source,
+        external_id="match",
+        title="Python Developer",
+        description="Build the backend.",
+    )
+    unmatched = Vacancy.objects.create(
+        source=source,
+        external_id="unmatched",
+        title="Django Developer",
+        description="Maintain the API.",
+    )
+    user = User.objects.create_user(email="ada@example.com")
+    other_user = User.objects.create_user(email="grace@example.com")
+    VacancyMatch.objects.create(
+        user=user,
+        vacancy=vacancy,
+        score=86,
+        reason="Strong Python overlap.",
+        evidence={"items": [{"type": "strong", "label": "Python"}]},
+        precise=True,
+    )
+    VacancyMatch.objects.create(user=other_user, vacancy=unmatched, score=99, reason="Must stay private.")
+    client = Client()
+    client.force_login(user)
+
+    with django_assert_num_queries(3):
+        response = client.get("/api/v1/feed")
+
+    items = {item["id"]: item for item in response.json()["items"]}
+    assert items[vacancy.id]["match"] == {
+        "score": 86,
+        "reason": "Strong Python overlap.",
+        "evidence": {"items": [{"type": "strong", "label": "Python"}]},
+        "precise": True,
+        "scored_at": items[vacancy.id]["match"]["scored_at"],
+    }
+    assert items[unmatched.id]["match"] is None

@@ -236,7 +236,21 @@
                         "name": "DOU",
                         "icon_url": "/source-icons/dou.png"
                       },
-                      "url": "https://example.com/jobs/42"
+                      "url": "https://example.com/jobs/42",
+                      "match": {
+                        "score": 86,
+                        "reason": "Strong Python and Django overlap.",
+                        "evidence": {
+                          "items": [
+                            {
+                              "type": "strong",
+                              "label": "Python"
+                            }
+                          ]
+                        },
+                        "precise": true,
+                        "scored_at": "2026-08-21T12:00:00Z"
+                      }
                     }
                   ],
                   "next_cursor": null
@@ -438,6 +452,48 @@
         "title": "FeedOut",
         "type": "object"
       },
+      "MatchOut": {
+        "properties": {
+          "score": {
+            "description": "Personal match percentage.",
+            "maximum": 100,
+            "minimum": 0,
+            "title": "Score",
+            "type": "integer"
+          },
+          "reason": {
+            "description": "Short explanation of the score.",
+            "title": "Reason",
+            "type": "string"
+          },
+          "evidence": {
+            "additionalProperties": true,
+            "description": "Structured evidence supporting the score.",
+            "title": "Evidence",
+            "type": "object"
+          },
+          "precise": {
+            "description": "Whether the score meets the precise-match evidence contract.",
+            "title": "Precise",
+            "type": "boolean"
+          },
+          "scored_at": {
+            "description": "Time when this result was produced.",
+            "format": "date-time",
+            "title": "Scored At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "score",
+          "reason",
+          "evidence",
+          "precise",
+          "scored_at"
+        ],
+        "title": "MatchOut",
+        "type": "object"
+      },
       "SourceOut": {
         "properties": {
           "code": {
@@ -478,6 +534,20 @@
             "id": 42,
             "is_deftech": true,
             "location": "Remote",
+            "match": {
+              "evidence": {
+                "items": [
+                  {
+                    "label": "Python",
+                    "type": "strong"
+                  }
+                ]
+              },
+              "precise": true,
+              "reason": "Strong Python and Django overlap.",
+              "score": 86,
+              "scored_at": "2026-08-21T12:00:00Z"
+            },
             "posted_date": "2026-08-21",
             "scraped_at": "2026-08-21T10:30:00Z",
             "source": {
@@ -580,6 +650,17 @@
             ],
             "description": "Original vacancy URL, or null when unavailable.",
             "title": "Url"
+          },
+          "match": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/MatchOut"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Current user's match result, or null when not scored."
           }
         },
         "required": [
@@ -592,7 +673,8 @@
           "source_updated_at",
           "is_deftech",
           "source",
-          "url"
+          "url",
+          "match"
         ],
         "title": "VacancyOut",
         "type": "object"

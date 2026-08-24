@@ -3,7 +3,7 @@ from typing import Literal
 
 from django.core import signing
 from django.core.signing import BadSignature
-from django.db.models import F, Q, QuerySet
+from django.db.models import F, FilteredRelation, Q, QuerySet
 from django.http import HttpRequest
 from ninja import Field, Query, Router, Schema
 from ninja.errors import HttpError
@@ -72,6 +72,13 @@ feed_router = Router(tags=["feed"])
                                         "icon_url": "/source-icons/dou.png",
                                     },
                                     "url": "https://example.com/jobs/42",
+                                    "match": {
+                                        "score": 86,
+                                        "reason": "Strong Python and Django overlap.",
+                                        "evidence": {"items": [{"type": "strong", "label": "Python"}]},
+                                        "precise": True,
+                                        "scored_at": "2026-08-21T12:00:00Z",
+                                    },
                                 }
                             ],
                             "next_cursor": None,
@@ -85,9 +92,17 @@ feed_router = Router(tags=["feed"])
 )
 def feed(request: HttpRequest, query: Query[FeedQuery]) -> dict[str, object]:
     """Returns vacancies in stable newest-first order."""
-    vacancies: QuerySet[Vacancy] = Vacancy.objects.select_related("company", "source").order_by(
-        F("posted_date").desc(nulls_last=True),
-        "-id",
+    vacancies: QuerySet[Vacancy] = (
+        Vacancy.objects.select_related("company", "source")
+        .alias(own_match=FilteredRelation("matches", condition=Q(matches__user=request.user)))
+        .annotate(
+            match_score=F("own_match__score"),
+            match_reason=F("own_match__reason"),
+            match_evidence=F("own_match__evidence"),
+            match_precise=F("own_match__precise"),
+            match_scored_at=F("own_match__scored_at"),
+        )
+        .order_by(F("posted_date").desc(nulls_last=True), "-id")
     )
     if query.cursor:
         cursor = decode_feed_cursor(query.cursor)

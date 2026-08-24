@@ -1,6 +1,7 @@
 import pytest
 from django.apps import apps
 from django.contrib.auth import get_user_model
+from django.core.exceptions import ValidationError
 from django.db import IntegrityError
 from django.db.models import ProtectedError
 
@@ -184,3 +185,23 @@ def test_catalog_and_state_models_have_meaningful_strings() -> None:
     assert str(company) == "CareerLens"
     assert str(vacancy) == "robota:123"
     assert str(state) == f"VacancyState({state.pk})"
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize("score", [-1, 101])
+def test_vacancy_match_rejects_scores_outside_percentage_range(score: int) -> None:
+    source = apps.get_model("vacancies", "Source").objects.create(code="dou", name="DOU")
+    vacancy = apps.get_model("vacancies", "Vacancy").objects.create(
+        source=source,
+        external_id=str(score),
+        title="Python Developer",
+        description="Build the backend.",
+    )
+    match = apps.get_model("vacancies", "VacancyMatch")(
+        user=get_user_model().objects.create_user(email=f"user-{score}@example.com"),
+        vacancy=vacancy,
+        score=score,
+    )
+
+    with pytest.raises(ValidationError):
+        match.full_clean()

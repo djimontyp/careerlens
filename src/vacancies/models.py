@@ -1,4 +1,5 @@
 from django.conf import settings
+from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 from django.utils import timezone
 
@@ -61,3 +62,22 @@ class VacancyState(models.Model):
 
     def __str__(self) -> str:
         return f"VacancyState({self.pk})"
+
+
+class VacancyMatch(models.Model):
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="vacancy_matches")
+    vacancy = models.ForeignKey(Vacancy, on_delete=models.CASCADE, related_name="matches")
+    score = models.PositiveSmallIntegerField(validators=[MinValueValidator(0), MaxValueValidator(100)])
+    reason = models.TextField(blank=True)
+    evidence = models.JSONField(default=dict, blank=True)
+    precise = models.BooleanField(default=False)
+    scored_at = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=["user", "vacancy"], name="vacancies_match_user_vacancy_uniq"),
+            models.CheckConstraint(condition=models.Q(score__lte=100), name="vacancies_match_score_lte_100"),
+        ]
+
+    def __str__(self) -> str:
+        return f"VacancyMatch({self.pk})"
