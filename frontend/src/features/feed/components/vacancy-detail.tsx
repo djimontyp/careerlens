@@ -7,6 +7,7 @@ import {
   fetchFeedDetail,
   type VacancyDetail as VacancyDetailData,
 } from "@/features/feed/api"
+import { VacancyStateActions } from "@/features/feed/components/vacancy-state-actions"
 import { SourceIdentity } from "@/features/vacancies/components/source-identity"
 
 export function VacancyDetail({ id }: { id: number | null }) {
@@ -70,17 +71,20 @@ export function VacancyDetail({ id }: { id: number | null }) {
           <h3 className="text-lg font-semibold leading-tight">
             {vacancy.title}
           </h3>
-          {vacancy.url && (
-            <a
-              href={vacancy.url}
-              target="_blank"
-              rel="noreferrer"
-              className="inline-flex h-7 shrink-0 items-center rounded-lg border px-2.5 text-xs font-medium hover:bg-state-hover focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none"
-              aria-label={`Відкрити на ${vacancy.source.name}`}
-            >
-              <SourceIdentity source={vacancy.source} />
-            </a>
-          )}
+          <div className="flex shrink-0 items-start gap-1">
+            <VacancyStateActions vacancy={vacancy} />
+            {vacancy.url && (
+              <a
+                href={vacancy.url}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex h-7 shrink-0 items-center rounded-lg border px-2.5 text-xs font-medium hover:bg-state-hover focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none"
+                aria-label={`Відкрити на ${vacancy.source.name}`}
+              >
+                <SourceIdentity source={vacancy.source} />
+              </a>
+            )}
+          </div>
         </div>
         <p className="mt-1 text-xs text-muted-foreground">
           {[vacancy.company, vacancy.location, vacancy.source.name]

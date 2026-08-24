@@ -57,3 +57,10 @@ export function apiPost<T = void>(
     headers,
   })
 }
+
+export function apiPostJson<T, B>(path: string, body: B): Promise<T> {
+  return apiPost<T>(path, {
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  })
+}

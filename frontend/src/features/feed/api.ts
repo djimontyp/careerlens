@@ -1,4 +1,4 @@
-import { apiGet } from "@/lib/api"
+import { apiGet, apiPostJson } from "@/lib/api"
 import type { VacancyMatch } from "@/features/vacancies/types"
 
 type VacancySource = {
@@ -7,7 +7,7 @@ type VacancySource = {
   icon_url: string | null
 }
 
-type Vacancy = {
+export type Vacancy = {
   id: number
   title: string
   company: string | null
@@ -19,6 +19,9 @@ type Vacancy = {
   source: VacancySource
   url: string | null
   match: VacancyMatch | null
+  saved: boolean
+  hidden: boolean
+  seen: boolean
 }
 
 export type VacancyDetail = Vacancy & {
@@ -41,4 +44,18 @@ export function fetchFeed(cursor: string | null, signal?: AbortSignal) {
 
 export function fetchFeedDetail(id: number, signal?: AbortSignal) {
   return apiGet<VacancyDetail>(`feed/${id}`, { signal })
+}
+
+export function setVacancySaved(id: number, saved: boolean) {
+  return apiPostJson<{ saved: boolean }, { saved: boolean }>(
+    `feed/${id}/saved`,
+    { saved },
+  )
+}
+
+export function setVacancyHidden(id: number, hidden: boolean) {
+  return apiPostJson<{ hidden: boolean }, { hidden: boolean }>(
+    `feed/${id}/hidden`,
+    { hidden },
+  )
 }

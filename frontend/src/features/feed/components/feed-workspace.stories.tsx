@@ -60,6 +60,12 @@ export const DetailAnalysis: Story = {
   beforeEach: () => {
     const fetch = window.fetch
     window.fetch = async (input) => {
+      if (String(input).includes("feed/42/saved")) {
+        return Response.json({ saved: true })
+      }
+      if (String(input).includes("feed/42/hidden")) {
+        return new Response(null, { status: 500 })
+      }
       if (String(input).includes("feed/42")) {
         return Response.json({
           id: 42,
@@ -74,6 +80,9 @@ export const DetailAnalysis: Story = {
           url: "https://example.com/jobs/42",
           description: "Build reliable Django services.",
           description_status: "source",
+          saved: false,
+          hidden: false,
+          seen: false,
           match: {
             score: 86,
             reason: "Strong Python and Django overlap.",
@@ -119,6 +128,15 @@ export const DetailAnalysis: Story = {
     ).toHaveAttribute("href", "https://example.com/jobs/42")
     await userEvent.click(detail.getByText("Показати деталі"))
     await expect(detail.getByText("Сильні збіги (1)")).toBeVisible()
+    const save = detail.getByRole("button", { name: "Зберегти" })
+    await userEvent.click(save)
+    await expect(save).toHaveAttribute("aria-pressed", "true")
+    const hide = detail.getByRole("button", { name: "Приховати" })
+    await userEvent.click(hide)
+    await expect(detail.getByRole("alert")).toHaveTextContent(
+      "Не вдалося оновити стан.",
+    )
+    await expect(hide).toHaveAttribute("aria-pressed", "false")
   },
 }
 
