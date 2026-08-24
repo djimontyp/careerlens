@@ -61,12 +61,15 @@ export const DetailAnalysis: Story = {
   parameters: { initialEntries: ["/?vacancy=42"] },
   beforeEach: () => {
     const fetch = window.fetch
+    let hiddenCalls = 0
     window.fetch = async (input) => {
       if (String(input).includes("feed/42/saved")) {
         return Response.json({ saved: true })
       }
       if (String(input).includes("feed/42/hidden")) {
-        return new Response(null, { status: 500 })
+        hiddenCalls += 1
+        if (hiddenCalls === 1) return new Response(null, { status: 500 })
+        return Response.json({ hidden: hiddenCalls === 2 })
       }
       if (String(input).includes("feed/42/seen")) {
         return new Response(null, { status: 204 })
@@ -145,6 +148,17 @@ export const DetailAnalysis: Story = {
       "Не вдалося оновити стан.",
     )
     await expect(hide).toHaveAttribute("aria-pressed", "false")
+    await userEvent.click(hide)
+    await expect(
+      detail.getByRole("button", { name: "Повернути вакансію" }),
+    ).toHaveAttribute("aria-pressed", "true")
+    const undo = await within(document.body).findByRole("button", {
+      name: "Скасувати",
+    })
+    await userEvent.click(undo)
+    await expect(
+      detail.getByRole("button", { name: "Приховати" }),
+    ).toHaveAttribute("aria-pressed", "false")
   },
 }
 

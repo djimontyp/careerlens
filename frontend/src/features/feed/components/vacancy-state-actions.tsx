@@ -4,6 +4,7 @@ import {
   EyeOffIcon,
 } from "@hugeicons/core-free-icons"
 import { HugeiconsIcon } from "@hugeicons/react"
+import { Toast } from "@base-ui/react/toast"
 import { useState } from "react"
 
 import { Button } from "@/components/ui/button"
@@ -15,6 +16,7 @@ import {
 import { useFeedStateStore } from "@/features/feed/state/store"
 
 export function VacancyStateActions({ vacancy }: { vacancy: Vacancy }) {
+  const toast = Toast.useToastManager()
   const override = useFeedStateStore((state) => state.overrides[vacancy.id])
   const confirm = useFeedStateStore((state) => state.confirm)
   const [pending, setPending] = useState<"saved" | "hidden" | null>(null)
@@ -38,7 +40,28 @@ export function VacancyStateActions({ vacancy }: { vacancy: Vacancy }) {
     setPending("hidden")
     setFailed(false)
     try {
-      confirm(vacancy.id, await setVacancyHidden(vacancy.id, !hidden))
+      const next = await setVacancyHidden(vacancy.id, !hidden)
+      confirm(vacancy.id, next)
+      if (next.hidden) {
+        const toastId = toast.add({
+          title: "Вакансію приховано",
+          timeout: 10_000,
+          actionProps: {
+            children: "Скасувати",
+            onClick: async () => {
+              try {
+                confirm(vacancy.id, await setVacancyHidden(vacancy.id, false))
+                toast.close(toastId)
+              } catch {
+                toast.update(toastId, {
+                  title: "Не вдалося повернути вакансію",
+                  actionProps: undefined,
+                })
+              }
+            },
+          },
+        })
+      }
     } catch {
       setFailed(true)
     } finally {

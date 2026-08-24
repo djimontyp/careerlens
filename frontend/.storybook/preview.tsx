@@ -4,6 +4,7 @@ import { useGlobals } from "storybook/preview-api"
 import type { Theme } from "@/components/theme-context"
 import { ThemeProvider } from "@/components/theme-provider"
 import { TooltipProvider } from "@/components/ui/tooltip"
+import { ToasterProvider } from "@/components/ui/toaster"
 
 import "@/index.css"
 
@@ -87,7 +88,9 @@ const preview: Preview = {
           onThemeChange={(theme) => updateGlobals({ theme })}
         >
           <TooltipProvider>
-            <Story />
+            <ToasterProvider>
+              <Story />
+            </ToasterProvider>
           </TooltipProvider>
         </ThemeProvider>
       )
