@@ -141,4 +141,5 @@ test *args:
 # Verify production deployment contracts
 container-test:
     bash tests/deploy/verify_frontend_install_test.sh
+    bash tests/deploy/verify_backup_script_test.sh
     bash tests/deploy/verify_container_test.sh
