@@ -237,6 +237,9 @@
                         "icon_url": "/source-icons/dou.png"
                       },
                       "url": "https://example.com/jobs/42",
+                      "saved": true,
+                      "hidden": false,
+                      "seen": true,
                       "match": {
                         "score": 86,
                         "reason": "Strong Python and Django overlap.",
@@ -345,6 +348,295 @@
           }
         },
         "description": "Returns one vacancy with its source description and the current user's match.",
+        "tags": [
+          "feed"
+        ],
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ]
+      }
+    },
+    "/api/v1/feed/{vacancy_id}/saved": {
+      "post": {
+        "operationId": "config_api_v1_feed_set_saved",
+        "summary": "Set saved state",
+        "parameters": [
+          {
+            "in": "cookie",
+            "name": "csrftoken",
+            "schema": {
+              "description": "CSRF cookie issued by GET /api/v1/me.",
+              "title": "Csrftoken",
+              "type": "string"
+            },
+            "required": true,
+            "description": "CSRF cookie issued by GET /api/v1/me."
+          },
+          {
+            "in": "header",
+            "name": "X-CSRFToken",
+            "schema": {
+              "description": "Value matching the csrftoken cookie.",
+              "title": "X-Csrftoken",
+              "type": "string"
+            },
+            "required": true,
+            "description": "Value matching the csrftoken cookie."
+          },
+          {
+            "in": "path",
+            "name": "vacancy_id",
+            "schema": {
+              "description": "CareerLens vacancy identifier.",
+              "title": "Vacancy Id",
+              "type": "integer"
+            },
+            "required": true,
+            "description": "CareerLens vacancy identifier."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SavedOut"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            }
+          }
+        },
+        "description": "Sets the current user's saved flag idempotently. Requires a valid CSRF token.",
+        "tags": [
+          "feed"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SavedIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ]
+      }
+    },
+    "/api/v1/feed/{vacancy_id}/hidden": {
+      "post": {
+        "operationId": "config_api_v1_feed_set_hidden",
+        "summary": "Set hidden state",
+        "parameters": [
+          {
+            "in": "cookie",
+            "name": "csrftoken",
+            "schema": {
+              "description": "CSRF cookie issued by GET /api/v1/me.",
+              "title": "Csrftoken",
+              "type": "string"
+            },
+            "required": true,
+            "description": "CSRF cookie issued by GET /api/v1/me."
+          },
+          {
+            "in": "header",
+            "name": "X-CSRFToken",
+            "schema": {
+              "description": "Value matching the csrftoken cookie.",
+              "title": "X-Csrftoken",
+              "type": "string"
+            },
+            "required": true,
+            "description": "Value matching the csrftoken cookie."
+          },
+          {
+            "in": "path",
+            "name": "vacancy_id",
+            "schema": {
+              "description": "CareerLens vacancy identifier.",
+              "title": "Vacancy Id",
+              "type": "integer"
+            },
+            "required": true,
+            "description": "CareerLens vacancy identifier."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HiddenOut"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            }
+          }
+        },
+        "description": "Sets the current user's hidden flag idempotently. Requires a valid CSRF token.",
+        "tags": [
+          "feed"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HiddenIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ]
+      }
+    },
+    "/api/v1/feed/{vacancy_id}/seen": {
+      "post": {
+        "operationId": "config_api_v1_feed_mark_seen",
+        "summary": "Mark vacancy seen",
+        "parameters": [
+          {
+            "in": "cookie",
+            "name": "csrftoken",
+            "schema": {
+              "description": "CSRF cookie issued by GET /api/v1/me.",
+              "title": "Csrftoken",
+              "type": "string"
+            },
+            "required": true,
+            "description": "CSRF cookie issued by GET /api/v1/me."
+          },
+          {
+            "in": "header",
+            "name": "X-CSRFToken",
+            "schema": {
+              "description": "Value matching the csrftoken cookie.",
+              "title": "X-Csrftoken",
+              "type": "string"
+            },
+            "required": true,
+            "description": "Value matching the csrftoken cookie."
+          },
+          {
+            "in": "path",
+            "name": "vacancy_id",
+            "schema": {
+              "description": "CareerLens vacancy identifier.",
+              "title": "Vacancy Id",
+              "type": "integer"
+            },
+            "required": true,
+            "description": "CareerLens vacancy identifier."
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            }
+          }
+        },
+        "description": "Marks the vacancy seen once for the current user. Requires a valid CSRF token.",
         "tags": [
           "feed"
         ],
@@ -648,6 +940,7 @@
         "examples": [
           {
             "company": "Acme",
+            "hidden": false,
             "id": 42,
             "is_deftech": true,
             "location": "Remote",
@@ -668,7 +961,9 @@
               "scored_at": "2026-08-21T12:00:00Z"
             },
             "posted_date": "2026-08-21",
+            "saved": true,
             "scraped_at": "2026-08-21T10:30:00Z",
+            "seen": true,
             "source": {
               "code": "dou",
               "icon_url": "/source-icons/dou.png",
@@ -780,6 +1075,21 @@
               }
             ],
             "description": "Current user's match result, or null when not scored."
+          },
+          "saved": {
+            "description": "Whether the current user saved the vacancy.",
+            "title": "Saved",
+            "type": "boolean"
+          },
+          "hidden": {
+            "description": "Whether the current user hid the vacancy.",
+            "title": "Hidden",
+            "type": "boolean"
+          },
+          "seen": {
+            "description": "Whether the current user opened the vacancy.",
+            "title": "Seen",
+            "type": "boolean"
           }
         },
         "required": [
@@ -793,7 +1103,10 @@
           "is_deftech",
           "source",
           "url",
-          "match"
+          "match",
+          "saved",
+          "hidden",
+          "seen"
         ],
         "title": "VacancyOut",
         "type": "object"
@@ -802,6 +1115,7 @@
         "examples": [
           {
             "company": "Acme",
+            "hidden": false,
             "id": 42,
             "is_deftech": true,
             "location": "Remote",
@@ -822,7 +1136,9 @@
               "scored_at": "2026-08-21T12:00:00Z"
             },
             "posted_date": "2026-08-21",
+            "saved": true,
             "scraped_at": "2026-08-21T10:30:00Z",
+            "seen": true,
             "source": {
               "code": "dou",
               "icon_url": "/source-icons/dou.png",
@@ -934,6 +1250,21 @@
               }
             ],
             "description": "Current user's match result, or null when not scored."
+          },
+          "saved": {
+            "description": "Whether the current user saved the vacancy.",
+            "title": "Saved",
+            "type": "boolean"
+          },
+          "hidden": {
+            "description": "Whether the current user hid the vacancy.",
+            "title": "Hidden",
+            "type": "boolean"
+          },
+          "seen": {
+            "description": "Whether the current user opened the vacancy.",
+            "title": "Seen",
+            "type": "boolean"
           },
           "description": {
             "description": "Vacancy description safe for direct text rendering.",
@@ -962,10 +1293,89 @@
           "source",
           "url",
           "match",
+          "saved",
+          "hidden",
+          "seen",
           "description",
           "description_status"
         ],
         "title": "VacancyDetailOut",
+        "type": "object"
+      },
+      "SavedOut": {
+        "examples": [
+          {
+            "saved": true
+          }
+        ],
+        "properties": {
+          "saved": {
+            "description": "Confirmed saved state.",
+            "title": "Saved",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "saved"
+        ],
+        "title": "SavedOut",
+        "type": "object"
+      },
+      "SavedIn": {
+        "examples": [
+          {
+            "saved": true
+          }
+        ],
+        "properties": {
+          "saved": {
+            "description": "Whether the vacancy is saved.",
+            "title": "Saved",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "saved"
+        ],
+        "title": "SavedIn",
+        "type": "object"
+      },
+      "HiddenOut": {
+        "examples": [
+          {
+            "hidden": true
+          }
+        ],
+        "properties": {
+          "hidden": {
+            "description": "Confirmed hidden state.",
+            "title": "Hidden",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "hidden"
+        ],
+        "title": "HiddenOut",
+        "type": "object"
+      },
+      "HiddenIn": {
+        "examples": [
+          {
+            "hidden": true
+          }
+        ],
+        "properties": {
+          "hidden": {
+            "description": "Whether the vacancy is hidden.",
+            "title": "Hidden",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "hidden"
+        ],
+        "title": "HiddenIn",
         "type": "object"
       }
     },

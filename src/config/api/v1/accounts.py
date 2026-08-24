@@ -3,11 +3,11 @@ from typing import cast
 from django.contrib.auth import logout as django_logout
 from django.http import HttpRequest
 from django.middleware.csrf import get_token
-from ninja import CookieEx, HeaderEx, P, Router, Status
+from ninja import Router, Status
 
 from accounts.models import User
 from accounts.schemas import MeOut
-from api.schemas import ErrorOut
+from api.schemas import CsrfCookie, CsrfHeader, ErrorOut
 
 accounts_router = Router(tags=["accounts"])
 
@@ -72,8 +72,8 @@ def me(request: HttpRequest) -> dict[str, int | str | None]:
 )
 def logout(
     request: HttpRequest,
-    csrf_cookie: CookieEx[str, P(alias="csrftoken", description="CSRF cookie issued by GET /api/v1/me.")],
-    csrf_header: HeaderEx[str, P(alias="X-CSRFToken", description="Value matching the csrftoken cookie.")],
+    csrf_cookie: CsrfCookie,
+    csrf_header: CsrfHeader,
 ) -> Status[None]:
     """
     Terminates the current authenticated session and clears the session cookie.

@@ -54,6 +54,7 @@ class VacancyState(models.Model):
     vacancy = models.ForeignKey(Vacancy, on_delete=models.CASCADE)
     saved = models.BooleanField(default=False)
     hidden = models.BooleanField(default=False)
+    seen_at = models.DateTimeField(blank=True, null=True)
 
     class Meta:
         constraints = [

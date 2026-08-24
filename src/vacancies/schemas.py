@@ -30,6 +30,30 @@ class MatchOut(Schema):
     scored_at: datetime = Field(description="Time when this result was produced.")
 
 
+class SavedIn(Schema):
+    model_config = ConfigDict(json_schema_extra={"examples": [{"saved": True}]})
+
+    saved: bool = Field(description="Whether the vacancy is saved.")
+
+
+class SavedOut(Schema):
+    model_config = ConfigDict(json_schema_extra={"examples": [{"saved": True}]})
+
+    saved: bool = Field(description="Confirmed saved state.")
+
+
+class HiddenIn(Schema):
+    model_config = ConfigDict(json_schema_extra={"examples": [{"hidden": True}]})
+
+    hidden: bool = Field(description="Whether the vacancy is hidden.")
+
+
+class HiddenOut(Schema):
+    model_config = ConfigDict(json_schema_extra={"examples": [{"hidden": True}]})
+
+    hidden: bool = Field(description="Confirmed hidden state.")
+
+
 class VacancyOut(Schema):
     model_config = ConfigDict(
         json_schema_extra={
@@ -45,6 +69,9 @@ class VacancyOut(Schema):
                     "is_deftech": True,
                     "source": {"code": "dou", "name": "DOU", "icon_url": "/source-icons/dou.png"},
                     "url": "https://example.com/jobs/42",
+                    "saved": True,
+                    "hidden": False,
+                    "seen": True,
                     "match": {
                         "score": 86,
                         "reason": "Strong Python and Django overlap.",
@@ -77,6 +104,9 @@ class VacancyOut(Schema):
     source: SourceOut = Field(description="Vacancy source.")
     url: HttpUrl | None = Field(description="Original vacancy URL, or null when unavailable.")
     match: MatchOut | None = Field(description="Current user's match result, or null when not scored.")
+    saved: bool = Field(description="Whether the current user saved the vacancy.")
+    hidden: bool = Field(description="Whether the current user hid the vacancy.")
+    seen: bool = Field(description="Whether the current user opened the vacancy.")
 
     @staticmethod
     def resolve_company(obj: Any) -> str | None:
@@ -97,6 +127,18 @@ class VacancyOut(Schema):
             "precise": obj.match_precise,
             "scored_at": obj.match_scored_at,
         }
+
+    @staticmethod
+    def resolve_saved(obj: Any) -> bool:
+        return bool(obj.state_saved)
+
+    @staticmethod
+    def resolve_hidden(obj: Any) -> bool:
+        return bool(obj.state_hidden)
+
+    @staticmethod
+    def resolve_seen(obj: Any) -> bool:
+        return obj.state_seen_at is not None
 
 
 class FeedOut(Schema):

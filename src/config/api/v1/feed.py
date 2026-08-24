@@ -6,13 +6,14 @@ from django.core.signing import BadSignature
 from django.db.models import F, FilteredRelation, Q, QuerySet
 from django.http import HttpRequest
 from django.shortcuts import get_object_or_404
-from ninja import Field, Path, Query, Router, Schema
+from django.utils import timezone
+from ninja import Field, Path, Query, Router, Schema, Status
 from ninja.errors import HttpError
 from pydantic import ValidationError
 
-from api.schemas import ErrorOut
-from vacancies.models import Vacancy
-from vacancies.schemas import FeedOut, VacancyDetailOut
+from api.schemas import CsrfCookie, CsrfHeader, ErrorOut
+from vacancies.models import Vacancy, VacancyState
+from vacancies.schemas import FeedOut, HiddenIn, HiddenOut, SavedIn, SavedOut, VacancyDetailOut
 
 
 class FeedQuery(Schema):
@@ -51,12 +52,16 @@ def feed_queryset(request: HttpRequest) -> QuerySet[Vacancy]:
     return (
         Vacancy.objects.select_related("company", "source")
         .alias(own_match=FilteredRelation("matches", condition=Q(matches__user=request.user)))
+        .alias(own_state=FilteredRelation("vacancystate", condition=Q(vacancystate__user=request.user)))
         .annotate(
             match_score=F("own_match__score"),
             match_reason=F("own_match__reason"),
             match_evidence=F("own_match__evidence"),
             match_precise=F("own_match__precise"),
             match_scored_at=F("own_match__scored_at"),
+            state_saved=F("own_state__saved"),
+            state_hidden=F("own_state__hidden"),
+            state_seen_at=F("own_state__seen_at"),
         )
     )
 
@@ -87,6 +92,9 @@ def feed_queryset(request: HttpRequest) -> QuerySet[Vacancy]:
                                         "icon_url": "/source-icons/dou.png",
                                     },
                                     "url": "https://example.com/jobs/42",
+                                    "saved": True,
+                                    "hidden": False,
+                                    "seen": True,
                                     "match": {
                                         "score": 86,
                                         "reason": "Strong Python and Django overlap.",
@@ -148,3 +156,67 @@ def feed_detail(
 ) -> Vacancy:
     """Returns one vacancy with its source description and the current user's match."""
     return get_object_or_404(feed_queryset(request), pk=vacancy_id)
+
+
+@feed_router.post(
+    "/feed/{vacancy_id}/saved",
+    response={200: SavedOut, 401: ErrorOut, 403: ErrorOut, 404: ErrorOut},
+    summary="Set saved state",
+)
+def set_saved(
+    request: HttpRequest,
+    payload: SavedIn,
+    csrf_cookie: CsrfCookie,
+    csrf_header: CsrfHeader,
+    vacancy_id: int = Path(..., description="CareerLens vacancy identifier."),
+) -> dict[str, bool]:
+    """Sets the current user's saved flag idempotently. Requires a valid CSRF token."""
+    vacancy = get_object_or_404(Vacancy, pk=vacancy_id)
+    VacancyState.objects.update_or_create(
+        user=request.user,
+        vacancy=vacancy,
+        defaults={"saved": payload.saved},
+    )
+    return {"saved": payload.saved}
+
+
+@feed_router.post(
+    "/feed/{vacancy_id}/hidden",
+    response={200: HiddenOut, 401: ErrorOut, 403: ErrorOut, 404: ErrorOut},
+    summary="Set hidden state",
+)
+def set_hidden(
+    request: HttpRequest,
+    payload: HiddenIn,
+    csrf_cookie: CsrfCookie,
+    csrf_header: CsrfHeader,
+    vacancy_id: int = Path(..., description="CareerLens vacancy identifier."),
+) -> dict[str, bool]:
+    """Sets the current user's hidden flag idempotently. Requires a valid CSRF token."""
+    vacancy = get_object_or_404(Vacancy, pk=vacancy_id)
+    VacancyState.objects.update_or_create(
+        user=request.user,
+        vacancy=vacancy,
+        defaults={"hidden": payload.hidden},
+    )
+    return {"hidden": payload.hidden}
+
+
+@feed_router.post(
+    "/feed/{vacancy_id}/seen",
+    response={204: None, 401: ErrorOut, 403: ErrorOut, 404: ErrorOut},
+    summary="Mark vacancy seen",
+)
+def mark_seen(
+    request: HttpRequest,
+    csrf_cookie: CsrfCookie,
+    csrf_header: CsrfHeader,
+    vacancy_id: int = Path(..., description="CareerLens vacancy identifier."),
+) -> Status[None]:
+    """Marks the vacancy seen once for the current user. Requires a valid CSRF token."""
+    vacancy = get_object_or_404(Vacancy, pk=vacancy_id)
+    state, _ = VacancyState.objects.get_or_create(user=request.user, vacancy=vacancy)
+    if state.seen_at is None:
+        state.seen_at = timezone.now()
+        state.save(update_fields=["seen_at"])
+    return Status(204, None)
