@@ -142,4 +142,5 @@ test *args:
 container-test:
     bash tests/deploy/verify_frontend_install_test.sh
     bash tests/deploy/verify_backup_script_test.sh
+    bash tests/deploy/verify_remote_deploy_test.sh
     bash tests/deploy/verify_container_test.sh

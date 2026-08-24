@@ -156,19 +156,19 @@ class Command(BaseCommand):
                         defaults=defaults,
                     )
                     if item.match and user:
-                        VacancyMatch.objects.update_or_create(
+                        VacancyMatch.objects.get_or_create(
                             user=user,
                             vacancy=vacancy,
                             defaults=item.match.model_dump(),
                         )
                     if item.note and user:
-                        VacancyNote.objects.update_or_create(
+                        VacancyNote.objects.get_or_create(
                             user=user,
                             vacancy=vacancy,
                             defaults={"text": item.note},
                         )
                     if item.application and user:
-                        VacancyApplication.objects.update_or_create(
+                        VacancyApplication.objects.get_or_create(
                             user=user,
                             vacancy=vacancy,
                             defaults=item.application.model_dump(),

@@ -18,6 +18,7 @@ variables=(
     APP__AUTH__WORKOS__REDIRECT_URI
     APP__DATABASE__DATABASE
     APP__DATABASE__USER
+    DEMO_USER_EMAIL
     DATABASE_PASSWORD
     DJANGO_SECRET_KEY
     WORKOS_API_KEY
@@ -48,16 +49,19 @@ if [[ ! "${CAREERLENS_IMAGE}" =~ ^docker\.io/[a-z0-9._/-]+@sha256:[0-9a-f]{64}$ 
 fi
 
 deploy_root="${HOME}/.careerlens"
-docker_config="$(mktemp --directory /dev/shm/careerlens-docker-config.XXXXXX)"
+docker_config_base="${DOCKER_CONFIG_BASE:-/dev/shm}"
+docker_config="$(mktemp --directory "${docker_config_base%/}/careerlens-docker-config.XXXXXX")"
 export DOCKER_CONFIG="${docker_config}"
 
 cleanup() {
     docker logout >/dev/null 2>&1 || true
-    if [[ "${docker_config}" != /dev/shm/careerlens-docker-config.* ]]; then
-        echo "Refusing unsafe cleanup path: ${docker_config}" >&2
-        return 1
-    fi
-    rm -rf -- "${docker_config}"
+    case "${docker_config}" in
+        "${docker_config_base%/}"/careerlens-docker-config.*) rm -rf -- "${docker_config}" ;;
+        *)
+            echo "Refusing unsafe cleanup path: ${docker_config}" >&2
+            return 1
+            ;;
+    esac
 }
 
 trap cleanup EXIT
@@ -72,5 +76,8 @@ compose config --quiet
 compose pull
 compose up --detach --wait db
 compose run --rm app python src/manage.py migrate --noinput
+compose run --rm app python src/manage.py import_vacancies \
+    src/vacancies/fixtures/demo_vacancies.json \
+    --user-email "${DEMO_USER_EMAIL}"
 compose up --detach --wait app
 curl --fail --silent --header "X-Forwarded-Proto: https" --retry 5 --retry-all-errors --retry-delay 2 http://127.0.0.1:9000/health >/dev/null
