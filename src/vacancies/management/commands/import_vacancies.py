@@ -2,11 +2,12 @@ from datetime import date, datetime
 from pathlib import Path
 from typing import Any
 
+from django.contrib.auth import get_user_model
 from django.core.management.base import BaseCommand, CommandError
 from django.db import transaction
 from pydantic import BaseModel, ConfigDict, Field, HttpUrl, ValidationError
 
-from vacancies.models import Company, Source, Vacancy
+from vacancies.models import Company, Source, Vacancy, VacancyMatch
 
 SOURCE_ICON_URLS = {
     "rabota": "/source-icons/rabota.png",
@@ -29,6 +30,16 @@ class SourcePayload(BaseModel):
     icon_url: str | None = Field(default=None, min_length=1, max_length=1000)
 
 
+class MatchPayload(BaseModel):
+    model_config = ConfigDict(extra="forbid", strict=True)
+
+    score: int = Field(ge=0, le=100)
+    reason: str = ""
+    evidence: dict[str, Any] = Field(default_factory=dict)
+    precise: bool = False
+    scored_at: datetime
+
+
 class VacancyPayload(BaseModel):
     model_config = ConfigDict(extra="forbid", strict=True)
 
@@ -44,6 +55,7 @@ class VacancyPayload(BaseModel):
     scraped_at: datetime | None = None
     source_updated_at: datetime | None = None
     description: str = Field(min_length=1)
+    match: MatchPayload | None = None
 
 
 class ImportPayload(BaseModel):
@@ -58,10 +70,19 @@ class Command(BaseCommand):
 
     def add_arguments(self, parser: Any) -> None:
         parser.add_argument("path", type=Path)
+        parser.add_argument("--user-email")
 
     def handle(self, *args: Any, **options: Any) -> None:
         try:
             payload = ImportPayload.model_validate_json(options["path"].read_text(encoding="utf-8"))
+            has_matches = any(item.match for item in payload.vacancies)
+            if has_matches and not options["user_email"]:
+                raise CommandError("--user-email is required when the payload contains matches")
+            user = None
+            if has_matches:
+                user = get_user_model().objects.filter(email__iexact=options["user_email"]).first()
+                if user is None:
+                    raise CommandError("User not found")
 
             with transaction.atomic():
                 created_count = 0
@@ -99,11 +120,17 @@ class Command(BaseCommand):
                         defaults["scraped_at"] = item.scraped_at
                     if "source_updated_at" in item.model_fields_set:
                         defaults["source_updated_at"] = item.source_updated_at
-                    _, created = Vacancy.objects.update_or_create(
+                    vacancy, created = Vacancy.objects.update_or_create(
                         source=source,
                         external_id=item.external_id,
                         defaults=defaults,
                     )
+                    if item.match and user:
+                        VacancyMatch.objects.update_or_create(
+                            user=user,
+                            vacancy=vacancy,
+                            defaults=item.match.model_dump(),
+                        )
                     created_count += created
                     updated_count += not created
 

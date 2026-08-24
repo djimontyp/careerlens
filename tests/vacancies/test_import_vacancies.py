@@ -4,6 +4,7 @@ from pathlib import Path
 
 import pytest
 from django.apps import apps
+from django.contrib.auth import get_user_model
 from django.core.management import CommandError, call_command
 
 DEMO_FIXTURE = Path(__file__).parents[2] / "src/vacancies/fixtures/demo_vacancies.json"
@@ -12,18 +13,25 @@ DEMO_FIXTURE = Path(__file__).parents[2] / "src/vacancies/fixtures/demo_vacancie
 @pytest.mark.django_db
 def test_import_vacancies_is_idempotent_and_updates_existing_records() -> None:
     vacancy_model = apps.get_model("vacancies", "Vacancy")
+    match_model = apps.get_model("vacancies", "VacancyMatch")
+    user = get_user_model().objects.create_user(email="demo@example.com")
     first_output = StringIO()
 
-    call_command("import_vacancies", DEMO_FIXTURE, stdout=first_output)
+    call_command("import_vacancies", DEMO_FIXTURE, user_email=user.email, stdout=first_output)
 
     assert first_output.getvalue().strip() == "created=4 updated=0"
     assert vacancy_model.objects.count() == 4
+    assert list(match_model.objects.order_by("vacancy__external_id").values_list("score", "precise")) == [
+        (92, True),
+        (68, True),
+        (34, False),
+    ]
     vacancy = vacancy_model.objects.get(source__code="dou", external_id="demo-001")
     vacancy.title = "Stale title"
     vacancy.save(update_fields=["title"])
     second_output = StringIO()
 
-    call_command("import_vacancies", DEMO_FIXTURE, stdout=second_output)
+    call_command("import_vacancies", DEMO_FIXTURE, user_email=user.email, stdout=second_output)
 
     vacancy.refresh_from_db()
     assert second_output.getvalue().strip() == "created=0 updated=4"
@@ -48,7 +56,8 @@ def test_import_vacancies_is_idempotent_and_updates_existing_records() -> None:
 @pytest.mark.django_db
 def test_import_vacancies_preserves_fields_omitted_by_legacy_v1(tmp_path: Path) -> None:
     vacancy_model = apps.get_model("vacancies", "Vacancy")
-    call_command("import_vacancies", DEMO_FIXTURE)
+    user = get_user_model().objects.create_user(email="demo@example.com")
+    call_command("import_vacancies", DEMO_FIXTURE, user_email=user.email)
     payload = json.loads(DEMO_FIXTURE.read_text(encoding="utf-8"))
     for vacancy in payload["vacancies"]:
         vacancy.pop("location")
@@ -56,6 +65,7 @@ def test_import_vacancies_preserves_fields_omitted_by_legacy_v1(tmp_path: Path) 
         vacancy.pop("is_deftech")
         vacancy.pop("scraped_at")
         vacancy.pop("source_updated_at")
+        vacancy.pop("match", None)
     legacy_fixture = tmp_path / "legacy-v1.json"
     legacy_fixture.write_text(json.dumps(payload), encoding="utf-8")
 
@@ -66,6 +76,14 @@ def test_import_vacancies_preserves_fields_omitted_by_legacy_v1(tmp_path: Path) 
     assert vacancy.is_deftech is True
     assert vacancy.source_updated_at is not None
     assert vacancy_model.objects.get(source__code="djinni").company.is_deftech is True
+
+
+@pytest.mark.django_db
+def test_import_vacancies_requires_an_explicit_user_for_demo_matches() -> None:
+    with pytest.raises(CommandError, match="--user-email"):
+        call_command("import_vacancies", DEMO_FIXTURE)
+
+    assert apps.get_model("vacancies", "Vacancy").objects.count() == 0
 
 
 @pytest.mark.django_db

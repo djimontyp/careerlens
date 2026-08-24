@@ -17,7 +17,14 @@
       "posted_date": "2026-08-20",
       "scraped_at": "2026-08-20T10:30:00Z",
       "source_updated_at": "2026-08-21T08:15:00Z",
-      "description": "Build and maintain Django services backed by PostgreSQL."
+      "description": "Build and maintain Django services backed by PostgreSQL.",
+      "match": {
+        "score": 92,
+        "reason": "Сильний збіг за Python, Django та PostgreSQL.",
+        "evidence": { "items": [{ "type": "strong", "label": "Django" }] },
+        "precise": true,
+        "scored_at": "2026-08-21T12:00:00Z"
+      }
     },
     {
       "source": { "code": "djinni", "name": "Djinni" },
@@ -31,7 +38,14 @@
       "posted_date": null,
       "scraped_at": "2026-08-20T09:00:00Z",
       "source_updated_at": null,
-      "description": "Develop typed Python APIs and improve production reliability."
+      "description": "Develop typed Python APIs and improve production reliability.",
+      "match": {
+        "score": 68,
+        "reason": "Python збігається, але доменний досвід підтверджено частково.",
+        "evidence": { "items": [{ "type": "partial", "label": "Production APIs" }] },
+        "precise": true,
+        "scored_at": "2026-08-21T12:01:00Z"
+      }
     },
     {
       "source": { "code": "telegram", "name": "Telegram" },
@@ -45,7 +59,14 @@
       "posted_date": "2026-08-19",
       "scraped_at": "2026-08-19T14:00:00Z",
       "source_updated_at": null,
-      "description": "Implement backend features for a compact product team."
+      "description": "Implement backend features for a compact product team.",
+      "match": {
+        "score": 34,
+        "reason": "Опис надто короткий для точної оцінки.",
+        "evidence": { "items": [{ "type": "unknown", "label": "Вимоги" }] },
+        "precise": false,
+        "scored_at": "2026-08-21T12:02:00Z"
+      }
     },
     {
       "source": { "code": "robota", "name": "Robota.ua" },
