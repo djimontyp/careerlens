@@ -196,6 +196,65 @@ export const CardPresentation: Story = {
   },
 }
 
+export const MatchStates: Story = {
+  beforeEach: () => {
+    const fetch = window.fetch
+    window.fetch = async () =>
+      Response.json({
+        items: (
+          [
+            [92, true, "High match"],
+            [68, true, "Medium match"],
+            [34, true, "Low match"],
+            [88, false, "Not precise"],
+            [null, false, "Not scored"],
+          ] as const
+        ).map(([score, precise, title], index) => ({
+          id: index + 1,
+          title,
+          company: "Acme",
+          location: "Remote",
+          posted_date: "2026-08-21",
+          scraped_at: "2026-08-21T10:30:00Z",
+          source_updated_at: null,
+          is_deftech: false,
+          source: { code: "dou", name: "DOU", icon_url: null },
+          url: null,
+          match:
+            score === null
+              ? null
+              : {
+                  score,
+                  reason: "",
+                  evidence: { items: [], evidence_coverage: 0 },
+                  precise,
+                  scored_at: "2026-08-21T12:00:00Z",
+                },
+        })),
+        next_cursor: null,
+      })
+    return () => (window.fetch = fetch)
+  },
+  play: async ({ canvas }) => {
+    const high = await canvas.findByRole("button", { name: /High match/ })
+    const medium = canvas.getByRole("button", { name: /Medium match/ })
+    const low = canvas.getByRole("button", { name: /Low match/ })
+
+    await expect(high).toHaveTextContent("92% відповідність")
+    await expect(high.querySelector('[data-match-tone="high"]')).toBeVisible()
+    await expect(medium).toHaveTextContent("68% відповідність")
+    await expect(
+      medium.querySelector('[data-match-tone="medium"]'),
+    ).toBeVisible()
+    await expect(low).toHaveTextContent("34% відповідність")
+    await expect(low.querySelector('[data-match-tone="low"]')).toBeVisible()
+    await expect(
+      canvas.queryByText("88% відповідність"),
+    ).not.toBeInTheDocument()
+    await expect(canvas.queryByText("Ще не оцінено")).not.toBeInTheDocument()
+  },
+}
+
 export const Loading: Story = {
   beforeEach: () => {
     const fetch = window.fetch
