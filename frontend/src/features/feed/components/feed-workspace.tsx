@@ -284,7 +284,7 @@ function MobileList({
       aria-label="Список вакансій"
       className="flex h-full min-h-0 flex-col bg-background"
     >
-      <VacancyList selectedId={selectedId} onSelect={onSelect} />
+      <VacancyList selectedId={selectedId} onSelect={onSelect} titleLevel={2} />
     </section>
   )
 }

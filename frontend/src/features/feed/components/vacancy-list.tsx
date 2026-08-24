@@ -13,6 +13,7 @@ type VacancyListProps = {
   onVisibleDateChange?: (date: string | null) => void
   jumpDate?: string | null
   onJumpComplete?: () => void
+  titleLevel?: 2 | 3
 }
 
 export function VacancyList({
@@ -22,7 +23,9 @@ export function VacancyList({
   onVisibleDateChange,
   jumpDate,
   onJumpComplete,
+  titleLevel = 3,
 }: VacancyListProps) {
+  const VacancyTitle = `h${titleLevel}` as const
   const listRef = useRef<HTMLUListElement>(null)
   const sentinelRef = useRef<HTMLLIElement>(null)
   const [cursor, setCursor] = useState<string | null>(null)
@@ -204,9 +207,9 @@ export function VacancyList({
                 {group.vacancies.map((vacancy) => {
                   const content = (
                     <>
-                      <h3 className="line-clamp-2 text-sm leading-snug font-medium">
+                      <VacancyTitle className="line-clamp-2 text-sm leading-snug font-medium">
                         {vacancy.title}
-                      </h3>
+                      </VacancyTitle>
                       <p className="truncate text-sm text-muted-foreground">
                         {vacancy.company ?? "Компанію не вказано"} ·{" "}
                         {vacancy.location ?? "Місце не вказано"}

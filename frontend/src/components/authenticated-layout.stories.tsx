@@ -11,6 +11,7 @@ import {
   FeedMobileActions,
   FeedWorkspace,
 } from "@/features/feed/components/feed-workspace"
+import type { FeedResponse } from "@/features/feed/api"
 import {
   FEED_LAYOUT_STORAGE_KEY,
   useFeedLayoutStore,
@@ -215,6 +216,25 @@ export const FeedDetailNavigation: Story = {
 
 export const MobileFeedWorkspace: Story = {
   globals: { viewport: { value: "mobile", isRotated: false } },
+  beforeEach: () => {
+    const fetch = window.fetch
+    const feed = {
+      items: [
+        {
+          id: 42,
+          title: "Senior Python Developer",
+          company: "Acme",
+          location: "Remote",
+          posted_date: new Date().toISOString().slice(0, 10),
+          source: { code: "dou", name: "DOU", icon_url: null },
+          url: null,
+        },
+      ],
+      next_cursor: null,
+    } satisfies FeedResponse
+    window.fetch = async () => Response.json(feed)
+    return () => (window.fetch = fetch)
+  },
   args: {
     children: <FeedWorkspace />,
     headerTitle: "Стрічка",
@@ -229,6 +249,9 @@ export const MobileFeedWorkspace: Story = {
     const header = within(banner)
 
     await expect(canvas.getAllByRole("banner")).toHaveLength(1)
+    await expect(
+      await canvas.findByRole("heading", { name: "Senior Python Developer" }),
+    ).toBeVisible()
     await expect(header.getByRole("heading", { name: "Стрічка" })).toBeVisible()
     const filters = header.getByRole("button", { name: "Фільтри" })
 
