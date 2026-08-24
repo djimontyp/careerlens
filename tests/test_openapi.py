@@ -4,6 +4,11 @@ from pathlib import Path
 from api.root import api
 
 
+def test_swagger_is_public(client):
+    assert client.get("/api/docs").status_code == 200
+    assert client.get("/api/openapi.json").status_code == 200
+
+
 def test_openapi_contract_is_complete_and_current() -> None:
     schema = api.get_openapi_schema()
     committed_schema = json.loads(Path("openapi.json").read_text())

@@ -10,8 +10,8 @@ api = NinjaAPI(
     title="CareerLens API",
     description="Session-authenticated HTTP API for the CareerLens web application.",
     version="1.0.0",
-    openapi_url=None,
-    docs_url=None,
+    openapi_url="/api/openapi.json",
+    docs_url="/api/docs",
     urls_namespace="careerlens-api",
     openapi_extra={
         "tags": [

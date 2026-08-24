@@ -39,6 +39,7 @@ MIDDLEWARE = [
 
 ROOT_URLCONF = "config.urls"
 ASGI_APPLICATION = "config.asgi.application"
+TEMPLATES = [{"BACKEND": "django.template.backends.django.DjangoTemplates"}]
 
 LANGUAGE_CODE = "uk"
 TIME_ZONE = "Europe/Kyiv"
