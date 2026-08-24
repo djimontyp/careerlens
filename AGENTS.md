@@ -50,6 +50,7 @@ Before changing either scope, read its `AGENTS.md`. After the change, re-read it
 ## Python code
 
 - Do not add private helper functions prefixed with `_`. Keep one-off logic inline; give reusable logic a domain name and place it in the owning module.
+- Demo data loading is dev/test-only and must never run from production or rollback workflows.
 
 ## Frontend
 

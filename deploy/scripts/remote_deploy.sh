@@ -18,7 +18,6 @@ variables=(
     APP__AUTH__WORKOS__REDIRECT_URI
     APP__DATABASE__DATABASE
     APP__DATABASE__USER
-    DEMO_USER_EMAIL
     DATABASE_PASSWORD
     DJANGO_SECRET_KEY
     WORKOS_API_KEY
@@ -45,6 +44,12 @@ export WORKOS_API_KEY
 
 if [[ ! "${CAREERLENS_IMAGE}" =~ ^docker\.io/[a-z0-9._/-]+@sha256:[0-9a-f]{64}$ ]]; then
     echo "Invalid immutable image reference" >&2
+    exit 1
+fi
+
+rollback_only="${ROLLBACK_ONLY:-false}"
+if [[ "${rollback_only}" != false && "${rollback_only}" != true ]]; then
+    echo "ROLLBACK_ONLY must be true or false" >&2
     exit 1
 fi
 
@@ -75,9 +80,8 @@ unset DOCKERHUB_TOKEN DOCKERHUB_USERNAME
 compose config --quiet
 compose pull
 compose up --detach --wait db
-compose run --rm app python src/manage.py migrate --noinput
-compose run --rm app python src/manage.py import_vacancies \
-    src/vacancies/fixtures/demo_vacancies.json \
-    --user-email "${DEMO_USER_EMAIL}"
+if [[ "${rollback_only}" == false ]]; then
+    compose run --rm app python src/manage.py migrate --noinput
+fi
 compose up --detach --wait app
 curl --fail --silent --header "X-Forwarded-Proto: https" --retry 5 --retry-all-errors --retry-delay 2 http://127.0.0.1:9000/health >/dev/null

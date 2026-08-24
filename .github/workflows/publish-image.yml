@@ -178,7 +178,6 @@ jobs:
           APP__AUTH__WORKOS__REDIRECT_URI: https://${{ vars.CAREERLENS_DOMAIN }}/callback/
           APP__DATABASE__DATABASE: ${{ secrets.DATABASE_NAME }}
           APP__DATABASE__USER: ${{ secrets.DATABASE_USER }}
-          DEMO_USER_EMAIL: ${{ vars.DEMO_USER_EMAIL }}
           DATABASE_PASSWORD: ${{ secrets.DATABASE_PASSWORD }}
           DJANGO_SECRET_KEY: ${{ secrets.DJANGO_SECRET_KEY }}
           DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
@@ -201,7 +200,6 @@ jobs:
               APP__AUTH__WORKOS__REDIRECT_URI \
               APP__DATABASE__DATABASE \
               APP__DATABASE__USER \
-              DEMO_USER_EMAIL \
               DATABASE_PASSWORD \
               DJANGO_SECRET_KEY \
               WORKOS_API_KEY \
