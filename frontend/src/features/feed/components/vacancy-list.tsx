@@ -9,9 +9,14 @@ import { formatPublicationDate } from "@/features/vacancies/presentation"
 type VacancyListProps = {
   selectedId: number | null
   onSelect: (id: number) => void
+  onLoadingChange?: (loading: boolean) => void
 }
 
-export function VacancyList({ selectedId, onSelect }: VacancyListProps) {
+export function VacancyList({
+  selectedId,
+  onSelect,
+  onLoadingChange,
+}: VacancyListProps) {
   const sentinelRef = useRef<HTMLLIElement>(null)
   const [cursor, setCursor] = useState<string | null>(null)
   const [attempt, setAttempt] = useState(0)
@@ -25,22 +30,26 @@ export function VacancyList({ selectedId, onSelect }: VacancyListProps) {
 
   useEffect(() => {
     const controller = new AbortController()
+    onLoadingChange?.(true)
     fetchFeed(cursor, controller.signal).then(
-      (feed) =>
+      (feed) => {
         setState((current) => ({
           key: requestKey,
           items: cursor ? [...current.items, ...feed.items] : feed.items,
           nextCursor: feed.next_cursor,
           failed: false,
-        })),
+        }))
+        onLoadingChange?.(false)
+      },
       () => {
         if (!controller.signal.aborted) {
           setState((current) => ({ ...current, key: requestKey, failed: true }))
+          onLoadingChange?.(false)
         }
       },
     )
     return () => controller.abort()
-  }, [cursor, requestKey])
+  }, [cursor, onLoadingChange, requestKey])
 
   useEffect(() => {
     const sentinel = sentinelRef.current

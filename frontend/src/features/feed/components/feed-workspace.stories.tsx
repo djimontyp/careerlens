@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react-vite"
 import { MemoryRouter } from "react-router-dom"
-import { expect, within } from "storybook/test"
+import { expect, fn, waitFor, within } from "storybook/test"
 
 import { FeedWorkspace } from "@/features/feed/components/feed-workspace"
 import {
@@ -51,6 +51,26 @@ export const Desktop: Story = {
     await expect(
       canvas.getAllByRole("button", { name: /Перетягнути панель/ }),
     ).toHaveLength(3)
+  },
+}
+
+export const Refresh: Story = {
+  globals: { viewport: { value: "desktop", isRotated: false } },
+  beforeEach: () => {
+    const fetch = window.fetch
+    window.fetch = fn(async () =>
+      Response.json({ items: [], next_cursor: null }),
+    )
+    return () => (window.fetch = fetch)
+  },
+  play: async ({ canvasElement, userEvent }) => {
+    const refresh = within(canvasElement).getByRole("button", {
+      name: "Оновити вакансії",
+    })
+
+    await waitFor(() => expect(refresh).toBeEnabled())
+    await userEvent.click(refresh)
+    await waitFor(() => expect(window.fetch).toHaveBeenCalledTimes(2))
   },
 }
 

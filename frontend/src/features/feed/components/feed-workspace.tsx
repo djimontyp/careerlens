@@ -17,7 +17,7 @@ import {
   FilterHorizontalIcon,
 } from "@hugeicons/core-free-icons"
 import { HugeiconsIcon } from "@hugeicons/react"
-import { Fragment, type ReactNode } from "react"
+import { Fragment, type ReactNode, useCallback, useState } from "react"
 import {
   NavLink,
   useLocation,
@@ -35,6 +35,7 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet"
 import { ResizeHandle } from "@/features/feed/components/resize-handle"
+import { FeedRefreshButton } from "@/features/feed/components/feed-refresh-button"
 import { SortablePanel } from "@/features/feed/components/sortable-panel"
 import { VacancyList } from "@/features/feed/components/vacancy-list"
 import { PanelVisibilityControls } from "@/features/feed/components/panel-visibility-controls"
@@ -60,6 +61,12 @@ export function FeedWorkspace() {
   const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
   const selectedId = Number(searchParams.get("vacancy")) || null
+  const [refreshVersion, setRefreshVersion] = useState(0)
+  const [refreshing, setRefreshing] = useState(false)
+  const handleLoadingChange = useCallback(
+    (loading: boolean) => setRefreshing(loading),
+    [],
+  )
   const order = useFeedLayoutStore((state) => state.order)
   const visibility = useFeedLayoutStore((state) => state.visibility)
   const widths = useFeedLayoutStore((state) => state.widths)
@@ -142,6 +149,12 @@ export function FeedWorkspace() {
                         action={handle}
                         selectedId={selectedId}
                         onSelect={handleSelect}
+                        refreshVersion={refreshVersion}
+                        refreshing={refreshing}
+                        onRefresh={() =>
+                          setRefreshVersion((value) => value + 1)
+                        }
+                        onLoadingChange={handleLoadingChange}
                       />
                     )}
                   </SortablePanel>
@@ -192,11 +205,19 @@ function EmptyPanel({
   action,
   selectedId,
   onSelect,
+  refreshVersion,
+  refreshing,
+  onRefresh,
+  onLoadingChange,
 }: {
   panel: FeedPanel
   action?: ReactNode
   selectedId: number | null
   onSelect: (id: number) => void
+  refreshVersion: number
+  refreshing: boolean
+  onRefresh: () => void
+  onLoadingChange: (loading: boolean) => void
 }) {
   return (
     <section
@@ -205,10 +226,24 @@ function EmptyPanel({
     >
       <header className="flex h-12 shrink-0 items-center border-b px-3">
         <h2 className="text-sm font-semibold">{PANEL_LABELS[panel]}</h2>
-        {action && <div className="ms-auto">{action}</div>}
+        {panel === "list" && (
+          <div className="ms-auto">
+            <FeedRefreshButton refreshing={refreshing} onRefresh={onRefresh} />
+          </div>
+        )}
+        {action && (
+          <div className={panel === "list" ? undefined : "ms-auto"}>
+            {action}
+          </div>
+        )}
       </header>
       {panel === "list" ? (
-        <VacancyList selectedId={selectedId} onSelect={onSelect} />
+        <VacancyList
+          key={refreshVersion}
+          selectedId={selectedId}
+          onSelect={onSelect}
+          onLoadingChange={onLoadingChange}
+        />
       ) : (
         <div
           data-testid="feed-scroll-region"
