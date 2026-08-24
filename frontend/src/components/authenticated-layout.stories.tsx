@@ -309,6 +309,36 @@ export const MobileFeedWorkspace: Story = {
   },
 }
 
+export const DesktopFiltersPopover: Story = {
+  ...MobileFeedWorkspace,
+  globals: { viewport: { value: "desktop", isRotated: false } },
+  args: {
+    ...MobileFeedWorkspace.args,
+    headerActions: <FeedDesktopActions />,
+  },
+  play: async ({ canvasElement, userEvent }) => {
+    const filters = within(canvasElement).getByRole("button", {
+      name: "Фільтри",
+    })
+
+    await userEvent.click(filters)
+    await waitFor(() =>
+      expect(
+        document.querySelector('[data-slot="popover-content"]'),
+      ).toBeVisible(),
+    )
+    await expect(
+      document.querySelector('[data-slot="sheet-overlay"]'),
+    ).not.toBeInTheDocument()
+    await userEvent.keyboard("{Escape}")
+    await waitFor(() =>
+      expect(
+        document.querySelector('[data-slot="popover-content"]'),
+      ).not.toBeInTheDocument(),
+    )
+  },
+}
+
 export const DesktopFeedWorkspace: Story = {
   globals: { viewport: { value: "desktop", isRotated: false } },
   beforeEach: () => {

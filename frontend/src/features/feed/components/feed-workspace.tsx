@@ -27,6 +27,11 @@ import {
 
 import { Button } from "@/components/ui/button"
 import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover"
+import {
   Sheet,
   SheetContent,
   SheetDescription,
@@ -377,27 +382,38 @@ function MobileDetail({
 }
 
 function FilterSheet({ iconOnly = false }: { iconOnly?: boolean }) {
+  const isMobile = useIsMobile()
+  const title = "Фільтри"
+  const description = "Налаштування фільтрів з’являться пізніше."
+  const trigger = (
+    <Button
+      variant="ghost"
+      size={iconOnly ? "icon" : "sm"}
+      className={iconOnly ? "size-[44px]" : undefined}
+      aria-label={iconOnly ? "Фільтри" : undefined}
+    >
+      <HugeiconsIcon icon={FilterHorizontalIcon} />
+      {!iconOnly && "Фільтри"}
+    </Button>
+  )
+  if (!isMobile)
+    return (
+      <Popover>
+        <PopoverTrigger render={trigger} />
+        <PopoverContent className="space-y-1">
+          <h2 className="font-heading text-base font-medium">{title}</h2>
+          <p className="text-sm text-muted-foreground">{description}</p>
+        </PopoverContent>
+      </Popover>
+    )
+
   return (
     <Sheet>
-      <SheetTrigger
-        render={
-          <Button
-            variant="ghost"
-            size={iconOnly ? "icon" : "sm"}
-            className={iconOnly ? "size-[44px]" : undefined}
-            aria-label={iconOnly ? "Фільтри" : undefined}
-          />
-        }
-      >
-        <HugeiconsIcon icon={FilterHorizontalIcon} />
-        {!iconOnly && "Фільтри"}
-      </SheetTrigger>
+      <SheetTrigger render={trigger} />
       <SheetContent className="w-full sm:max-w-sm">
         <SheetHeader>
-          <SheetTitle>Фільтри</SheetTitle>
-          <SheetDescription>
-            Налаштування фільтрів з’являться пізніше.
-          </SheetDescription>
+          <SheetTitle>{title}</SheetTitle>
+          <SheetDescription>{description}</SheetDescription>
         </SheetHeader>
       </SheetContent>
     </Sheet>

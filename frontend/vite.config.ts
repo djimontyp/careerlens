@@ -16,6 +16,9 @@ export default defineConfig({
       "@": path.resolve(import.meta.dirname, "./src"),
     },
   },
+  optimizeDeps: {
+    include: ["@base-ui/react/popover"],
+  },
   server: {
     proxy: {
       "/api": "http://127.0.0.1:9090",
