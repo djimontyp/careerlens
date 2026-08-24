@@ -14,6 +14,8 @@ DEMO_FIXTURE = Path(__file__).parents[2] / "src/vacancies/fixtures/demo_vacancie
 def test_import_vacancies_is_idempotent_and_updates_existing_records() -> None:
     vacancy_model = apps.get_model("vacancies", "Vacancy")
     match_model = apps.get_model("vacancies", "VacancyMatch")
+    note_model = apps.get_model("vacancies", "VacancyNote")
+    application_model = apps.get_model("vacancies", "VacancyApplication")
     user = get_user_model().objects.create_user(email="demo@example.com")
     first_output = StringIO()
 
@@ -21,6 +23,8 @@ def test_import_vacancies_is_idempotent_and_updates_existing_records() -> None:
 
     assert first_output.getvalue().strip() == "created=4 updated=0"
     assert vacancy_model.objects.count() == 4
+    assert note_model.objects.get(user=user).text == "Уточнити формат чергувань на співбесіді."
+    assert application_model.objects.get(user=user).submitted_at.isoformat() == "2026-08-22T09:30:00+00:00"
     assert list(match_model.objects.order_by("vacancy__external_id").values_list("score", "precise")) == [
         (92, True),
         (68, True),
@@ -66,6 +70,8 @@ def test_import_vacancies_preserves_fields_omitted_by_legacy_v1(tmp_path: Path) 
         vacancy.pop("scraped_at")
         vacancy.pop("source_updated_at")
         vacancy.pop("match", None)
+        vacancy.pop("note", None)
+        vacancy.pop("application", None)
     legacy_fixture = tmp_path / "legacy-v1.json"
     legacy_fixture.write_text(json.dumps(payload), encoding="utf-8")
 

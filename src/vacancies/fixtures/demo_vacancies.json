@@ -18,6 +18,11 @@
       "scraped_at": "2026-08-20T10:30:00Z",
       "source_updated_at": "2026-08-21T08:15:00Z",
       "description": "Build and maintain Django services backed by PostgreSQL.",
+      "note": "Уточнити формат чергувань на співбесіді.",
+      "application": {
+        "cover_letter": "Маю релевантний досвід із Django та PostgreSQL.",
+        "submitted_at": "2026-08-22T09:30:00Z"
+      },
       "match": {
         "score": 92,
         "reason": "Сильний збіг за Python, Django та PostgreSQL.",

@@ -2,7 +2,7 @@ import pytest
 from django.apps import apps
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
-from django.db import IntegrityError
+from django.db import IntegrityError, transaction
 from django.db.models import ProtectedError
 
 
@@ -142,6 +142,29 @@ def test_vacancy_state_allows_saved_and_hidden_together() -> None:
 
     assert state.saved is True
     assert state.hidden is True
+
+
+@pytest.mark.django_db
+def test_note_and_application_are_unique_per_user_and_vacancy() -> None:
+    source_model = apps.get_model("vacancies", "Source")
+    vacancy_model = apps.get_model("vacancies", "Vacancy")
+    note_model = apps.get_model("vacancies", "VacancyNote")
+    application_model = apps.get_model("vacancies", "VacancyApplication")
+    user = get_user_model().objects.create_user(email="ada@example.com")
+    source = source_model.objects.create(code="dou", name="DOU")
+    vacancy = vacancy_model.objects.create(
+        source=source,
+        external_id="123",
+        title="Backend Engineer",
+        description="Build the backend.",
+    )
+    note_model.objects.create(user=user, vacancy=vacancy, text="Follow up")
+    application_model.objects.create(user=user, vacancy=vacancy, cover_letter="Hello")
+
+    with transaction.atomic(), pytest.raises(IntegrityError):
+        note_model.objects.create(user=user, vacancy=vacancy, text="Duplicate")
+    with transaction.atomic(), pytest.raises(IntegrityError):
+        application_model.objects.create(user=user, vacancy=vacancy, cover_letter="Duplicate")
 
 
 @pytest.mark.django_db

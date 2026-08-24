@@ -7,7 +7,7 @@ from django.core.management.base import BaseCommand, CommandError
 from django.db import transaction
 from pydantic import BaseModel, ConfigDict, Field, HttpUrl, ValidationError, model_validator
 
-from vacancies.models import Company, Source, Vacancy, VacancyMatch
+from vacancies.models import Company, Source, Vacancy, VacancyApplication, VacancyMatch, VacancyNote
 
 SOURCE_ICON_URLS = {
     "rabota": "/source-icons/rabota.png",
@@ -61,6 +61,13 @@ class MatchPayload(BaseModel):
         return self
 
 
+class ApplicationPayload(BaseModel):
+    model_config = ConfigDict(extra="forbid", strict=True)
+
+    cover_letter: str = ""
+    submitted_at: datetime
+
+
 class VacancyPayload(BaseModel):
     model_config = ConfigDict(extra="forbid", strict=True)
 
@@ -77,6 +84,8 @@ class VacancyPayload(BaseModel):
     source_updated_at: datetime | None = None
     description: str = Field(min_length=1)
     match: MatchPayload | None = None
+    note: str | None = Field(default=None, min_length=1)
+    application: ApplicationPayload | None = None
 
 
 class ImportPayload(BaseModel):
@@ -96,11 +105,11 @@ class Command(BaseCommand):
     def handle(self, *args: Any, **options: Any) -> None:
         try:
             payload = ImportPayload.model_validate_json(options["path"].read_text(encoding="utf-8"))
-            has_matches = any(item.match for item in payload.vacancies)
-            if has_matches and not options["user_email"]:
-                raise CommandError("--user-email is required when the payload contains matches")
+            has_user_data = any(item.match or item.note or item.application for item in payload.vacancies)
+            if has_user_data and not options["user_email"]:
+                raise CommandError("--user-email is required when the payload contains user data")
             user = None
-            if has_matches:
+            if has_user_data:
                 user = get_user_model().objects.filter(email__iexact=options["user_email"]).first()
                 if user is None:
                     raise CommandError("User not found")
@@ -151,6 +160,18 @@ class Command(BaseCommand):
                             user=user,
                             vacancy=vacancy,
                             defaults=item.match.model_dump(),
+                        )
+                    if item.note and user:
+                        VacancyNote.objects.update_or_create(
+                            user=user,
+                            vacancy=vacancy,
+                            defaults={"text": item.note},
+                        )
+                    if item.application and user:
+                        VacancyApplication.objects.update_or_create(
+                            user=user,
+                            vacancy=vacancy,
+                            defaults=item.application.model_dump(),
                         )
                     created_count += created
                     updated_count += not created

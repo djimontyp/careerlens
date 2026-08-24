@@ -65,6 +65,36 @@ class VacancyState(models.Model):
         return f"VacancyState({self.pk})"
 
 
+class VacancyNote(models.Model):
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="vacancy_notes")
+    vacancy = models.ForeignKey(Vacancy, on_delete=models.CASCADE, related_name="notes")
+    text = models.TextField()
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=["user", "vacancy"], name="vacancies_note_user_vacancy_uniq"),
+        ]
+
+    def __str__(self) -> str:
+        return f"VacancyNote({self.pk})"
+
+
+class VacancyApplication(models.Model):
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="vacancy_applications")
+    vacancy = models.ForeignKey(Vacancy, on_delete=models.CASCADE, related_name="applications")
+    cover_letter = models.TextField(blank=True)
+    submitted_at = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=["user", "vacancy"], name="vacancies_application_user_vacancy_uniq"),
+        ]
+
+    def __str__(self) -> str:
+        return f"VacancyApplication({self.pk})"
+
+
 class VacancyMatch(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="vacancy_matches")
     vacancy = models.ForeignKey(Vacancy, on_delete=models.CASCADE, related_name="matches")
