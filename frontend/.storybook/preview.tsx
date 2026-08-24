@@ -47,6 +47,11 @@ const preview: Preview = {
           styles: { width: "1024px", height: "800px" },
           type: "desktop",
         },
+        compactMacbook: {
+          name: "Compact MacBook 1280×800",
+          styles: { width: "1280px", height: "800px" },
+          type: "desktop",
+        },
         desktop: {
           name: "Desktop 1440×900",
           styles: { width: "1440px", height: "900px" },
