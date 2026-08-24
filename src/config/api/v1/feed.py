@@ -15,14 +15,18 @@ from api.schemas import CsrfCookie, CsrfHeader, ErrorOut
 from vacancies.models import Vacancy, VacancyState
 from vacancies.schemas import FeedOut, HiddenIn, HiddenOut, SavedIn, SavedOut, VacancyDetailOut
 
+FeedMode = Literal["active", "saved", "hidden"]
+
 
 class FeedQuery(Schema):
+    mode: FeedMode = Field("active", description="User-specific feed mode.")
     cursor: str | None = Field(None, description="Opaque cursor returned by the previous response.")
     limit: int = Field(20, ge=1, le=100, description="Number of vacancies to return.")
 
 
 class FeedCursor(Schema):
     version: Literal[1] = 1
+    mode: FeedMode
     posted_date: date | None
     vacancy_id: int
 
@@ -30,16 +34,19 @@ class FeedCursor(Schema):
 CURSOR_SALT = "careerlens.feed.cursor"
 
 
-def decode_feed_cursor(value: str) -> FeedCursor:
+def decode_feed_cursor(value: str, mode: FeedMode) -> FeedCursor:
     try:
-        return FeedCursor.model_validate(signing.loads(value, salt=CURSOR_SALT))
+        cursor = FeedCursor.model_validate(signing.loads(value, salt=CURSOR_SALT))
     except BadSignature, ValidationError, TypeError:
         raise HttpError(422, "Invalid cursor.") from None
+    if cursor.mode != mode:
+        raise HttpError(422, "Invalid cursor.")
+    return cursor
 
 
-def encode_feed_cursor(vacancy: Vacancy) -> str:
+def encode_feed_cursor(vacancy: Vacancy, mode: FeedMode) -> str:
     return signing.dumps(
-        FeedCursor(posted_date=vacancy.posted_date, vacancy_id=vacancy.id).model_dump(mode="json"),
+        FeedCursor(mode=mode, posted_date=vacancy.posted_date, vacancy_id=vacancy.id).model_dump(mode="json"),
         salt=CURSOR_SALT,
         compress=True,
     )
@@ -125,8 +132,14 @@ def feed_queryset(request: HttpRequest) -> QuerySet[Vacancy]:
 def feed(request: HttpRequest, query: Query[FeedQuery]) -> dict[str, object]:
     """Returns vacancies in stable newest-first order."""
     vacancies = feed_queryset(request).order_by(F("posted_date").desc(nulls_last=True), "-id")
+    if query.mode == "active":
+        vacancies = vacancies.filter(Q(state_hidden=False) | Q(state_hidden__isnull=True))
+    elif query.mode == "saved":
+        vacancies = vacancies.filter(state_saved=True)
+    else:
+        vacancies = vacancies.filter(state_hidden=True)
     if query.cursor:
-        cursor = decode_feed_cursor(query.cursor)
+        cursor = decode_feed_cursor(query.cursor, query.mode)
         if cursor.posted_date:
             vacancies = vacancies.filter(
                 Q(posted_date__lt=cursor.posted_date)
@@ -141,7 +154,7 @@ def feed(request: HttpRequest, query: Query[FeedQuery]) -> dict[str, object]:
     items = items[: query.limit]
     return {
         "items": items,
-        "next_cursor": encode_feed_cursor(items[-1]) if has_more else None,
+        "next_cursor": encode_feed_cursor(items[-1], query.mode) if has_more else None,
     }
 
 

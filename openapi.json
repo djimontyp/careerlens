@@ -181,6 +181,23 @@
         "parameters": [
           {
             "in": "query",
+            "name": "mode",
+            "schema": {
+              "default": "active",
+              "description": "User-specific feed mode.",
+              "enum": [
+                "active",
+                "saved",
+                "hidden"
+              ],
+              "title": "Mode",
+              "type": "string"
+            },
+            "required": false,
+            "description": "User-specific feed mode."
+          },
+          {
+            "in": "query",
             "name": "cursor",
             "schema": {
               "anyOf": [
@@ -752,6 +769,17 @@
       },
       "FeedQuery": {
         "properties": {
+          "mode": {
+            "default": "active",
+            "description": "User-specific feed mode.",
+            "enum": [
+              "active",
+              "saved",
+              "hidden"
+            ],
+            "title": "Mode",
+            "type": "string"
+          },
           "cursor": {
             "anyOf": [
               {

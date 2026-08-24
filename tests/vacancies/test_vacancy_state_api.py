@@ -89,3 +89,54 @@ def test_state_mutations_require_csrf_are_idempotent_and_keep_flags_independent(
     assert state.seen_at == seen_at
     assert other_state.saved is False
     assert other_state.hidden is False
+
+
+@pytest.mark.django_db
+def test_feed_modes_filter_only_the_current_users_state() -> None:
+    source = Source.objects.create(code="dou", name="DOU")
+    user = User.objects.create_user(email="ada@example.com")
+    other_user = User.objects.create_user(email="grace@example.com")
+    active, saved, hidden, other_hidden = [
+        Vacancy.objects.create(
+            source=source,
+            external_id=title,
+            title=title,
+            description="Build APIs.",
+        )
+        for title in ("active", "saved", "hidden", "other-hidden")
+    ]
+    VacancyState.objects.create(user=user, vacancy=saved, saved=True)
+    VacancyState.objects.create(user=user, vacancy=hidden, hidden=True)
+    VacancyState.objects.create(user=other_user, vacancy=other_hidden, hidden=True)
+    client = Client()
+    client.force_login(user)
+
+    active_ids = {item["id"] for item in client.get("/api/v1/feed", {"mode": "active"}).json()["items"]}
+    saved_ids = {item["id"] for item in client.get("/api/v1/feed", {"mode": "saved"}).json()["items"]}
+    hidden_ids = {item["id"] for item in client.get("/api/v1/feed", {"mode": "hidden"}).json()["items"]}
+
+    assert active_ids == {active.id, saved.id, other_hidden.id}
+    assert saved_ids == {saved.id}
+    assert hidden_ids == {hidden.id}
+
+
+@pytest.mark.django_db
+def test_feed_cursor_is_bound_to_its_mode() -> None:
+    source = Source.objects.create(code="dou", name="DOU")
+    user = User.objects.create_user(email="ada@example.com")
+    for index in range(2):
+        vacancy = Vacancy.objects.create(
+            source=source,
+            external_id=str(index),
+            title=f"Vacancy {index}",
+            description="Build APIs.",
+        )
+        VacancyState.objects.create(user=user, vacancy=vacancy, saved=True)
+    client = Client()
+    client.force_login(user)
+
+    cursor = client.get("/api/v1/feed", {"mode": "saved", "limit": 1}).json()["next_cursor"]
+    response = client.get("/api/v1/feed", {"mode": "hidden", "limit": 1, "cursor": cursor})
+
+    assert response.status_code == 422
+    assert response.json() == {"detail": "Invalid cursor."}
