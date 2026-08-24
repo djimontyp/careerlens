@@ -294,6 +294,66 @@
           }
         ]
       }
+    },
+    "/api/v1/feed/{vacancy_id}": {
+      "get": {
+        "operationId": "config_api_v1_feed_feed_detail",
+        "summary": "Get vacancy detail",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "vacancy_id",
+            "schema": {
+              "description": "CareerLens vacancy identifier.",
+              "title": "Vacancy Id",
+              "type": "integer"
+            },
+            "required": true,
+            "description": "CareerLens vacancy identifier."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VacancyDetailOut"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            }
+          }
+        },
+        "description": "Returns one vacancy with its source description and the current user's match.",
+        "tags": [
+          "feed"
+        ],
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ]
+      }
     }
   },
   "components": {
@@ -736,6 +796,176 @@
           "match"
         ],
         "title": "VacancyOut",
+        "type": "object"
+      },
+      "VacancyDetailOut": {
+        "examples": [
+          {
+            "company": "Acme",
+            "id": 42,
+            "is_deftech": true,
+            "location": "Remote",
+            "match": {
+              "evidence": {
+                "evidence_coverage": 0.86,
+                "items": [
+                  {
+                    "explanation": "Five years of experience.",
+                    "label": "Python",
+                    "type": "strong"
+                  }
+                ]
+              },
+              "precise": true,
+              "reason": "Strong Python and Django overlap.",
+              "score": 86,
+              "scored_at": "2026-08-21T12:00:00Z"
+            },
+            "posted_date": "2026-08-21",
+            "scraped_at": "2026-08-21T10:30:00Z",
+            "source": {
+              "code": "dou",
+              "icon_url": "/source-icons/dou.png",
+              "name": "DOU"
+            },
+            "source_updated_at": "2026-08-21T11:45:00Z",
+            "title": "Python Developer",
+            "url": "https://example.com/jobs/42"
+          }
+        ],
+        "properties": {
+          "id": {
+            "description": "CareerLens vacancy identifier.",
+            "title": "Id",
+            "type": "integer"
+          },
+          "title": {
+            "description": "Vacancy title.",
+            "title": "Title",
+            "type": "string"
+          },
+          "company": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Company name, or null when unavailable.",
+            "title": "Company"
+          },
+          "location": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Vacancy location, or null when unavailable.",
+            "title": "Location"
+          },
+          "posted_date": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Source publication date, or null when unavailable.",
+            "title": "Posted Date"
+          },
+          "scraped_at": {
+            "description": "Time when CareerLens imported the vacancy.",
+            "format": "date-time",
+            "title": "Scraped At",
+            "type": "string"
+          },
+          "source_updated_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Last source update time, or null when unavailable.",
+            "title": "Source Updated At"
+          },
+          "is_deftech": {
+            "description": "Whether the vacancy or its company is classified as DefTech.",
+            "title": "Is Deftech",
+            "type": "boolean"
+          },
+          "source": {
+            "$ref": "#/components/schemas/SourceOut",
+            "description": "Vacancy source."
+          },
+          "url": {
+            "anyOf": [
+              {
+                "format": "uri",
+                "maxLength": 2083,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Original vacancy URL, or null when unavailable.",
+            "title": "Url"
+          },
+          "match": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/MatchOut"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Current user's match result, or null when not scored."
+          },
+          "description": {
+            "description": "Vacancy description safe for direct text rendering.",
+            "title": "Description",
+            "type": "string"
+          },
+          "description_status": {
+            "description": "Description representation.",
+            "enum": [
+              "markdown",
+              "source"
+            ],
+            "title": "Description Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "company",
+          "location",
+          "posted_date",
+          "scraped_at",
+          "source_updated_at",
+          "is_deftech",
+          "source",
+          "url",
+          "match",
+          "description",
+          "description_status"
+        ],
+        "title": "VacancyDetailOut",
         "type": "object"
       }
     },

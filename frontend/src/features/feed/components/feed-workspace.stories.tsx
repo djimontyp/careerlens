@@ -54,6 +54,74 @@ export const Desktop: Story = {
   },
 }
 
+export const DetailAnalysis: Story = {
+  globals: { viewport: { value: "desktop", isRotated: false } },
+  parameters: { initialEntries: ["/?vacancy=42"] },
+  beforeEach: () => {
+    const fetch = window.fetch
+    window.fetch = async (input) => {
+      if (String(input).includes("feed/42")) {
+        return Response.json({
+          id: 42,
+          title: "Senior Python Developer",
+          company: "Acme",
+          location: "Remote",
+          posted_date: "2026-08-21",
+          scraped_at: "2026-08-21T10:30:00Z",
+          source_updated_at: null,
+          is_deftech: false,
+          source: { code: "dou", name: "DOU", icon_url: null },
+          url: "https://example.com/jobs/42",
+          description: "Build reliable Django services.",
+          description_status: "source",
+          match: {
+            score: 86,
+            reason: "Strong Python and Django overlap.",
+            evidence: {
+              items: [
+                {
+                  type: "strong",
+                  label: "Python",
+                  explanation: "Five years of experience.",
+                },
+              ],
+              evidence_coverage: 0.86,
+            },
+            precise: true,
+            scored_at: "2026-08-21T12:00:00Z",
+          },
+        })
+      }
+      return Response.json({ items: [], next_cursor: null })
+    }
+    return () => (window.fetch = fetch)
+  },
+  play: async ({ canvasElement, userEvent }) => {
+    const detail = within(
+      within(canvasElement).getByRole("region", {
+        name: "Деталі вакансії",
+      }),
+    )
+
+    await expect(
+      await detail.findByText("Senior Python Developer"),
+    ).toBeVisible()
+    await expect(
+      detail.getByText("Build reliable Django services."),
+    ).toBeVisible()
+    await expect(
+      detail.getByRole("region", { name: "AI-аналіз відповідності" }),
+    ).toBeVisible()
+    await expect(detail.getByText("86%")).toBeVisible()
+    await expect(detail.getByText("Покриття доказами 86%")).toBeVisible()
+    await expect(
+      detail.getByRole("link", { name: "Відкрити на DOU" }),
+    ).toHaveAttribute("href", "https://example.com/jobs/42")
+    await userEvent.click(detail.getByText("Показати деталі"))
+    await expect(detail.getByText("Сильні збіги (1)")).toBeVisible()
+  },
+}
+
 export const Refresh: Story = {
   globals: { viewport: { value: "desktop", isRotated: false } },
   beforeEach: () => {

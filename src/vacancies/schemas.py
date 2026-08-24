@@ -102,3 +102,12 @@ class VacancyOut(Schema):
 class FeedOut(Schema):
     items: list[VacancyOut] = Field(description="Vacancies in stable newest-first order.")
     next_cursor: str | None = Field(description="Opaque cursor for the next page, or null at the end.")
+
+
+class VacancyDetailOut(VacancyOut):
+    description: str = Field(description="Vacancy description safe for direct text rendering.")
+    description_status: Literal["markdown", "source"] = Field(description="Description representation.")
+
+    @staticmethod
+    def resolve_description_status(obj: Any) -> Literal["source"]:
+        return "source"

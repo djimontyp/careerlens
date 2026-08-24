@@ -21,6 +21,11 @@ type Vacancy = {
   match: VacancyMatch | null
 }
 
+export type VacancyDetail = Vacancy & {
+  description: string
+  description_status: "markdown" | "source"
+}
+
 export type FeedResponse = {
   items: Vacancy[]
   next_cursor: string | null
@@ -32,4 +37,8 @@ export function fetchFeed(cursor: string | null, signal?: AbortSignal) {
   const query = new URLSearchParams({ limit: String(FEED_PAGE_SIZE) })
   if (cursor) query.set("cursor", cursor)
   return apiGet<FeedResponse>(`feed?${query}`, { signal })
+}
+
+export function fetchFeedDetail(id: number, signal?: AbortSignal) {
+  return apiGet<VacancyDetail>(`feed/${id}`, { signal })
 }

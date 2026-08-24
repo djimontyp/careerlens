@@ -175,3 +175,39 @@ def test_feed_returns_only_the_current_users_match(django_assert_num_queries: ob
         "scored_at": items[vacancy.id]["match"]["scored_at"],
     }
     assert items[unmatched.id]["match"] is None
+
+
+@pytest.mark.django_db
+def test_feed_detail_returns_description_and_only_the_current_users_match() -> None:
+    source = Source.objects.create(code="dou", name="DOU")
+    vacancy = Vacancy.objects.create(
+        source=source,
+        external_id="detail",
+        title="Python Developer",
+        description="Build the backend.",
+    )
+    user = User.objects.create_user(email="ada@example.com")
+    other_user = User.objects.create_user(email="grace@example.com")
+    VacancyMatch.objects.create(
+        user=user,
+        vacancy=vacancy,
+        score=86,
+        reason="Strong Python overlap.",
+        evidence={
+            "items": [{"type": "strong", "label": "Python", "explanation": "Five years of experience."}],
+            "evidence_coverage": 0.86,
+        },
+        precise=True,
+    )
+    VacancyMatch.objects.create(user=other_user, vacancy=vacancy, score=12, reason="Must stay private.")
+    client = Client()
+    client.force_login(user)
+
+    response = client.get(f"/api/v1/feed/{vacancy.id}")
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["description"] == "Build the backend."
+    assert body["description_status"] == "source"
+    assert body["match"]["score"] == 86
+    assert body["match"]["reason"] == "Strong Python overlap."

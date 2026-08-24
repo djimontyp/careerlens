@@ -5,13 +5,14 @@ from django.core import signing
 from django.core.signing import BadSignature
 from django.db.models import F, FilteredRelation, Q, QuerySet
 from django.http import HttpRequest
-from ninja import Field, Query, Router, Schema
+from django.shortcuts import get_object_or_404
+from ninja import Field, Path, Query, Router, Schema
 from ninja.errors import HttpError
 from pydantic import ValidationError
 
 from api.schemas import ErrorOut
 from vacancies.models import Vacancy
-from vacancies.schemas import FeedOut
+from vacancies.schemas import FeedOut, VacancyDetailOut
 
 
 class FeedQuery(Schema):
@@ -44,6 +45,20 @@ def encode_feed_cursor(vacancy: Vacancy) -> str:
 
 
 feed_router = Router(tags=["feed"])
+
+
+def feed_queryset(request: HttpRequest) -> QuerySet[Vacancy]:
+    return (
+        Vacancy.objects.select_related("company", "source")
+        .alias(own_match=FilteredRelation("matches", condition=Q(matches__user=request.user)))
+        .annotate(
+            match_score=F("own_match__score"),
+            match_reason=F("own_match__reason"),
+            match_evidence=F("own_match__evidence"),
+            match_precise=F("own_match__precise"),
+            match_scored_at=F("own_match__scored_at"),
+        )
+    )
 
 
 @feed_router.get(
@@ -101,18 +116,7 @@ feed_router = Router(tags=["feed"])
 )
 def feed(request: HttpRequest, query: Query[FeedQuery]) -> dict[str, object]:
     """Returns vacancies in stable newest-first order."""
-    vacancies: QuerySet[Vacancy] = (
-        Vacancy.objects.select_related("company", "source")
-        .alias(own_match=FilteredRelation("matches", condition=Q(matches__user=request.user)))
-        .annotate(
-            match_score=F("own_match__score"),
-            match_reason=F("own_match__reason"),
-            match_evidence=F("own_match__evidence"),
-            match_precise=F("own_match__precise"),
-            match_scored_at=F("own_match__scored_at"),
-        )
-        .order_by(F("posted_date").desc(nulls_last=True), "-id")
-    )
+    vacancies = feed_queryset(request).order_by(F("posted_date").desc(nulls_last=True), "-id")
     if query.cursor:
         cursor = decode_feed_cursor(query.cursor)
         if cursor.posted_date:
@@ -131,3 +135,16 @@ def feed(request: HttpRequest, query: Query[FeedQuery]) -> dict[str, object]:
         "items": items,
         "next_cursor": encode_feed_cursor(items[-1]) if has_more else None,
     }
+
+
+@feed_router.get(
+    "/feed/{vacancy_id}",
+    response={200: VacancyDetailOut, 401: ErrorOut, 404: ErrorOut},
+    summary="Get vacancy detail",
+)
+def feed_detail(
+    request: HttpRequest,
+    vacancy_id: int = Path(..., description="CareerLens vacancy identifier."),
+) -> Vacancy:
+    """Returns one vacancy with its source description and the current user's match."""
+    return get_object_or_404(feed_queryset(request), pk=vacancy_id)

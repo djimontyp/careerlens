@@ -39,6 +39,7 @@ import { FeedDateJump } from "@/features/feed/components/feed-date-jump"
 import { FeedRefreshButton } from "@/features/feed/components/feed-refresh-button"
 import { SortablePanel } from "@/features/feed/components/sortable-panel"
 import { VacancyList } from "@/features/feed/components/vacancy-list"
+import { VacancyDetail } from "@/features/feed/components/vacancy-detail"
 import { PanelVisibilityControls } from "@/features/feed/components/panel-visibility-controls"
 import {
   DEFAULT_PANEL_ORDER,
@@ -101,7 +102,7 @@ export function FeedWorkspace() {
 
   if (isMobile) {
     return pathname === "/feed/detail" ? (
-      <MobileDetail />
+      <MobileDetail selectedId={selectedId} />
     ) : (
       <MobileList selectedId={selectedId} onSelect={handleSelect} />
     )
@@ -260,6 +261,8 @@ function EmptyPanel({
           jumpDate={jumpDate}
           onJumpComplete={() => onJump(null)}
         />
+      ) : panel === "detail" ? (
+        <VacancyDetail id={selectedId} />
       ) : (
         <div
           data-testid="feed-scroll-region"
@@ -289,7 +292,7 @@ function MobileList({
   )
 }
 
-function MobileDetail() {
+function MobileDetail({ selectedId }: { selectedId: number | null }) {
   return (
     <section
       aria-label="Деталі вакансії"
@@ -304,9 +307,7 @@ function MobileDetail() {
           До списку
         </NavLink>
       </header>
-      <div className="grid min-h-0 flex-1 place-items-center overflow-y-auto p-4 text-center text-sm text-muted-foreground">
-        Виберіть вакансію зі списку
-      </div>
+      <VacancyDetail id={selectedId} />
     </section>
   )
 }
