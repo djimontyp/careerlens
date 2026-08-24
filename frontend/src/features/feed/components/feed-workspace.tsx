@@ -35,6 +35,7 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet"
 import { ResizeHandle } from "@/features/feed/components/resize-handle"
+import { FeedDateJump } from "@/features/feed/components/feed-date-jump"
 import { FeedRefreshButton } from "@/features/feed/components/feed-refresh-button"
 import { SortablePanel } from "@/features/feed/components/sortable-panel"
 import { VacancyList } from "@/features/feed/components/vacancy-list"
@@ -63,6 +64,8 @@ export function FeedWorkspace() {
   const selectedId = Number(searchParams.get("vacancy")) || null
   const [refreshVersion, setRefreshVersion] = useState(0)
   const [refreshing, setRefreshing] = useState(false)
+  const [visibleDate, setVisibleDate] = useState<string | null>()
+  const [jumpDate, setJumpDate] = useState<string | null>(null)
   const handleLoadingChange = useCallback(
     (loading: boolean) => setRefreshing(loading),
     [],
@@ -155,6 +158,10 @@ export function FeedWorkspace() {
                           setRefreshVersion((value) => value + 1)
                         }
                         onLoadingChange={handleLoadingChange}
+                        visibleDate={visibleDate}
+                        onVisibleDateChange={setVisibleDate}
+                        jumpDate={jumpDate}
+                        onJump={setJumpDate}
                       />
                     )}
                   </SortablePanel>
@@ -209,6 +216,10 @@ function EmptyPanel({
   refreshing,
   onRefresh,
   onLoadingChange,
+  visibleDate,
+  onVisibleDateChange,
+  jumpDate,
+  onJump,
 }: {
   panel: FeedPanel
   action?: ReactNode
@@ -218,6 +229,10 @@ function EmptyPanel({
   refreshing: boolean
   onRefresh: () => void
   onLoadingChange: (loading: boolean) => void
+  visibleDate: string | null | undefined
+  onVisibleDateChange: (date: string | null) => void
+  jumpDate: string | null
+  onJump: (date: string | null) => void
 }) {
   return (
     <section
@@ -227,15 +242,13 @@ function EmptyPanel({
       <header className="flex h-12 shrink-0 items-center border-b px-3">
         <h2 className="text-sm font-semibold">{PANEL_LABELS[panel]}</h2>
         {panel === "list" && (
-          <div className="ms-auto">
+          <div className="ms-auto flex items-center gap-1">
+            <FeedDateJump visibleDate={visibleDate} onJump={onJump} />
             <FeedRefreshButton refreshing={refreshing} onRefresh={onRefresh} />
-          </div>
-        )}
-        {action && (
-          <div className={panel === "list" ? undefined : "ms-auto"}>
             {action}
           </div>
         )}
+        {panel !== "list" && action && <div className="ms-auto">{action}</div>}
       </header>
       {panel === "list" ? (
         <VacancyList
@@ -243,6 +256,9 @@ function EmptyPanel({
           selectedId={selectedId}
           onSelect={onSelect}
           onLoadingChange={onLoadingChange}
+          onVisibleDateChange={onVisibleDateChange}
+          jumpDate={jumpDate}
+          onJumpComplete={() => onJump(null)}
         />
       ) : (
         <div

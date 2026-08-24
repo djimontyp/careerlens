@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react-vite"
 import { MemoryRouter } from "react-router-dom"
-import { expect, fn, waitFor, within } from "storybook/test"
+import { expect, fireEvent, fn, waitFor, within } from "storybook/test"
 
 import { FeedWorkspace } from "@/features/feed/components/feed-workspace"
 import {
@@ -59,7 +59,20 @@ export const Refresh: Story = {
   beforeEach: () => {
     const fetch = window.fetch
     window.fetch = fn(async () =>
-      Response.json({ items: [], next_cursor: null }),
+      Response.json({
+        items: [
+          {
+            id: 42,
+            title: "Senior Python Developer",
+            company: "Acme",
+            location: "Remote",
+            posted_date: new Date().toISOString().slice(0, 10),
+            source: { code: "dou", name: "DOU", icon_url: null },
+            url: null,
+          },
+        ],
+        next_cursor: null,
+      }),
     )
     return () => (window.fetch = fetch)
   },
@@ -69,6 +82,25 @@ export const Refresh: Story = {
     })
 
     await waitFor(() => expect(refresh).toBeEnabled())
+    await waitFor(() =>
+      expect(
+        within(
+          canvasElement.querySelector('[aria-label="Список вакансій"] header')!,
+        ).getByText("Сьогодні"),
+      ).toBeVisible(),
+    )
+    const dateJump = within(canvasElement).getByLabelText(
+      "Вибрана дата",
+    ) as HTMLInputElement
+    dateJump.showPicker = fn()
+    await userEvent.click(
+      within(canvasElement).getByRole("button", { name: "Перейти до дати" }),
+    )
+    await expect(dateJump.showPicker).toHaveBeenCalledOnce()
+    fireEvent.change(dateJump, {
+      target: { value: new Date().toISOString().slice(0, 10) },
+    })
+    await expect(dateJump).toHaveValue("")
     await userEvent.click(refresh)
     await waitFor(() => expect(window.fetch).toHaveBeenCalledTimes(2))
   },

@@ -10,13 +10,20 @@ type VacancyListProps = {
   selectedId: number | null
   onSelect: (id: number) => void
   onLoadingChange?: (loading: boolean) => void
+  onVisibleDateChange?: (date: string | null) => void
+  jumpDate?: string | null
+  onJumpComplete?: () => void
 }
 
 export function VacancyList({
   selectedId,
   onSelect,
   onLoadingChange,
+  onVisibleDateChange,
+  jumpDate,
+  onJumpComplete,
 }: VacancyListProps) {
+  const listRef = useRef<HTMLUListElement>(null)
   const sentinelRef = useRef<HTMLLIElement>(null)
   const [cursor, setCursor] = useState<string | null>(null)
   const [attempt, setAttempt] = useState(0)
@@ -69,6 +76,57 @@ export function VacancyList({
     observer.observe(sentinel)
     return () => observer.disconnect()
   }, [requestKey, state.failed, state.key, state.nextCursor])
+
+  useEffect(() => {
+    const list = listRef.current
+    if (!list || !onVisibleDateChange) return
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const visible = entries
+          .filter((entry) => entry.isIntersecting)
+          .sort(
+            (left, right) =>
+              left.boundingClientRect.top - right.boundingClientRect.top,
+          )
+          .at(0)
+        if (!visible) return
+        onVisibleDateChange(
+          visible.target.getAttribute("data-feed-date") || null,
+        )
+      },
+      { root: list, rootMargin: "0px 0px -80% 0px" },
+    )
+    list
+      .querySelectorAll<HTMLElement>("[data-feed-date]")
+      .forEach((group) => observer.observe(group))
+    return () => observer.disconnect()
+  }, [onVisibleDateChange, state.items.length])
+
+  useEffect(() => {
+    const list = listRef.current
+    if (!list || !jumpDate || state.key !== requestKey) return
+    const groups = Array.from(
+      list.querySelectorAll<HTMLElement>("[data-feed-date]"),
+    ).filter((group) => group.dataset.feedDate)
+    const target = groups.find((group) => group.dataset.feedDate! <= jumpDate)
+    if (target) {
+      target.scrollIntoView({ block: "start" })
+      onJumpComplete?.()
+    } else if (state.nextCursor && !state.failed) {
+      const frame = requestAnimationFrame(() => setCursor(state.nextCursor))
+      return () => cancelAnimationFrame(frame)
+    } else {
+      groups.at(-1)?.scrollIntoView({ block: "start" })
+      onJumpComplete?.()
+    }
+  }, [
+    jumpDate,
+    onJumpComplete,
+    requestKey,
+    state.failed,
+    state.key,
+    state.nextCursor,
+  ])
 
   if (state.key === requestKey && state.failed && state.items.length === 0) {
     return (
@@ -134,13 +192,13 @@ export function VacancyList({
       data-testid="feed-scroll-region"
       className="flex min-h-0 flex-1 flex-col"
     >
-      <ul className="min-h-0 flex-1 overflow-y-auto">
+      <ul ref={listRef} className="min-h-0 flex-1 overflow-y-auto">
         {groups.map((group) => (
           <li key={group.date ?? "unknown"}>
             <section
               role="group"
               aria-label={formatPublicationDate(group.date)}
-              data-feed-date={group.date ?? undefined}
+              data-feed-date={group.date ?? ""}
             >
               <ul>
                 {group.vacancies.map((vacancy) => {

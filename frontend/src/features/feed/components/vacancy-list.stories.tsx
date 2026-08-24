@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react-vite"
 import { MemoryRouter } from "react-router-dom"
-import { expect, fn } from "storybook/test"
+import { expect, fn, waitFor } from "storybook/test"
 
 import { VacancyList } from "@/features/feed/components/vacancy-list"
 
@@ -129,7 +129,13 @@ export const RetryAfterLoadMoreError: Story = {
 
 export const CardPresentation: Story = {
   ...LoadedAndInfinite,
-  args: { selectedId: 42, onSelect: fn() },
+  args: {
+    selectedId: 42,
+    onSelect: fn(),
+    onVisibleDateChange: fn(),
+    jumpDate: "2020-01-01",
+    onJumpComplete: fn(),
+  },
   play: async ({ args, canvas, userEvent }) => {
     const vacancy = await canvas.findByRole("button", {
       name: /Senior Python Developer/,
@@ -143,6 +149,12 @@ export const CardPresentation: Story = {
     )
     await expect(vacancy).toHaveClass("focus-visible:ring-2")
     await expect(vacancy).toHaveAttribute("aria-pressed", "true")
+    await waitFor(() =>
+      expect(args.onVisibleDateChange).toHaveBeenCalledWith(
+        expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/),
+      ),
+    )
+    await waitFor(() => expect(args.onJumpComplete).toHaveBeenCalledOnce())
     const article = await canvas.findByRole("button", {
       name: /Older Django Developer/,
     })
