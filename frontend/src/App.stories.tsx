@@ -131,5 +131,8 @@ export const SignedIn: Story = {
       expect(profile).toHaveAttribute("aria-expanded", "true"),
     )
     await userEvent.click(profile)
+    await waitFor(() =>
+      expect(profile).toHaveAttribute("aria-expanded", "false"),
+    )
   },
 }
