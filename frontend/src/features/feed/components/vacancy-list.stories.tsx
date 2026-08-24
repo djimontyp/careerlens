@@ -72,7 +72,13 @@ export const LoadedAndInfinite: Story = {
                     icon_url: "/source-icons/dou.png",
                   },
                   url: "https://example.com/jobs/42",
-                  match: null,
+                  match: {
+                    score: 92,
+                    reason: "Strong Python and Django overlap.",
+                    evidence: {},
+                    precise: true,
+                    scored_at: new Date().toISOString(),
+                  },
                 },
               ],
               next_cursor: "next",
@@ -118,6 +124,7 @@ export const RetryAfterLoadMoreError: Story = {
             posted_date: "2026-08-21",
             source: { code: "dou", name: "DOU", icon_url: null },
             url: null,
+            match: null,
           },
         ],
         next_cursor: calls === 1 ? "next" : null,
@@ -153,6 +160,10 @@ export const CardPresentation: Story = {
     await expect(vacancy).toHaveTextContent("Оновлено")
     await expect(vacancy).toHaveTextContent("DOU")
     await expect(vacancy).toHaveTextContent("Сьогодні")
+    await expect(vacancy).toHaveTextContent("92% відповідність")
+    await expect(
+      vacancy.querySelector('[data-match-tone="high"]'),
+    ).toBeVisible()
     await expect(vacancy.querySelector("img")).toHaveAttribute(
       "src",
       "/source-icons/dou.png",
@@ -170,6 +181,7 @@ export const CardPresentation: Story = {
     })
     await expect(article).toHaveTextContent("Telegram")
     await expect(article).toHaveTextContent("Дата невідома")
+    await expect(canvas.queryByText("Ще не оцінено")).not.toBeInTheDocument()
     await userEvent.click(article)
     await expect(args.onSelect).toHaveBeenCalledWith(41)
   },

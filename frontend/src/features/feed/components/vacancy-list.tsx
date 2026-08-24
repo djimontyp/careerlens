@@ -5,7 +5,10 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { fetchFeed, type FeedResponse } from "@/features/feed/api"
 import { SourceIdentity } from "@/features/vacancies/components/source-identity"
 import { VacancyUpdatedLabel } from "@/features/vacancies/components/vacancy-updated-label"
-import { formatPublicationDate } from "@/features/vacancies/presentation"
+import {
+  formatPublicationDate,
+  presentMatch,
+} from "@/features/vacancies/presentation"
 
 type VacancyListProps = {
   selectedId: number | null
@@ -206,6 +209,7 @@ export function VacancyList({
             >
               <ul>
                 {group.vacancies.map((vacancy) => {
+                  const match = presentMatch(vacancy.match)
                   const content = (
                     <>
                       <VacancyTitle className="line-clamp-2 text-sm leading-snug font-medium">
@@ -220,15 +224,27 @@ export function VacancyList({
                         {vacancy.company ?? "Компанію не вказано"} ·{" "}
                         {vacancy.location ?? "Місце не вказано"}
                       </p>
-                      <p className="flex items-center justify-end gap-1.5 text-right text-xs text-muted-foreground">
-                        <SourceIdentity source={vacancy.source} />
-                        <span aria-hidden="true">·</span>
-                        <span>
-                          {formatPublicationDate(vacancy.posted_date)}
+                      <p className="flex items-center justify-between gap-3 text-xs">
+                        <span className="min-w-0">
+                          {match.precise && (
+                            <span
+                              data-match-tone={match.tone}
+                              className={`truncate ${match.tone === "high" ? "font-medium text-primary" : "text-muted-foreground"}`}
+                            >
+                              {match.label}
+                            </span>
+                          )}
                         </span>
-                        <VacancyUpdatedLabel
-                          updatedAt={vacancy.source_updated_at}
-                        />
+                        <span className="flex shrink-0 items-center gap-1.5 text-muted-foreground">
+                          <SourceIdentity source={vacancy.source} />
+                          <span aria-hidden="true">·</span>
+                          <span>
+                            {formatPublicationDate(vacancy.posted_date)}
+                          </span>
+                          <VacancyUpdatedLabel
+                            updatedAt={vacancy.source_updated_at}
+                          />
+                        </span>
                       </p>
                     </>
                   )
