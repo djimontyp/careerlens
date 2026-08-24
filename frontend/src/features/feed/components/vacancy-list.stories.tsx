@@ -41,6 +41,9 @@ export const LoadedAndInfinite: Story = {
                   company: null,
                   location: null,
                   posted_date: null,
+                  scraped_at: new Date().toISOString(),
+                  source_updated_at: null,
+                  is_deftech: false,
                   source: {
                     code: "telegram",
                     name: "Telegram",
@@ -59,6 +62,9 @@ export const LoadedAndInfinite: Story = {
                   company: "Acme",
                   location: "Remote",
                   posted_date: today,
+                  scraped_at: new Date().toISOString(),
+                  source_updated_at: new Date().toISOString(),
+                  is_deftech: true,
                   source: {
                     code: "dou",
                     name: "DOU",
@@ -75,10 +81,10 @@ export const LoadedAndInfinite: Story = {
   },
   play: async ({ canvas }) => {
     await expect(
-      await canvas.findByRole("heading", { name: "Senior Python Developer" }),
+      await canvas.findByRole("heading", { name: /Senior Python Developer/ }),
     ).toBeVisible()
     await expect(
-      await canvas.findByRole("heading", { name: "Older Django Developer" }),
+      await canvas.findByRole("heading", { name: /Older Django Developer/ }),
     ).toBeVisible()
     await expect(canvas.getByRole("group", { name: "Сьогодні" })).toBeVisible()
     await expect(
@@ -141,6 +147,8 @@ export const CardPresentation: Story = {
       name: /Senior Python Developer/,
     })
     await expect(vacancy).toHaveTextContent("Acme · Remote")
+    await expect(vacancy).toHaveTextContent("DefTech")
+    await expect(vacancy).toHaveTextContent("Оновлено")
     await expect(vacancy).toHaveTextContent("DOU")
     await expect(vacancy).toHaveTextContent("Сьогодні")
     await expect(vacancy.querySelector("img")).toHaveAttribute(

@@ -30,8 +30,15 @@ def test_import_vacancies_is_idempotent_and_updates_existing_records() -> None:
     assert vacancy_model.objects.count() == 4
     assert vacancy.title == "Python/Django Backend Engineer"
     assert vacancy.location == "Remote, Ukraine"
+    assert vacancy.company.is_deftech is False
+    assert vacancy.is_deftech is True
+    assert vacancy.scraped_at.isoformat() == "2026-08-20T10:30:00+00:00"
+    assert vacancy.source_updated_at.isoformat() == "2026-08-21T08:15:00+00:00"
     assert vacancy.source.icon_url == "/source-icons/dou.png"
     assert vacancy_model.objects.get(source__code="djinni").source.icon_url == "/source-icons/djinni.png"
+    agency_vacancy = vacancy_model.objects.get(source__code="djinni")
+    assert agency_vacancy.company.is_deftech is True
+    assert agency_vacancy.is_deftech is False
     assert vacancy_model.objects.get(source__code="telegram").url is None
     vacancy_without_company = vacancy_model.objects.get(external_id="demo-004")
     assert vacancy_without_company.company is None
@@ -39,12 +46,16 @@ def test_import_vacancies_is_idempotent_and_updates_existing_records() -> None:
 
 
 @pytest.mark.django_db
-def test_import_vacancies_preserves_location_omitted_by_legacy_v1(tmp_path: Path) -> None:
+def test_import_vacancies_preserves_fields_omitted_by_legacy_v1(tmp_path: Path) -> None:
     vacancy_model = apps.get_model("vacancies", "Vacancy")
     call_command("import_vacancies", DEMO_FIXTURE)
     payload = json.loads(DEMO_FIXTURE.read_text(encoding="utf-8"))
     for vacancy in payload["vacancies"]:
         vacancy.pop("location")
+        vacancy.pop("company_is_deftech", None)
+        vacancy.pop("is_deftech")
+        vacancy.pop("scraped_at")
+        vacancy.pop("source_updated_at")
     legacy_fixture = tmp_path / "legacy-v1.json"
     legacy_fixture.write_text(json.dumps(payload), encoding="utf-8")
 
@@ -52,6 +63,9 @@ def test_import_vacancies_preserves_location_omitted_by_legacy_v1(tmp_path: Path
 
     vacancy = vacancy_model.objects.get(source__code="dou", external_id="demo-001")
     assert vacancy.location == "Remote, Ukraine"
+    assert vacancy.is_deftech is True
+    assert vacancy.source_updated_at is not None
+    assert vacancy_model.objects.get(source__code="djinni").company.is_deftech is True
 
 
 @pytest.mark.django_db

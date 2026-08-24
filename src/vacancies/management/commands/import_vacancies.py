@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import date, datetime
 from pathlib import Path
 from typing import Any
 
@@ -36,9 +36,13 @@ class VacancyPayload(BaseModel):
     external_id: str = Field(min_length=1, max_length=50)
     title: str = Field(min_length=1, max_length=200)
     company: str | None = Field(default=None, min_length=1, max_length=200)
+    company_is_deftech: bool = False
+    is_deftech: bool = False
     url: HttpUrl | None = Field(default=None, max_length=1000)
     location: str | None = Field(default=None, min_length=1, max_length=500)
     posted_date: date | None = None
+    scraped_at: datetime | None = None
+    source_updated_at: datetime | None = None
     description: str = Field(min_length=1)
 
 
@@ -73,7 +77,13 @@ class Command(BaseCommand):
                     )
                     company = None
                     if item.company:
-                        company, _ = Company.objects.get_or_create(name=item.company)
+                        company_defaults = {}
+                        if "company_is_deftech" in item.model_fields_set:
+                            company_defaults["is_deftech"] = item.company_is_deftech
+                        company, _ = Company.objects.update_or_create(
+                            name=item.company,
+                            defaults=company_defaults,
+                        )
                     defaults = {
                         "company": company,
                         "title": item.title,
@@ -83,6 +93,12 @@ class Command(BaseCommand):
                     }
                     if "location" in item.model_fields_set:
                         defaults["location"] = item.location
+                    if "is_deftech" in item.model_fields_set:
+                        defaults["is_deftech"] = item.is_deftech
+                    if item.scraped_at is not None:
+                        defaults["scraped_at"] = item.scraped_at
+                    if "source_updated_at" in item.model_fields_set:
+                        defaults["source_updated_at"] = item.source_updated_at
                     _, created = Vacancy.objects.update_or_create(
                         source=source,
                         external_id=item.external_id,

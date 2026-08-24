@@ -10,9 +10,13 @@
       "external_id": "demo-001",
       "title": "Python/Django Backend Engineer",
       "company": "Northstar Labs",
+      "company_is_deftech": false,
+      "is_deftech": true,
       "url": "https://example.test/jobs/demo-001",
       "location": "Remote, Ukraine",
       "posted_date": "2026-08-20",
+      "scraped_at": "2026-08-20T10:30:00Z",
+      "source_updated_at": "2026-08-21T08:15:00Z",
       "description": "Build and maintain Django services backed by PostgreSQL."
     },
     {
@@ -20,9 +24,13 @@
       "external_id": "demo-002",
       "title": "Senior Python Engineer",
       "company": "Orbit Software",
+      "company_is_deftech": true,
+      "is_deftech": false,
       "url": "https://example.test/jobs/demo-002",
       "location": "Kyiv, Ukraine",
       "posted_date": null,
+      "scraped_at": "2026-08-20T09:00:00Z",
+      "source_updated_at": null,
       "description": "Develop typed Python APIs and improve production reliability."
     },
     {
@@ -30,9 +38,13 @@
       "external_id": "demo-003",
       "title": "Django Developer",
       "company": "Harbor Tech",
+      "company_is_deftech": false,
+      "is_deftech": false,
       "url": null,
       "location": "Remote",
       "posted_date": "2026-08-19",
+      "scraped_at": "2026-08-19T14:00:00Z",
+      "source_updated_at": null,
       "description": "Implement backend features for a compact product team."
     },
     {
@@ -40,9 +52,12 @@
       "external_id": "demo-004",
       "title": "Python Backend Developer",
       "company": null,
+      "is_deftech": false,
       "url": "https://example.test/jobs/demo-004",
       "location": null,
       "posted_date": "2026-08-18",
+      "scraped_at": "2026-08-18T12:00:00Z",
+      "source_updated_at": null,
       "description": "Work on Django, PostgreSQL, and asynchronous jobs."
     }
   ]

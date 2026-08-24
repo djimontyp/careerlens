@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import { fetchFeed, type FeedResponse } from "@/features/feed/api"
 import { SourceIdentity } from "@/features/vacancies/components/source-identity"
+import { VacancyUpdatedLabel } from "@/features/vacancies/components/vacancy-updated-label"
 import { formatPublicationDate } from "@/features/vacancies/presentation"
 
 type VacancyListProps = {
@@ -209,6 +210,11 @@ export function VacancyList({
                     <>
                       <VacancyTitle className="line-clamp-2 text-sm leading-snug font-medium">
                         {vacancy.title}
+                        {vacancy.is_deftech && (
+                          <span className="ms-1 text-xs font-medium text-primary">
+                            DefTech
+                          </span>
+                        )}
                       </VacancyTitle>
                       <p className="truncate text-sm text-muted-foreground">
                         {vacancy.company ?? "Компанію не вказано"} ·{" "}
@@ -220,6 +226,9 @@ export function VacancyList({
                         <span>
                           {formatPublicationDate(vacancy.posted_date)}
                         </span>
+                        <VacancyUpdatedLabel
+                          updatedAt={vacancy.source_updated_at}
+                        />
                       </p>
                     </>
                   )

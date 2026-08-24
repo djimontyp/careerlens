@@ -63,7 +63,14 @@ feed_router = Router(tags=["feed"])
                                     "company": "Acme",
                                     "location": "Remote",
                                     "posted_date": "2026-08-21",
-                                    "source": {"code": "dou", "name": "DOU"},
+                                    "scraped_at": "2026-08-21T10:30:00Z",
+                                    "source_updated_at": "2026-08-21T11:45:00Z",
+                                    "is_deftech": True,
+                                    "source": {
+                                        "code": "dou",
+                                        "name": "DOU",
+                                        "icon_url": "/source-icons/dou.png",
+                                    },
                                     "url": "https://example.com/jobs/42",
                                 }
                             ],

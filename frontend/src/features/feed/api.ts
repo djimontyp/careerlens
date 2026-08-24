@@ -12,6 +12,9 @@ type Vacancy = {
   company: string | null
   location: string | null
   posted_date: string | null
+  scraped_at: string
+  source_updated_at: string | null
+  is_deftech: boolean
   source: VacancySource
   url: string | null
 }

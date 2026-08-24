@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import UTC, date, datetime
 
 import pytest
 from django.contrib.auth import get_user_model
@@ -23,7 +23,7 @@ def test_feed_returns_stable_cursor_pages_with_nullable_fields() -> None:
         name="DOU",
         icon_url="/source-icons/dou.png",
     )
-    company = Company.objects.create(name="Acme")
+    company = Company.objects.create(name="Acme", is_deftech=True)
     vacancies = [
         Vacancy.objects.create(
             source=source,
@@ -42,6 +42,9 @@ def test_feed_returns_stable_cursor_pages_with_nullable_fields() -> None:
             url=None,
             location=None,
             posted_date=None,
+            is_deftech=True,
+            scraped_at=datetime(2026, 8, 21, 10, 30, tzinfo=UTC),
+            source_updated_at=datetime(2026, 8, 21, 11, 45, tzinfo=UTC),
             description="Unknown date",
         ),
         Vacancy.objects.create(
@@ -74,6 +77,7 @@ def test_feed_returns_stable_cursor_pages_with_nullable_fields() -> None:
     first_body = first.json()
     assert [item["id"] for item in first_body["items"]] == [vacancies[3].id, vacancies[2].id]
     assert first_body["items"][0]["source"]["icon_url"] == "/source-icons/dou.png"
+    assert first_body["items"][0]["is_deftech"] is True
     assert first_body["next_cursor"]
 
     second = client.get("/api/v1/feed", {"limit": 2, "cursor": first_body["next_cursor"]})
@@ -83,6 +87,9 @@ def test_feed_returns_stable_cursor_pages_with_nullable_fields() -> None:
     assert [item["id"] for item in second_body["items"]] == [vacancies[0].id, vacancies[1].id]
     assert second_body["items"][-1]["company"] is None
     assert second_body["items"][-1]["url"] is None
+    assert second_body["items"][-1]["is_deftech"] is True
+    assert second_body["items"][-1]["scraped_at"] == "2026-08-21T10:30:00Z"
+    assert second_body["items"][-1]["source_updated_at"] == "2026-08-21T11:45:00Z"
     assert second_body["next_cursor"] is None
 
 

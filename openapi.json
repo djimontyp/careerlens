@@ -228,9 +228,13 @@
                       "company": "Acme",
                       "location": "Remote",
                       "posted_date": "2026-08-21",
+                      "scraped_at": "2026-08-21T10:30:00Z",
+                      "source_updated_at": "2026-08-21T11:45:00Z",
+                      "is_deftech": true,
                       "source": {
                         "code": "dou",
-                        "name": "DOU"
+                        "name": "DOU",
+                        "icon_url": "/source-icons/dou.png"
                       },
                       "url": "https://example.com/jobs/42"
                     }
@@ -472,12 +476,16 @@
           {
             "company": "Acme",
             "id": 42,
+            "is_deftech": true,
             "location": "Remote",
             "posted_date": "2026-08-21",
+            "scraped_at": "2026-08-21T10:30:00Z",
             "source": {
               "code": "dou",
+              "icon_url": "/source-icons/dou.png",
               "name": "DOU"
             },
+            "source_updated_at": "2026-08-21T11:45:00Z",
             "title": "Python Developer",
             "url": "https://example.com/jobs/42"
           }
@@ -530,6 +538,30 @@
             "description": "Source publication date, or null when unavailable.",
             "title": "Posted Date"
           },
+          "scraped_at": {
+            "description": "Time when CareerLens imported the vacancy.",
+            "format": "date-time",
+            "title": "Scraped At",
+            "type": "string"
+          },
+          "source_updated_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Last source update time, or null when unavailable.",
+            "title": "Source Updated At"
+          },
+          "is_deftech": {
+            "description": "Whether the vacancy or its company is classified as DefTech.",
+            "title": "Is Deftech",
+            "type": "boolean"
+          },
           "source": {
             "$ref": "#/components/schemas/SourceOut",
             "description": "Vacancy source."
@@ -556,6 +588,9 @@
           "company",
           "location",
           "posted_date",
+          "scraped_at",
+          "source_updated_at",
+          "is_deftech",
           "source",
           "url"
         ],

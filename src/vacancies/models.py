@@ -1,5 +1,6 @@
 from django.conf import settings
 from django.db import models
+from django.utils import timezone
 
 
 class Source(models.Model):
@@ -13,6 +14,7 @@ class Source(models.Model):
 
 class Company(models.Model):
     name = models.CharField(max_length=200, unique=True)
+    is_deftech = models.BooleanField(default=False, db_index=True)
 
     def __str__(self) -> str:
         return self.name
@@ -32,6 +34,9 @@ class Vacancy(models.Model):
     url = models.URLField(blank=True, max_length=1000, null=True)
     location = models.CharField(blank=True, max_length=500, null=True)
     posted_date = models.DateField(blank=True, null=True)
+    is_deftech = models.BooleanField(default=False, db_index=True)
+    scraped_at = models.DateTimeField(default=timezone.now)
+    source_updated_at = models.DateTimeField(blank=True, null=True)
     description = models.TextField()
 
     class Meta:
