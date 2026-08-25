@@ -20,6 +20,7 @@ export default defineConfig({
     include: ["@base-ui/react/popover"],
   },
   server: {
+    host: "0.0.0.0",
     proxy: {
       "/api": "http://127.0.0.1:9090",
       "/login": "http://127.0.0.1:9090",

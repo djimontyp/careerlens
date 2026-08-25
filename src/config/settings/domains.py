@@ -45,6 +45,10 @@ class DjangoSettings(SettingsModel):
         return resolve_secret_file(data, "secret_key")
 
 
+class DevSettings(SettingsModel):
+    autologin: bool = False
+
+
 class CoreSettings(SettingsModel):
     site_url: AnyHttpUrl = AnyHttpUrl("http://localhost:9000")
 

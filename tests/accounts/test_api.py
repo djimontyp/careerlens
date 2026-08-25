@@ -1,7 +1,7 @@
 import pytest
 from django.conf import settings
 from django.contrib.auth import get_user_model
-from django.test import Client
+from django.test import Client, override_settings
 from ninja.security import SessionAuth
 
 from api.root import api
@@ -20,6 +20,29 @@ def test_me_requires_session() -> None:
 
     assert response.status_code == 401
     assert response.json() == {"detail": "Unauthorized"}
+
+
+@pytest.mark.django_db
+@override_settings(
+    DEV_AUTOLOGIN=True,
+    MIDDLEWARE=[
+        "django.middleware.security.SecurityMiddleware",
+        "django.contrib.sessions.middleware.SessionMiddleware",
+        "django.middleware.common.CommonMiddleware",
+        "django.middleware.csrf.CsrfViewMiddleware",
+        "django.contrib.auth.middleware.AuthenticationMiddleware",
+        "accounts.middleware.DevAutoLoginMiddleware",
+        "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    ],
+)
+def test_dev_autologin_creates_a_session_for_the_dev_user() -> None:
+    client = Client()
+
+    response = client.get("/api/v1/me")
+
+    assert response.status_code == 200
+    assert response.json()["email"] == "dev@local"
+    assert "_auth_user_id" in client.session
 
 
 @pytest.mark.django_db
