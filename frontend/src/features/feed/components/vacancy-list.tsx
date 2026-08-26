@@ -15,6 +15,7 @@ import {
   formatPublicationDate,
   presentMatch,
 } from "@/features/vacancies/presentation"
+import { cn } from "@/lib/utils"
 
 type VacancyListProps = {
   mode?: FeedMode
@@ -25,6 +26,7 @@ type VacancyListProps = {
   jumpDate?: string | null
   onJumpComplete?: () => void
   titleLevel?: 2 | 3
+  headerInset?: boolean
 }
 
 export function VacancyList({
@@ -36,6 +38,7 @@ export function VacancyList({
   jumpDate,
   onJumpComplete,
   titleLevel = 3,
+  headerInset = false,
 }: VacancyListProps) {
   const VacancyTitle = `h${titleLevel}` as const
   const listRef = useRef<HTMLUListElement>(null)
@@ -170,7 +173,11 @@ export function VacancyList({
         data-testid="feed-scroll-region"
         className="flex min-h-0 flex-1 flex-col overflow-hidden"
       >
-        <ul aria-busy="true" aria-label="Завантаження вакансій">
+        <ul
+          aria-busy="true"
+          aria-label="Завантаження вакансій"
+          className={cn(headerInset && "pt-12")}
+        >
           {Array.from({ length: 8 }, (_, index) => (
             <li key={index} className="space-y-2 border-b px-4 py-3">
               <Skeleton className="h-4 w-3/4" />
@@ -248,7 +255,7 @@ export function VacancyList({
         ref={listRef}
         role="listbox"
         aria-label="Вакансії"
-        className="min-h-0 flex-1 overflow-y-auto"
+        className={cn("min-h-0 flex-1 overflow-y-auto", headerInset && "pt-12")}
         onKeyDown={handleListKeyDown}
       >
         {groups.map((group) => (
