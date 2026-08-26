@@ -65,6 +65,10 @@ export const Desktop: Story = {
     const sidebarSurface = canvasElement.querySelector(
       '[data-slot="sidebar-inner"]',
     )!
+    const brandIcon = sidebar
+      .getByText("CareerLens")
+      .parentElement!.querySelector("svg")!
+    const banner = canvas.getByRole("banner")
     const rail = canvas.getByRole("button", {
       name: "Згорнути або розгорнути бічну панель",
     })
@@ -101,6 +105,14 @@ export const Desktop: Story = {
     ).toBeLessThanOrEqual(1)
     await expect(railLine.top).toBe("16px")
     await expect(railLine.bottom).toBe("16px")
+    await expect(
+      Math.abs(
+        brandIcon.getBoundingClientRect().top +
+          brandIcon.getBoundingClientRect().height / 2 -
+          (banner.getBoundingClientRect().top +
+            banner.getBoundingClientRect().height / 2),
+      ),
+    ).toBeLessThanOrEqual(1)
 
     await userEvent.click(toggle)
     await waitFor(() =>
@@ -119,6 +131,14 @@ export const Desktop: Story = {
         sidebarBox.left +
           sidebarBox.width / 2 -
           (avatarBox.left + avatarBox.width / 2),
+      ),
+    ).toBeLessThanOrEqual(1)
+    await expect(
+      Math.abs(
+        brandIcon.getBoundingClientRect().top +
+          brandIcon.getBoundingClientRect().height / 2 -
+          (banner.getBoundingClientRect().top +
+            banner.getBoundingClientRect().height / 2),
       ),
     ).toBeLessThanOrEqual(1)
   },
