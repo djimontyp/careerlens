@@ -141,6 +141,17 @@ export const Desktop: Story = {
             banner.getBoundingClientRect().height / 2),
       ),
     ).toBeLessThanOrEqual(1)
+    const sidebarCenter =
+      sidebarSurface.getBoundingClientRect().left +
+      sidebarSurface.getBoundingClientRect().width / 2
+
+    for (const icon of navigation.querySelectorAll("svg")) {
+      const iconBox = icon.getBoundingClientRect()
+
+      await expect(
+        Math.abs(iconBox.left + iconBox.width / 2 - sidebarCenter),
+      ).toBeLessThanOrEqual(1)
+    }
   },
 }
 
