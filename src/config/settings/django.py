@@ -6,6 +6,7 @@ app_config = AppSettings()
 DEBUG = app_config.django.debug
 SECRET_KEY = app_config.django.secret_key.get_secret_value()
 ALLOWED_HOSTS = list(app_config.django.allowed_hosts)
+DEV_AUTOLOGIN = app_config.dev_autologin
 SITE_URL = app_config.core.site_url_value
 CSRF_TRUSTED_ORIGINS = [SITE_URL]
 DATABASES = {"default": app_config.database.django_config}
@@ -20,6 +21,7 @@ INSTALLED_APPS = [
     "django.contrib.contenttypes",
     "django.contrib.sessions",
     "accounts",
+    "vacancies",
 ]
 
 AUTH_USER_MODEL = "accounts.User"
@@ -36,8 +38,15 @@ MIDDLEWARE = [
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
 
+if DEV_AUTOLOGIN:
+    MIDDLEWARE.insert(
+        MIDDLEWARE.index("django.contrib.auth.middleware.AuthenticationMiddleware") + 1,
+        "accounts.middleware.DevAutoLoginMiddleware",
+    )
+
 ROOT_URLCONF = "config.urls"
 ASGI_APPLICATION = "config.asgi.application"
+TEMPLATES = [{"BACKEND": "django.template.backends.django.DjangoTemplates"}]
 
 LANGUAGE_CODE = "uk"
 TIME_ZONE = "Europe/Kyiv"

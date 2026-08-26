@@ -173,6 +173,321 @@
           }
         ]
       }
+    },
+    "/api/v1/feed": {
+      "get": {
+        "operationId": "config_api_v1_feed_feed",
+        "summary": "List vacancies",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "mode",
+            "schema": {
+              "default": "active",
+              "description": "User-specific feed mode.",
+              "enum": [
+                "active",
+                "saved",
+                "hidden"
+              ],
+              "title": "Mode",
+              "type": "string"
+            },
+            "required": false,
+            "description": "User-specific feed mode."
+          },
+          {
+            "in": "query",
+            "name": "cursor",
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Opaque cursor returned by the previous response.",
+              "title": "Cursor"
+            },
+            "required": false,
+            "description": "Opaque cursor returned by the previous response."
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "default": 20,
+              "description": "Number of vacancies to return.",
+              "maximum": 100,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            },
+            "required": false,
+            "description": "Number of vacancies to return."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FeedOut"
+                },
+                "example": {
+                  "items": [
+                    {
+                      "id": 42,
+                      "title": "Python Developer",
+                      "company": "Acme",
+                      "location": "Remote",
+                      "posted_date": "2026-08-21",
+                      "scraped_at": "2026-08-21T10:30:00Z",
+                      "source_updated_at": "2026-08-21T11:45:00Z",
+                      "is_deftech": true,
+                      "source": {
+                        "code": "dou",
+                        "name": "DOU",
+                        "icon_url": "/source-icons/dou.png"
+                      },
+                      "url": "https://example.com/jobs/42",
+                      "saved": true,
+                      "hidden": false,
+                      "seen": true,
+                      "has_note": true,
+                      "application_submitted_at": "2026-08-22T09:30:00Z",
+                      "match": {
+                        "score": 86,
+                        "reason": "Strong Python and Django overlap.",
+                        "evidence": {
+                          "items": [
+                            {
+                              "type": "strong",
+                              "label": "Python",
+                              "explanation": "Five years of experience."
+                            }
+                          ],
+                          "evidence_coverage": 0.86
+                        },
+                        "precise": true,
+                        "scored_at": "2026-08-21T12:00:00Z"
+                      }
+                    }
+                  ],
+                  "next_cursor": null
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                },
+                "example": {
+                  "detail": "Unauthorized"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Content",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            }
+          }
+        },
+        "description": "Returns vacancies in stable newest-first order.",
+        "tags": [
+          "feed"
+        ],
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ]
+      }
+    },
+    "/api/v1/feed/{vacancy_id}": {
+      "get": {
+        "operationId": "config_api_v1_feed_feed_detail",
+        "summary": "Get vacancy detail",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "vacancy_id",
+            "schema": {
+              "description": "CareerLens vacancy identifier.",
+              "title": "Vacancy Id",
+              "type": "integer"
+            },
+            "required": true,
+            "description": "CareerLens vacancy identifier."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VacancyDetailOut"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            }
+          }
+        },
+        "description": "Returns one vacancy with its source description and the current user's match.",
+        "tags": [
+          "feed"
+        ],
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ]
+      }
+    },
+    "/api/v1/feed/{vacancy_id}/state": {
+      "patch": {
+        "operationId": "config_api_v1_feed_set_state",
+        "summary": "Update vacancy state",
+        "parameters": [
+          {
+            "in": "cookie",
+            "name": "csrftoken",
+            "schema": {
+              "description": "CSRF cookie issued by GET /api/v1/me.",
+              "title": "Csrftoken",
+              "type": "string"
+            },
+            "required": true,
+            "description": "CSRF cookie issued by GET /api/v1/me."
+          },
+          {
+            "in": "header",
+            "name": "X-CSRFToken",
+            "schema": {
+              "description": "Value matching the csrftoken cookie.",
+              "title": "X-Csrftoken",
+              "type": "string"
+            },
+            "required": true,
+            "description": "Value matching the csrftoken cookie."
+          },
+          {
+            "in": "path",
+            "name": "vacancy_id",
+            "schema": {
+              "description": "CareerLens vacancy identifier.",
+              "title": "Vacancy Id",
+              "type": "integer"
+            },
+            "required": true,
+            "description": "CareerLens vacancy identifier."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VacancyStateOut"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Content",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            }
+          }
+        },
+        "description": "Partially updates the current user's vacancy state.",
+        "tags": [
+          "feed"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VacancyStateIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ]
+      }
     }
   },
   "components": {
@@ -276,6 +591,700 @@
         ],
         "title": "ErrorOut",
         "type": "object"
+      },
+      "FeedQuery": {
+        "properties": {
+          "mode": {
+            "default": "active",
+            "description": "User-specific feed mode.",
+            "enum": [
+              "active",
+              "saved",
+              "hidden"
+            ],
+            "title": "Mode",
+            "type": "string"
+          },
+          "cursor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Opaque cursor returned by the previous response.",
+            "title": "Cursor"
+          },
+          "limit": {
+            "default": 20,
+            "description": "Number of vacancies to return.",
+            "maximum": 100,
+            "minimum": 1,
+            "title": "Limit",
+            "type": "integer"
+          }
+        },
+        "title": "FeedQuery",
+        "type": "object"
+      },
+      "FeedOut": {
+        "properties": {
+          "items": {
+            "description": "Vacancies in stable newest-first order.",
+            "items": {
+              "$ref": "#/components/schemas/VacancyOut"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "next_cursor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Opaque cursor for the next page, or null at the end.",
+            "title": "Next Cursor"
+          }
+        },
+        "required": [
+          "items",
+          "next_cursor"
+        ],
+        "title": "FeedOut",
+        "type": "object"
+      },
+      "MatchEvidenceItemOut": {
+        "properties": {
+          "type": {
+            "description": "Evidence category.",
+            "enum": [
+              "strong",
+              "partial",
+              "gaps",
+              "unknown"
+            ],
+            "title": "Type",
+            "type": "string"
+          },
+          "label": {
+            "description": "Short evidence label.",
+            "title": "Label",
+            "type": "string"
+          },
+          "explanation": {
+            "description": "Evidence explanation, or an empty string when unavailable.",
+            "title": "Explanation",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "label",
+          "explanation"
+        ],
+        "title": "MatchEvidenceItemOut",
+        "type": "object"
+      },
+      "MatchEvidenceOut": {
+        "properties": {
+          "items": {
+            "description": "Structured evidence supporting the match result.",
+            "items": {
+              "$ref": "#/components/schemas/MatchEvidenceItemOut"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "evidence_coverage": {
+            "description": "Share of requirements covered by evidence.",
+            "maximum": 1,
+            "minimum": 0,
+            "title": "Evidence Coverage",
+            "type": "number"
+          }
+        },
+        "required": [
+          "items",
+          "evidence_coverage"
+        ],
+        "title": "MatchEvidenceOut",
+        "type": "object"
+      },
+      "MatchOut": {
+        "properties": {
+          "score": {
+            "description": "Personal match percentage.",
+            "maximum": 100,
+            "minimum": 0,
+            "title": "Score",
+            "type": "integer"
+          },
+          "reason": {
+            "description": "Short explanation of the score.",
+            "title": "Reason",
+            "type": "string"
+          },
+          "evidence": {
+            "$ref": "#/components/schemas/MatchEvidenceOut",
+            "description": "Structured evidence supporting the score."
+          },
+          "precise": {
+            "description": "Whether the score meets the precise-match evidence contract.",
+            "title": "Precise",
+            "type": "boolean"
+          },
+          "scored_at": {
+            "description": "Time when this result was produced.",
+            "format": "date-time",
+            "title": "Scored At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "score",
+          "reason",
+          "evidence",
+          "precise",
+          "scored_at"
+        ],
+        "title": "MatchOut",
+        "type": "object"
+      },
+      "SourceOut": {
+        "properties": {
+          "code": {
+            "description": "Stable source code.",
+            "title": "Code",
+            "type": "string"
+          },
+          "name": {
+            "description": "Human-readable source name.",
+            "title": "Name",
+            "type": "string"
+          },
+          "icon_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Source icon URL, or null when unavailable.",
+            "title": "Icon Url"
+          }
+        },
+        "required": [
+          "code",
+          "name",
+          "icon_url"
+        ],
+        "title": "SourceOut",
+        "type": "object"
+      },
+      "VacancyOut": {
+        "examples": [
+          {
+            "application_submitted_at": "2026-08-22T09:30:00Z",
+            "company": "Acme",
+            "has_note": true,
+            "hidden": false,
+            "id": 42,
+            "is_deftech": true,
+            "location": "Remote",
+            "match": {
+              "evidence": {
+                "evidence_coverage": 0.86,
+                "items": [
+                  {
+                    "explanation": "Five years of experience.",
+                    "label": "Python",
+                    "type": "strong"
+                  }
+                ]
+              },
+              "precise": true,
+              "reason": "Strong Python and Django overlap.",
+              "score": 86,
+              "scored_at": "2026-08-21T12:00:00Z"
+            },
+            "posted_date": "2026-08-21",
+            "saved": true,
+            "scraped_at": "2026-08-21T10:30:00Z",
+            "seen": true,
+            "source": {
+              "code": "dou",
+              "icon_url": "/source-icons/dou.png",
+              "name": "DOU"
+            },
+            "source_updated_at": "2026-08-21T11:45:00Z",
+            "title": "Python Developer",
+            "url": "https://example.com/jobs/42"
+          }
+        ],
+        "properties": {
+          "id": {
+            "description": "CareerLens vacancy identifier.",
+            "title": "Id",
+            "type": "integer"
+          },
+          "title": {
+            "description": "Vacancy title.",
+            "title": "Title",
+            "type": "string"
+          },
+          "company": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Company name, or null when unavailable.",
+            "title": "Company"
+          },
+          "location": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Vacancy location, or null when unavailable.",
+            "title": "Location"
+          },
+          "posted_date": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Source publication date, or null when unavailable.",
+            "title": "Posted Date"
+          },
+          "scraped_at": {
+            "description": "Time when CareerLens imported the vacancy.",
+            "format": "date-time",
+            "title": "Scraped At",
+            "type": "string"
+          },
+          "source_updated_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Last source update time, or null when unavailable.",
+            "title": "Source Updated At"
+          },
+          "is_deftech": {
+            "description": "Whether the vacancy or its company is classified as DefTech.",
+            "title": "Is Deftech",
+            "type": "boolean"
+          },
+          "source": {
+            "$ref": "#/components/schemas/SourceOut",
+            "description": "Vacancy source."
+          },
+          "url": {
+            "anyOf": [
+              {
+                "format": "uri",
+                "maxLength": 2083,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Original vacancy URL, or null when unavailable.",
+            "title": "Url"
+          },
+          "match": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/MatchOut"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Current user's match result, or null when not scored."
+          },
+          "saved": {
+            "description": "Whether the current user saved the vacancy.",
+            "title": "Saved",
+            "type": "boolean"
+          },
+          "hidden": {
+            "description": "Whether the current user hid the vacancy.",
+            "title": "Hidden",
+            "type": "boolean"
+          },
+          "seen": {
+            "description": "Whether the current user opened the vacancy.",
+            "title": "Seen",
+            "type": "boolean"
+          },
+          "has_note": {
+            "description": "Whether the current user has a note for the vacancy.",
+            "title": "Has Note",
+            "type": "boolean"
+          },
+          "application_submitted_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "When the current user submitted an application, or null when not submitted.",
+            "title": "Application Submitted At"
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "company",
+          "location",
+          "posted_date",
+          "scraped_at",
+          "source_updated_at",
+          "is_deftech",
+          "source",
+          "url",
+          "match",
+          "saved",
+          "hidden",
+          "seen",
+          "has_note",
+          "application_submitted_at"
+        ],
+        "title": "VacancyOut",
+        "type": "object"
+      },
+      "VacancyDetailOut": {
+        "examples": [
+          {
+            "application_submitted_at": "2026-08-22T09:30:00Z",
+            "company": "Acme",
+            "has_note": true,
+            "hidden": false,
+            "id": 42,
+            "is_deftech": true,
+            "location": "Remote",
+            "match": {
+              "evidence": {
+                "evidence_coverage": 0.86,
+                "items": [
+                  {
+                    "explanation": "Five years of experience.",
+                    "label": "Python",
+                    "type": "strong"
+                  }
+                ]
+              },
+              "precise": true,
+              "reason": "Strong Python and Django overlap.",
+              "score": 86,
+              "scored_at": "2026-08-21T12:00:00Z"
+            },
+            "posted_date": "2026-08-21",
+            "saved": true,
+            "scraped_at": "2026-08-21T10:30:00Z",
+            "seen": true,
+            "source": {
+              "code": "dou",
+              "icon_url": "/source-icons/dou.png",
+              "name": "DOU"
+            },
+            "source_updated_at": "2026-08-21T11:45:00Z",
+            "title": "Python Developer",
+            "url": "https://example.com/jobs/42"
+          }
+        ],
+        "properties": {
+          "id": {
+            "description": "CareerLens vacancy identifier.",
+            "title": "Id",
+            "type": "integer"
+          },
+          "title": {
+            "description": "Vacancy title.",
+            "title": "Title",
+            "type": "string"
+          },
+          "company": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Company name, or null when unavailable.",
+            "title": "Company"
+          },
+          "location": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Vacancy location, or null when unavailable.",
+            "title": "Location"
+          },
+          "posted_date": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Source publication date, or null when unavailable.",
+            "title": "Posted Date"
+          },
+          "scraped_at": {
+            "description": "Time when CareerLens imported the vacancy.",
+            "format": "date-time",
+            "title": "Scraped At",
+            "type": "string"
+          },
+          "source_updated_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Last source update time, or null when unavailable.",
+            "title": "Source Updated At"
+          },
+          "is_deftech": {
+            "description": "Whether the vacancy or its company is classified as DefTech.",
+            "title": "Is Deftech",
+            "type": "boolean"
+          },
+          "source": {
+            "$ref": "#/components/schemas/SourceOut",
+            "description": "Vacancy source."
+          },
+          "url": {
+            "anyOf": [
+              {
+                "format": "uri",
+                "maxLength": 2083,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Original vacancy URL, or null when unavailable.",
+            "title": "Url"
+          },
+          "match": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/MatchOut"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Current user's match result, or null when not scored."
+          },
+          "saved": {
+            "description": "Whether the current user saved the vacancy.",
+            "title": "Saved",
+            "type": "boolean"
+          },
+          "hidden": {
+            "description": "Whether the current user hid the vacancy.",
+            "title": "Hidden",
+            "type": "boolean"
+          },
+          "seen": {
+            "description": "Whether the current user opened the vacancy.",
+            "title": "Seen",
+            "type": "boolean"
+          },
+          "has_note": {
+            "description": "Whether the current user has a note for the vacancy.",
+            "title": "Has Note",
+            "type": "boolean"
+          },
+          "application_submitted_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "When the current user submitted an application, or null when not submitted.",
+            "title": "Application Submitted At"
+          },
+          "description": {
+            "description": "Vacancy description safe for direct text rendering.",
+            "title": "Description",
+            "type": "string"
+          },
+          "description_status": {
+            "description": "Description representation.",
+            "enum": [
+              "markdown",
+              "source"
+            ],
+            "title": "Description Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "company",
+          "location",
+          "posted_date",
+          "scraped_at",
+          "source_updated_at",
+          "is_deftech",
+          "source",
+          "url",
+          "match",
+          "saved",
+          "hidden",
+          "seen",
+          "has_note",
+          "application_submitted_at",
+          "description",
+          "description_status"
+        ],
+        "title": "VacancyDetailOut",
+        "type": "object"
+      },
+      "VacancyStateOut": {
+        "examples": [
+          {
+            "hidden": false,
+            "saved": true,
+            "seen": true
+          }
+        ],
+        "properties": {
+          "saved": {
+            "description": "Confirmed saved state.",
+            "title": "Saved",
+            "type": "boolean"
+          },
+          "hidden": {
+            "description": "Confirmed hidden state.",
+            "title": "Hidden",
+            "type": "boolean"
+          },
+          "seen": {
+            "description": "Whether the vacancy has been opened.",
+            "title": "Seen",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "saved",
+          "hidden",
+          "seen"
+        ],
+        "title": "VacancyStateOut",
+        "type": "object"
+      },
+      "VacancyStateIn": {
+        "examples": [
+          {
+            "saved": true
+          },
+          {
+            "hidden": false
+          },
+          {
+            "seen": true
+          }
+        ],
+        "properties": {
+          "saved": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "New saved state when supplied.",
+            "title": "Saved"
+          },
+          "hidden": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "New hidden state when supplied.",
+            "title": "Hidden"
+          },
+          "seen": {
+            "anyOf": [
+              {
+                "const": true,
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Marks the vacancy as seen; this cannot be reverted.",
+            "title": "Seen"
+          }
+        },
+        "title": "VacancyStateIn",
+        "type": "object"
       }
     },
     "securitySchemes": {
@@ -291,6 +1300,10 @@
     {
       "name": "accounts",
       "description": "Current-user session and account operations."
+    },
+    {
+      "name": "feed",
+      "description": "Vacancy feed operations."
     },
     {
       "name": "health",

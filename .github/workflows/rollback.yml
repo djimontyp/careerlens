@@ -1,0 +1,166 @@
+name: Roll back production
+run-name: Rollback · ${{ inputs.frontend_sha }}
+
+on:
+  workflow_dispatch:
+    inputs:
+      image_digest:
+        description: Published backend image digest (sha256:…)
+        required: true
+        type: string
+      frontend_sha:
+        description: Reviewed commit SHA for the frontend
+        required: true
+        type: string
+      backup_confirmed:
+        description: A verified encrypted backup exists outside the server
+        required: true
+        default: false
+        type: boolean
+
+permissions:
+  contents: read
+
+concurrency:
+  group: production-image-publication
+  cancel-in-progress: false
+
+jobs:
+  rollback:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment: production
+    env:
+      CAREERLENS_IMAGE: docker.io/${{ vars.DOCKERHUB_REPOSITORY }}@${{ inputs.image_digest }}
+      FRONTEND_SHA: ${{ inputs.frontend_sha }}
+      IMAGE_REPOSITORY: docker.io/${{ vars.DOCKERHUB_REPOSITORY }}
+
+    steps:
+      - name: Validate rollback target
+        env:
+          BACKUP_CONFIRMED: ${{ inputs.backup_confirmed }}
+          IMAGE_DIGEST: ${{ inputs.image_digest }}
+        run: |
+          if [[ "${BACKUP_CONFIRMED}" != true ]]; then
+            echo "Verify an encrypted backup before rollback" >&2
+            exit 1
+          fi
+          if [[ ! "${IMAGE_REPOSITORY}" =~ ^docker\.io/[a-z0-9]+([._-][a-z0-9]+)*/[a-z0-9]+([._-][a-z0-9]+)*$ ]]; then
+            echo "Invalid Docker Hub repository" >&2
+            exit 1
+          fi
+          if [[ ! "${IMAGE_DIGEST}" =~ ^sha256:[0-9a-f]{64}$ ]]; then
+            echo "Invalid image digest" >&2
+            exit 1
+          fi
+          if [[ ! "${FRONTEND_SHA}" =~ ^[0-9a-f]{40}$ ]]; then
+            echo "Frontend SHA must be exactly 40 lowercase hexadecimal characters" >&2
+            exit 1
+          fi
+
+      - name: Check out rollback tooling
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Validate reviewed frontend commit
+        env:
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+        run: |
+          git cat-file -e "${FRONTEND_SHA}^{commit}"
+          git merge-base --is-ancestor "${FRONTEND_SHA}" "origin/${DEFAULT_BRANCH}"
+
+      - name: Check out reviewed frontend
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ inputs.frontend_sha }}
+          path: release-source
+          persist-credentials: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: release-source/frontend/package-lock.json
+
+      - name: Build reviewed frontend
+        run: |
+          npm ci --prefix release-source/frontend
+          npm run build --prefix release-source/frontend
+          tar --create --gzip --file "${RUNNER_TEMP}/careerlens-frontend.tar.gz" --directory release-source/frontend/dist .
+
+      - name: Configure SSH
+        env:
+          SERVER_HOST: ${{ secrets.SERVER_HOST }}
+          SERVER_USER: ${{ secrets.SERVER_USER }}
+          SSH_KNOWN_HOSTS: ${{ vars.SSH_KNOWN_HOSTS }}
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+        run: |
+          if [[ ! "${SERVER_HOST}" =~ ^[a-zA-Z0-9.-]+$ ]] || [[ ! "${SERVER_USER}" =~ ^[a-z_][a-z0-9_-]*$ ]]; then
+            echo "Invalid production SSH target" >&2
+            exit 1
+          fi
+          install --directory --mode 700 "${HOME}/.ssh"
+          printf '%s\n' "${SSH_KNOWN_HOSTS}" > "${HOME}/.ssh/known_hosts"
+          chmod 600 "${HOME}/.ssh/known_hosts"
+          eval "$(ssh-agent -s)"
+          printf 'SSH_AUTH_SOCK=%s\n' "${SSH_AUTH_SOCK}" >> "${GITHUB_ENV}"
+          printf 'SSH_AGENT_PID=%s\n' "${SSH_AGENT_PID}" >> "${GITHUB_ENV}"
+          printf '%s\n' "${SSH_PRIVATE_KEY}" | ssh-add -
+          printf 'DEPLOY_TARGET=%s@%s\n' "${SERVER_USER}" "${SERVER_HOST}" >> "${GITHUB_ENV}"
+
+      - name: Roll back immutable release
+        env:
+          CAREERLENS_DOMAIN: ${{ vars.CAREERLENS_DOMAIN }}
+          APP__DJANGO__ALLOWED_HOSTS: '["${{ vars.CAREERLENS_DOMAIN }}","127.0.0.1"]'
+          APP__CORE__SITE_URL: https://${{ vars.CAREERLENS_DOMAIN }}
+          APP__AUTH__WORKOS__CLIENT_ID: ${{ vars.WORKOS_CLIENT_ID }}
+          APP__AUTH__WORKOS__REDIRECT_URI: https://${{ vars.CAREERLENS_DOMAIN }}/callback/
+          APP__DATABASE__DATABASE: ${{ secrets.DATABASE_NAME }}
+          APP__DATABASE__USER: ${{ secrets.DATABASE_USER }}
+          DATABASE_PASSWORD: ${{ secrets.DATABASE_PASSWORD }}
+          DJANGO_SECRET_KEY: ${{ secrets.DJANGO_SECRET_KEY }}
+          DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+          DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+          WORKOS_API_KEY: ${{ secrets.WORKOS_API_KEY }}
+        run: |
+          ssh "${DEPLOY_TARGET}" 'install --directory --mode 700 "${HOME}/.careerlens"'
+          scp deploy/compose/production.yml "${DEPLOY_TARGET}:.careerlens/production.yml.new"
+          scp deploy/scripts/remote_deploy.sh "${DEPLOY_TARGET}:.careerlens/remote_deploy.sh.new"
+          scp deploy/scripts/install_frontend.sh "${DEPLOY_TARGET}:.careerlens/install_frontend.sh.new"
+          scp "${RUNNER_TEMP}/careerlens-frontend.tar.gz" "${DEPLOY_TARGET}:.careerlens/frontend.tar.gz.new"
+          ssh "${DEPLOY_TARGET}" 'mv "${HOME}/.careerlens/production.yml.new" "${HOME}/.careerlens/production.yml" && mv "${HOME}/.careerlens/remote_deploy.sh.new" "${HOME}/.careerlens/remote_deploy.sh" && mv "${HOME}/.careerlens/install_frontend.sh.new" "${HOME}/.careerlens/install_frontend.sh" && mv "${HOME}/.careerlens/frontend.tar.gz.new" "${HOME}/.careerlens/frontend.tar.gz"'
+          send_environment() {
+            for variable in \
+              CAREERLENS_IMAGE \
+              APP__DJANGO__ALLOWED_HOSTS \
+              APP__CORE__SITE_URL \
+              APP__AUTH__WORKOS__CLIENT_ID \
+              APP__AUTH__WORKOS__REDIRECT_URI \
+              APP__DATABASE__DATABASE \
+              APP__DATABASE__USER \
+              DATABASE_PASSWORD \
+              DJANGO_SECRET_KEY \
+              WORKOS_API_KEY \
+              DOCKERHUB_USERNAME \
+              DOCKERHUB_TOKEN
+            do
+              printf '%s\0' "${!variable}"
+            done
+          }
+          send_environment | ssh "${DEPLOY_TARGET}" 'ROLLBACK_ONLY=true bash "${HOME}/.careerlens/remote_deploy.sh"'
+          printf '%s\n' "${FRONTEND_SHA}" | ssh "${DEPLOY_TARGET}" 'read -r frontend_sha && bash "${HOME}/.careerlens/install_frontend.sh" "${HOME}/.careerlens/frontend.tar.gz" "${frontend_sha}" /var/www/careerlens'
+          ssh "${DEPLOY_TARGET}" 'rm -f "${HOME}/.careerlens/frontend.tar.gz"'
+          bash deploy/scripts/verify_public_routes.sh "https://${CAREERLENS_DOMAIN}"
+          {
+            echo "### Production rollback"
+            echo "- Image: \`${CAREERLENS_IMAGE}\`"
+            echo "- Frontend SHA: \`${FRONTEND_SHA}\`"
+            echo "- Database mutations: skipped"
+          } >> "${GITHUB_STEP_SUMMARY}"
+
+      - name: Clean up credentials
+        if: always()
+        run: ssh-agent -k || true

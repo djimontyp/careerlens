@@ -4,7 +4,7 @@ from pydantic import Field, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from accounts.settings import AuthSettings
-from config.settings.domains import CoreSettings, DjangoSettings, PostgresDatabaseSettings
+from config.settings.domains import CoreSettings, DevSettings, DjangoSettings, PostgresDatabaseSettings
 
 
 class AppSettings(BaseSettings):
@@ -21,8 +21,13 @@ class AppSettings(BaseSettings):
     environment: Literal["development", "test", "production"]
     django: DjangoSettings
     auth: AuthSettings = Field(default_factory=AuthSettings)
+    dev: DevSettings = Field(default_factory=DevSettings)
     core: CoreSettings = Field(default_factory=CoreSettings)
     database: PostgresDatabaseSettings
+
+    @property
+    def dev_autologin(self) -> bool:
+        return self.django.debug and self.dev.autologin
 
     @model_validator(mode="after")
     def validate_production(self) -> Self:
@@ -30,6 +35,8 @@ class AppSettings(BaseSettings):
             return self
         if self.django.debug:
             raise ValueError("APP__DJANGO__DEBUG must be false in production")
+        if self.dev.autologin:
+            raise ValueError("APP__DEV__AUTOLOGIN must be false in production")
         if not self.django.secret_key.get_secret_value():
             raise ValueError("APP__DJANGO__SECRET_KEY must not be empty in production")
         if not self.django.allowed_hosts or "*" in self.django.allowed_hosts:

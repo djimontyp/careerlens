@@ -37,6 +37,9 @@ src = ["src"]
 select = ["B", "DJ", "E", "F", "I", "TID", "UP", "W"]
 ignore = ["E501"]
 
+[tool.ruff.lint.per-file-ignores]
+"src/vacancies/models.py" = ["DJ001"]
+
 [tool.ruff.lint.flake8-tidy-imports]
 ban-relative-imports = "all"
 

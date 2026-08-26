@@ -1,0 +1,99 @@
+{
+  "version": 1,
+  "vacancies": [
+    {
+      "source": {
+        "code": "dou",
+        "name": "DOU",
+        "icon_url": "/source-icons/dou.png"
+      },
+      "external_id": "demo-001",
+      "title": "Python/Django Backend Engineer",
+      "company": "Northstar Labs",
+      "company_is_deftech": false,
+      "is_deftech": true,
+      "url": "https://example.test/jobs/demo-001",
+      "location": "Remote, Ukraine",
+      "posted_date": "2026-08-20",
+      "scraped_at": "2026-08-20T10:30:00Z",
+      "source_updated_at": "2026-08-21T08:15:00Z",
+      "description": "Build and maintain Django services backed by PostgreSQL.",
+      "note": "Уточнити формат чергувань на співбесіді.",
+      "application": {
+        "cover_letter": "Маю релевантний досвід із Django та PostgreSQL.",
+        "submitted_at": "2026-08-22T09:30:00Z"
+      },
+      "match": {
+        "score": 92,
+        "reason": "Сильний збіг за Python, Django та PostgreSQL.",
+        "evidence": {
+          "items": [{ "type": "strong", "label": "Django", "explanation": "Комерційний досвід підтверджено." }],
+          "evidence_coverage": 0.92
+        },
+        "precise": true,
+        "scored_at": "2026-08-21T12:00:00Z"
+      }
+    },
+    {
+      "source": { "code": "djinni", "name": "Djinni" },
+      "external_id": "demo-002",
+      "title": "Senior Python Engineer",
+      "company": "Orbit Software",
+      "company_is_deftech": true,
+      "is_deftech": false,
+      "url": "https://example.test/jobs/demo-002",
+      "location": "Kyiv, Ukraine",
+      "posted_date": null,
+      "scraped_at": "2026-08-20T09:00:00Z",
+      "source_updated_at": null,
+      "description": "Develop typed Python APIs and improve production reliability.",
+      "match": {
+        "score": 68,
+        "reason": "Python збігається, але доменний досвід підтверджено частково.",
+        "evidence": {
+          "items": [{ "type": "partial", "label": "Production APIs", "explanation": "Python підтверджено, доменний досвід частковий." }],
+          "evidence_coverage": 0.68
+        },
+        "precise": true,
+        "scored_at": "2026-08-21T12:01:00Z"
+      }
+    },
+    {
+      "source": { "code": "telegram", "name": "Telegram" },
+      "external_id": "demo-003",
+      "title": "Django Developer",
+      "company": "Harbor Tech",
+      "company_is_deftech": false,
+      "is_deftech": false,
+      "url": null,
+      "location": "Remote",
+      "posted_date": "2026-08-19",
+      "scraped_at": "2026-08-19T14:00:00Z",
+      "source_updated_at": null,
+      "description": "Implement backend features for a compact product team.",
+      "match": {
+        "score": 34,
+        "reason": "Опис надто короткий для точної оцінки.",
+        "evidence": {
+          "items": [{ "type": "unknown", "label": "Вимоги", "explanation": "Опис не містить достатньо деталей." }],
+          "evidence_coverage": 0.34
+        },
+        "precise": false,
+        "scored_at": "2026-08-21T12:02:00Z"
+      }
+    },
+    {
+      "source": { "code": "robota", "name": "Robota.ua" },
+      "external_id": "demo-004",
+      "title": "Python Backend Developer",
+      "company": null,
+      "is_deftech": false,
+      "url": "https://example.test/jobs/demo-004",
+      "location": null,
+      "posted_date": "2026-08-18",
+      "scraped_at": "2026-08-18T12:00:00Z",
+      "source_updated_at": null,
+      "description": "Work on Django, PostgreSQL, and asynchronous jobs."
+    }
+  ]
+}

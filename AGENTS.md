@@ -3,9 +3,11 @@
 ## Scoped instructions
 
 - `deploy/AGENTS.md` — production container, network, secrets and deployment verification contracts.
+- `frontend/AGENTS.md` — frontend state and test contracts.
 - `src/config/settings/AGENTS.md` — Django settings architecture, environment and secret-loading contracts.
+- `tests/AGENTS.md` — backend test contracts.
 
-Before changing either scope, read its `AGENTS.md`. After the change, re-read it and update instructions made stale by the change.
+Before changing any scoped area, read its `AGENTS.md`. After the change, re-read it and update instructions made stale by the change.
 
 ## Python dependencies
 
@@ -47,12 +49,22 @@ Before changing either scope, read its `AGENTS.md`. After the change, re-read it
 
 `uv add --frozen` is not the normal dependency workflow because it skips resolution. Use it only for a reviewed manifest-only recovery after an independent successful resolution.
 
-## Frontend
+## Python code
 
-- Durable UI preferences live in a versioned Zustand store; primitives do not access storage.
+- Do not add private helper functions prefixed with `_`. Keep one-off logic inline; give reusable logic a domain name and place it in the owning module.
+- Demo data loading is dev/test-only and must never run from production or rollback workflows.
+
+## Code work
+
+- Trace the existing use case and reuse its domain contracts before adding an abstraction.
+- Django `User` is the internal actor contract. Authentication providers stay behind `accounts` adapters; domain code never depends on WorkOS.
+- Reusable ORM composition and user scoping belong in custom QuerySets. Class-based services own use cases, permissions, transactions and business invariants. Routers and views only adapt HTTP.
+- Keep services cohesive and named after one domain responsibility; do not create generic service bases, factories or interfaces until a second real implementation requires them.
+- Apply SOLID at actual change boundaries without replacing direct framework contracts with speculative layers.
 
 ## API contracts
 
+- Equivalent partial mutations share one resource endpoint instead of duplicating route logic.
 - On API changes, update `openapi.json` via `just api-schema` to keep the schema up to date.
 - Every operation must fully describe inputs, types, examples, tags, success and error responses, authentication and relevant headers or cookies. The generated schema must match `openapi.json`.
 
@@ -71,4 +83,3 @@ Before changing either scope, read its `AGENTS.md`. After the change, re-read it
 - Use Playwright E2E only for a real SPA-Django boundary that lower levels cannot prove. When selected, apply `playwright-best-practices` to its implementation.
 - Keep the real WorkOS redirect and environment flow as an explicit manual smoke check unless a deterministic isolated provider environment exists.
 - Add infrastructure, helpers, matrices and coverage targets only for a current risk or demonstrated repetition.
-- Scoped rules live in `tests/AGENTS.md` and `frontend/AGENTS.md`.

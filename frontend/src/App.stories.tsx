@@ -62,7 +62,10 @@ export const RetryAfterError: Story = {
   beforeEach: () => {
     const fetch = window.fetch
     let attempt = 0
-    window.fetch = async () => {
+    window.fetch = async (input) => {
+      if (!String(input).endsWith("/me")) {
+        return Response.json({ items: [], next_cursor: null })
+      }
       attempt += 1
       if (attempt === 1) return new Response(null, { status: 500 })
       return Response.json({
@@ -95,14 +98,16 @@ export const RetryAfterError: Story = {
 export const SignedIn: Story = {
   beforeEach: () => {
     const fetch = window.fetch
-    window.fetch = async () =>
-      Response.json({
-        id: 1,
-        email: "ada@example.com",
-        first_name: "Ada",
-        last_name: "Lovelace",
-        avatar_url: null,
-      })
+    window.fetch = async (input) =>
+      String(input).endsWith("/me")
+        ? Response.json({
+            id: 1,
+            email: "ada@example.com",
+            first_name: "Ada",
+            last_name: "Lovelace",
+            avatar_url: null,
+          })
+        : Response.json({ items: [], next_cursor: null })
 
     return () => {
       window.fetch = fetch
@@ -115,10 +120,19 @@ export const SignedIn: Story = {
     })
 
     await expect(canvas.getByRole("main")).toBeVisible()
+    await waitFor(() =>
+      expect(canvas.getByRole("link", { name: "Стрічка" })).toHaveAttribute(
+        "aria-current",
+        "page",
+      ),
+    )
     await userEvent.click(profile)
     await waitFor(() =>
       expect(profile).toHaveAttribute("aria-expanded", "true"),
     )
     await userEvent.click(profile)
+    await waitFor(() =>
+      expect(profile).toHaveAttribute("aria-expanded", "false"),
+    )
   },
 }

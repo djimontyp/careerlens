@@ -1,4 +1,10 @@
-# Frontend tests
+# Frontend
+
+## State
+
+- Durable UI preferences live in a versioned Zustand store; primitives do not access storage.
+
+## Tests
 
 - Storybook stories are the canonical source for component states, user interactions, responsive behavior and accessibility. Run them with Storybook/Vitest Browser; Playwright is the browser provider, not a second test source. Treat an accessibility violation as a failing test.
 - Stub only the API boundary and keep method, path, status, headers and body aligned with `openapi.json` and the real Django contract.

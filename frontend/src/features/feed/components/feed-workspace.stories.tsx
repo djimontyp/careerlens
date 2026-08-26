@@ -1,20 +1,25 @@
 import type { Meta, StoryObj } from "@storybook/react-vite"
 import { MemoryRouter } from "react-router-dom"
-import { expect, within } from "storybook/test"
+import { expect, fireEvent, fn, waitFor, within } from "storybook/test"
 
 import { FeedWorkspace } from "@/features/feed/components/feed-workspace"
 import {
   FEED_LAYOUT_STORAGE_KEY,
   useFeedLayoutStore,
 } from "@/features/feed/layout/store"
+import { useFeedStateStore } from "@/features/feed/state/store"
 
 const meta = {
   title: "Feed/Workspace",
   component: FeedWorkspace,
   parameters: { layout: "fullscreen" },
   beforeEach: () => {
+    const fetch = window.fetch
+    window.fetch = async () => Response.json({ items: [], next_cursor: null })
     localStorage.removeItem(FEED_LAYOUT_STORAGE_KEY)
     useFeedLayoutStore.getState().reset()
+    useFeedStateStore.setState({ overrides: {} })
+    return () => (window.fetch = fetch)
   },
   decorators: [
     (Story, context) => (
@@ -44,10 +49,295 @@ export const Desktop: Story = {
     await expect(
       canvas.getByRole("region", { name: "Фільтри вакансій" }),
     ).toBeVisible()
+    const filters = canvas.getByRole("region", { name: "Фільтри вакансій" })
+    await expect(filters.scrollHeight).toBe(filters.clientHeight)
     await expect(canvas.getAllByRole("separator")).toHaveLength(2)
     await expect(
       canvas.getAllByRole("button", { name: /Перетягнути панель/ }),
     ).toHaveLength(3)
+  },
+}
+
+export const ListMinimumWidth: Story = {
+  globals: { viewport: { value: "desktopBoundary", isRotated: false } },
+  beforeEach: () => {
+    useFeedLayoutStore.setState((state) => ({
+      widths: { ...state.widths, list: 280 },
+    }))
+  },
+  play: async ({ canvasElement }) => {
+    const list = within(canvasElement).getByRole("region", {
+      name: "Список вакансій",
+    })
+    const header = within(list)
+      .getByRole("heading", { name: "Список вакансій" })
+      .closest("header")!
+
+    await expect(list.getBoundingClientRect().width).toBe(280)
+    await expect(header.scrollWidth).toBeLessThanOrEqual(header.clientWidth)
+    await expect(
+      within(canvasElement).queryByRole("region", {
+        name: "Фільтри вакансій",
+      }),
+    ).not.toBeInTheDocument()
+  },
+}
+
+export const PinnedFiltersBoundary: Story = {
+  globals: { viewport: { value: "compactWorkspace", isRotated: false } },
+  play: async ({ canvasElement }) => {
+    const filters = within(canvasElement).getByRole("region", {
+      name: "Фільтри вакансій",
+    })
+
+    await expect(filters).toBeVisible()
+    await expect(filters.scrollHeight).toBe(filters.clientHeight)
+    await expect(filters.getBoundingClientRect().width).toBeGreaterThanOrEqual(
+      240,
+    )
+  },
+}
+
+export const DetailAnalysis: Story = {
+  globals: { viewport: { value: "desktop", isRotated: false } },
+  parameters: { initialEntries: ["/?vacancy=42"] },
+  beforeEach: () => {
+    const fetch = window.fetch
+    let hiddenCalls = 0
+    let state = { saved: false, hidden: false, seen: false }
+    window.fetch = async (input, init) => {
+      if (String(input).includes("feed/42/state")) {
+        if (init?.method !== "PATCH") {
+          return new Response(null, { status: 405 })
+        }
+        const payload = JSON.parse(String(init?.body)) as Partial<typeof state>
+        if (payload.hidden !== undefined) {
+          hiddenCalls += 1
+          if (hiddenCalls === 1) return new Response(null, { status: 500 })
+        }
+        state = { ...state, ...payload }
+        return Response.json(state)
+      }
+      if (String(input).includes("feed/42")) {
+        return Response.json({
+          id: 42,
+          title: "Senior Python Developer",
+          company: "Acme",
+          location: "Remote",
+          posted_date: "2026-08-21",
+          scraped_at: "2026-08-21T10:30:00Z",
+          source_updated_at: null,
+          is_deftech: false,
+          source: { code: "dou", name: "DOU", icon_url: null },
+          url: "https://example.com/jobs/42",
+          description: "Build reliable Django services.",
+          description_status: "source",
+          saved: false,
+          hidden: false,
+          seen: false,
+          has_note: true,
+          application_submitted_at: "2026-08-22T09:30:00Z",
+          match: {
+            score: 86,
+            reason: "Strong Python and Django overlap.",
+            evidence: {
+              items: [
+                {
+                  type: "strong",
+                  label: "Python",
+                  explanation: "Five years of experience.",
+                },
+              ],
+              evidence_coverage: 0.86,
+            },
+            precise: true,
+            scored_at: "2026-08-21T12:00:00Z",
+          },
+        })
+      }
+      return Response.json({ items: [], next_cursor: null })
+    }
+    return () => (window.fetch = fetch)
+  },
+  play: async ({ canvasElement, userEvent }) => {
+    const detail = within(
+      within(canvasElement).getByRole("region", {
+        name: "Деталі вакансії",
+      }),
+    )
+
+    await expect(
+      await detail.findByText("Senior Python Developer"),
+    ).toBeVisible()
+    await expect(
+      detail.getByText("Build reliable Django services."),
+    ).toBeVisible()
+    await expect(
+      Number.parseFloat(
+        getComputedStyle(detail.getByText("Build reliable Django services."))
+          .maxWidth,
+      ),
+    ).toBeLessThanOrEqual(720)
+    await expect(
+      detail.getByRole("region", { name: "AI-аналіз відповідності" }),
+    ).toBeVisible()
+    await expect(detail.getByText("86%")).toBeVisible()
+    await expect(detail.getByText("Покриття доказами 86%")).toBeVisible()
+    await expect(detail.getByRole("img", { name: "Моя нотатка" })).toBeVisible()
+    await expect(detail.getByRole("img", { name: "Подано" })).toBeVisible()
+    await expect(
+      detail.getByRole("link", { name: "Відкрити на DOU" }),
+    ).toHaveAttribute("href", "https://example.com/jobs/42")
+    await userEvent.click(detail.getByText("Показати деталі"))
+    await expect(detail.getByText("Сильні збіги (1)")).toBeVisible()
+    await waitFor(() =>
+      expect(useFeedStateStore.getState().overrides[42]?.seen).toBeTruthy(),
+    )
+    const save = detail.getByRole("button", { name: "Зберегти" })
+    await userEvent.click(save)
+    await expect(save).toHaveAttribute("aria-pressed", "true")
+    const hide = detail.getByRole("button", { name: "Приховати" })
+    await userEvent.click(hide)
+    await expect(detail.getByRole("alert")).toHaveTextContent(
+      "Не вдалося оновити стан.",
+    )
+    await expect(hide).toHaveAttribute("aria-pressed", "false")
+    await userEvent.click(hide)
+    await expect(detail.getByText("Виберіть вакансію зі списку")).toBeVisible()
+    const undo = await within(document.body).findByRole("button", {
+      name: "Скасувати",
+    })
+    await userEvent.click(undo)
+    await waitFor(() =>
+      expect(useFeedStateStore.getState().overrides[42]?.hidden).toBeFalsy(),
+    )
+  },
+}
+
+export const DetailWithNullableFields: Story = {
+  globals: { viewport: { value: "desktop", isRotated: false } },
+  parameters: { initialEntries: ["/?vacancy=43"] },
+  beforeEach: () => {
+    const fetch = window.fetch
+    window.fetch = async (input) =>
+      Response.json(
+        String(input).includes("feed/43")
+          ? {
+              id: 43,
+              title: "Backend Developer",
+              company: null,
+              location: null,
+              posted_date: null,
+              scraped_at: "2026-08-21T10:30:00Z",
+              source_updated_at: null,
+              is_deftech: false,
+              source: { code: "telegram", name: "Telegram", icon_url: null },
+              url: null,
+              description: "Вакансія з Telegram.",
+              description_status: "source",
+              saved: false,
+              hidden: false,
+              seen: true,
+              has_note: false,
+              application_submitted_at: null,
+              match: null,
+            }
+          : { items: [], next_cursor: null },
+      )
+    return () => (window.fetch = fetch)
+  },
+  play: async ({ canvasElement }) => {
+    const detail = within(
+      within(canvasElement).getByRole("region", {
+        name: "Деталі вакансії",
+      }),
+    )
+
+    await expect(await detail.findByText("Backend Developer")).toBeVisible()
+    await expect(detail.getByText("Вакансія з Telegram.")).toBeVisible()
+    await expect(
+      detail.queryByRole("link", { name: /Відкрити на/ }),
+    ).not.toBeInTheDocument()
+  },
+}
+
+export const Refresh: Story = {
+  globals: { viewport: { value: "desktop", isRotated: false } },
+  beforeEach: () => {
+    const fetch = window.fetch
+    window.fetch = fn(async () =>
+      Response.json({
+        items: [
+          {
+            id: 42,
+            title: "Senior Python Developer",
+            company: "Acme",
+            location: "Remote",
+            posted_date: new Date().toISOString().slice(0, 10),
+            source: { code: "dou", name: "DOU", icon_url: null },
+            url: null,
+          },
+        ],
+        next_cursor: null,
+      }),
+    )
+    return () => (window.fetch = fetch)
+  },
+  play: async ({ canvasElement, userEvent }) => {
+    const refresh = within(canvasElement).getByRole("button", {
+      name: "Оновити вакансії",
+    })
+
+    await waitFor(() => expect(refresh).toBeEnabled())
+    await waitFor(() =>
+      expect(
+        within(
+          canvasElement.querySelector('[aria-label="Список вакансій"] header')!,
+        ).getByText("Сьогодні"),
+      ).toBeVisible(),
+    )
+    const dateJump = within(canvasElement).getByLabelText(
+      "Вибрана дата",
+    ) as HTMLInputElement
+    dateJump.showPicker = fn()
+    await userEvent.click(
+      within(canvasElement).getByRole("button", { name: "Перейти до дати" }),
+    )
+    await expect(dateJump.showPicker).toHaveBeenCalledOnce()
+    fireEvent.change(dateJump, {
+      target: { value: new Date().toISOString().slice(0, 10) },
+    })
+    await expect(dateJump).toHaveValue("")
+    await userEvent.click(refresh)
+    await waitFor(() => expect(window.fetch).toHaveBeenCalledTimes(2))
+  },
+}
+
+export const Modes: Story = {
+  parameters: { initialEntries: ["/?mode=saved"] },
+  play: async ({ canvasElement, userEvent }) => {
+    const canvas = within(canvasElement)
+    const mode = await canvas.findByRole("button", {
+      name: "Режим: Збережені",
+    })
+    await expect(
+      await canvas.findByText("Немає збережених вакансій"),
+    ).toBeVisible()
+    await userEvent.click(mode)
+    await userEvent.click(
+      await within(document.body).findByRole("menuitem", {
+        name: "Приховані",
+      }),
+    )
+    await waitFor(() =>
+      expect(within(document.body).queryAllByRole("menuitem")).toHaveLength(0),
+    )
+    await expect(
+      canvas.getByRole("button", { name: "Режим: Приховані" }),
+    ).toBeVisible()
+    await expect(
+      await canvas.findByText("Немає прихованих вакансій"),
+    ).toBeVisible()
   },
 }
 
@@ -89,8 +379,9 @@ export const MobileList: Story = {
 }
 
 export const MobileDetail: Story = {
+  ...DetailWithNullableFields,
   globals: { viewport: { value: "mobile", isRotated: false } },
-  parameters: { initialEntries: ["/feed/detail"] },
+  parameters: { initialEntries: ["/feed/detail?mode=saved&vacancy=43"] },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
 
@@ -102,7 +393,8 @@ export const MobileDetail: Story = {
     ).toBeNull()
     const back = canvas.getByRole("link", { name: "До списку" })
 
-    await expect(back).toHaveAttribute("href", "/")
+    await expect(await canvas.findByText("Backend Developer")).toBeVisible()
+    await expect(back).toHaveAttribute("href", "/feed?mode=saved")
     await expect(back.getBoundingClientRect().height).toBeGreaterThanOrEqual(44)
   },
 }

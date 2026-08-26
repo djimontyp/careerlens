@@ -188,8 +188,9 @@ jobs:
           scp deploy/compose/production.yml "${DEPLOY_TARGET}:.careerlens/production.yml.new"
           scp deploy/scripts/remote_deploy.sh "${DEPLOY_TARGET}:.careerlens/remote_deploy.sh.new"
           scp deploy/scripts/install_frontend.sh "${DEPLOY_TARGET}:.careerlens/install_frontend.sh.new"
+          scp deploy/scripts/stream_postgres_backup.sh "${DEPLOY_TARGET}:.careerlens/stream_postgres_backup.sh.new"
           scp "${RUNNER_TEMP}/careerlens-frontend.tar.gz" "${DEPLOY_TARGET}:.careerlens/frontend.tar.gz.new"
-          ssh "${DEPLOY_TARGET}" 'mv "${HOME}/.careerlens/production.yml.new" "${HOME}/.careerlens/production.yml" && mv "${HOME}/.careerlens/remote_deploy.sh.new" "${HOME}/.careerlens/remote_deploy.sh" && mv "${HOME}/.careerlens/install_frontend.sh.new" "${HOME}/.careerlens/install_frontend.sh" && mv "${HOME}/.careerlens/frontend.tar.gz.new" "${HOME}/.careerlens/frontend.tar.gz"'
+          ssh "${DEPLOY_TARGET}" 'mv "${HOME}/.careerlens/production.yml.new" "${HOME}/.careerlens/production.yml" && mv "${HOME}/.careerlens/remote_deploy.sh.new" "${HOME}/.careerlens/remote_deploy.sh" && mv "${HOME}/.careerlens/install_frontend.sh.new" "${HOME}/.careerlens/install_frontend.sh" && mv "${HOME}/.careerlens/stream_postgres_backup.sh.new" "${HOME}/.careerlens/stream_postgres_backup.sh" && chmod 700 "${HOME}/.careerlens/stream_postgres_backup.sh" && mv "${HOME}/.careerlens/frontend.tar.gz.new" "${HOME}/.careerlens/frontend.tar.gz"'
           send_environment() {
             for variable in \
               CAREERLENS_IMAGE \
@@ -211,7 +212,7 @@ jobs:
           send_environment | ssh "${DEPLOY_TARGET}" 'bash "${HOME}/.careerlens/remote_deploy.sh"'
           printf '%s\n' "${IMAGE_SHA}" | ssh "${DEPLOY_TARGET}" 'read -r image_sha && bash "${HOME}/.careerlens/install_frontend.sh" "${HOME}/.careerlens/frontend.tar.gz" "${image_sha}" /var/www/careerlens'
           ssh "${DEPLOY_TARGET}" 'rm -f "${HOME}/.careerlens/frontend.tar.gz"'
-          curl --fail --silent --show-error --retry 3 --retry-all-errors --retry-delay 2 "https://${CAREERLENS_DOMAIN}/" >/dev/null
+          bash deploy/scripts/verify_public_routes.sh "https://${CAREERLENS_DOMAIN}"
           {
             echo "### Production deployment"
             echo "- Image: \`${CAREERLENS_IMAGE}\`"

@@ -44,7 +44,8 @@ services:
       APP__ENVIRONMENT: development
       APP__DJANGO__DEBUG: "true"
       APP__DJANGO__SECRET_KEY: ${APP__DJANGO__SECRET_KEY:-dev-secret-key-with-at-least-32-characters-long}
-      APP__DJANGO__ALLOWED_HOSTS: ${APP__DJANGO__ALLOWED_HOSTS:-["localhost","127.0.0.1","app"]}
+      APP__DJANGO__ALLOWED_HOSTS: '["*"]'
+      APP__DEV__AUTOLOGIN: ${APP__DEV__AUTOLOGIN:-false}
       APP__CORE__SITE_URL: ${APP__CORE__SITE_URL:-http://localhost:5173}
       APP__AUTH__WORKOS__ENABLED: ${APP__AUTH__WORKOS__ENABLED:-false}
       APP__AUTH__WORKOS__CLIENT_ID: ${APP__AUTH__WORKOS__CLIENT_ID:-}
@@ -56,7 +57,7 @@ services:
       APP__DATABASE__HOST: db
       APP__DATABASE__PORT: "5432"
     ports:
-      - "127.0.0.1:${CAREERLENS_HTTP_PORT:-9090}:8000"
+      - "${CAREERLENS_HTTP_PORT:-9090}:8000"
     depends_on:
       db:
         condition: service_healthy

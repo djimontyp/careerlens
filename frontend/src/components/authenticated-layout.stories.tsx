@@ -11,6 +11,7 @@ import {
   FeedMobileActions,
   FeedWorkspace,
 } from "@/features/feed/components/feed-workspace"
+import type { FeedResponse } from "@/features/feed/api"
 import {
   FEED_LAYOUT_STORAGE_KEY,
   useFeedLayoutStore,
@@ -37,7 +38,9 @@ const meta = {
   },
   decorators: [
     (Story, context) => (
-      <MemoryRouter initialEntries={context.parameters.initialEntries ?? ["/"]}>
+      <MemoryRouter
+        initialEntries={context.parameters.initialEntries ?? ["/feed"]}
+      >
         <Story />
       </MemoryRouter>
     ),
@@ -191,7 +194,7 @@ export const NavigationRouting: Story = {
     })
     const feed = within(navigation).getByRole("link", { name: "Стрічка" })
 
-    await expect(feed).toHaveAttribute("href", "/")
+    await expect(feed).toHaveAttribute("href", "/feed")
     await expect(feed).not.toHaveAttribute("aria-current")
     await userEvent.click(feed)
     await waitFor(() => expect(feed).toHaveAttribute("aria-current", "page"))
@@ -213,6 +216,34 @@ export const FeedDetailNavigation: Story = {
 
 export const MobileFeedWorkspace: Story = {
   globals: { viewport: { value: "mobile", isRotated: false } },
+  beforeEach: () => {
+    const fetch = window.fetch
+    const feed = {
+      items: [
+        {
+          id: 42,
+          title: "Senior Python Developer",
+          company: "Acme",
+          location: "Remote",
+          posted_date: new Date().toISOString().slice(0, 10),
+          scraped_at: new Date().toISOString(),
+          source_updated_at: null,
+          is_deftech: false,
+          source: { code: "dou", name: "DOU", icon_url: null },
+          url: null,
+          match: null,
+          saved: false,
+          hidden: false,
+          seen: false,
+          has_note: false,
+          application_submitted_at: null,
+        },
+      ],
+      next_cursor: null,
+    } satisfies FeedResponse
+    window.fetch = async () => Response.json(feed)
+    return () => (window.fetch = fetch)
+  },
   args: {
     children: <FeedWorkspace />,
     headerTitle: "Стрічка",
@@ -227,10 +258,15 @@ export const MobileFeedWorkspace: Story = {
     const header = within(banner)
 
     await expect(canvas.getAllByRole("banner")).toHaveLength(1)
+    await expect(
+      await canvas.findByRole("heading", { name: "Senior Python Developer" }),
+    ).toBeVisible()
     await expect(header.getByRole("heading", { name: "Стрічка" })).toBeVisible()
     const filters = header.getByRole("button", { name: "Фільтри" })
+    const mode = header.getByRole("button", { name: "Режим: Активні" })
 
     await expect(filters).toBeVisible()
+    await expect(mode.getBoundingClientRect().height).toBeGreaterThanOrEqual(44)
     await expect(filters.getBoundingClientRect().width).toBeGreaterThanOrEqual(
       44,
     )
@@ -270,6 +306,36 @@ export const MobileFeedWorkspace: Story = {
       scrollRegion.getBoundingClientRect().height /
         workspace.getBoundingClientRect().height,
     ).toBeGreaterThan(0.7)
+  },
+}
+
+export const DesktopFiltersPopover: Story = {
+  ...MobileFeedWorkspace,
+  globals: { viewport: { value: "desktop", isRotated: false } },
+  args: {
+    ...MobileFeedWorkspace.args,
+    headerActions: <FeedDesktopActions />,
+  },
+  play: async ({ canvasElement, userEvent }) => {
+    const filters = within(canvasElement).getByRole("button", {
+      name: "Фільтри",
+    })
+
+    await userEvent.click(filters)
+    await waitFor(() =>
+      expect(
+        document.querySelector('[data-slot="popover-content"]'),
+      ).toBeVisible(),
+    )
+    await expect(
+      document.querySelector('[data-slot="sheet-overlay"]'),
+    ).not.toBeInTheDocument()
+    await userEvent.keyboard("{Escape}")
+    await waitFor(() =>
+      expect(
+        document.querySelector('[data-slot="popover-content"]'),
+      ).not.toBeInTheDocument(),
+    )
   },
 }
 

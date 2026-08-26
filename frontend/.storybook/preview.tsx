@@ -4,6 +4,7 @@ import { useGlobals } from "storybook/preview-api"
 import type { Theme } from "@/components/theme-context"
 import { ThemeProvider } from "@/components/theme-provider"
 import { TooltipProvider } from "@/components/ui/tooltip"
+import { ToasterProvider } from "@/components/ui/toaster"
 
 import "@/index.css"
 
@@ -44,6 +45,11 @@ const preview: Preview = {
         compactWorkspace: {
           name: "Compact workspace 1024×800",
           styles: { width: "1024px", height: "800px" },
+          type: "desktop",
+        },
+        compactMacbook: {
+          name: "Compact MacBook 1280×800",
+          styles: { width: "1280px", height: "800px" },
           type: "desktop",
         },
         desktop: {
@@ -87,7 +93,9 @@ const preview: Preview = {
           onThemeChange={(theme) => updateGlobals({ theme })}
         >
           <TooltipProvider>
-            <Story />
+            <ToasterProvider>
+              <Story />
+            </ToasterProvider>
           </TooltipProvider>
         </ThemeProvider>
       )

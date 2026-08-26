@@ -1,0 +1,148 @@
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
+from django.conf import settings
+from django.core.validators import MaxValueValidator, MinValueValidator
+from django.db import models
+from django.db.models import F, FilteredRelation, Q
+from django.utils import timezone
+
+if TYPE_CHECKING:
+    from accounts.models import User
+
+
+class VacancyQuerySet(models.QuerySet["Vacancy"]):
+    def for_user(self, user: User) -> VacancyQuerySet:
+        return (
+            self.select_related("company", "source")
+            .alias(own_match=FilteredRelation("matches", condition=Q(matches__user=user)))
+            .alias(own_state=FilteredRelation("vacancystate", condition=Q(vacancystate__user=user)))
+            .alias(own_note=FilteredRelation("notes", condition=Q(notes__user=user)))
+            .alias(own_application=FilteredRelation("applications", condition=Q(applications__user=user)))
+            .annotate(
+                match_score=F("own_match__score"),
+                match_reason=F("own_match__reason"),
+                match_evidence=F("own_match__evidence"),
+                match_precise=F("own_match__precise"),
+                match_scored_at=F("own_match__scored_at"),
+                state_saved=F("own_state__saved"),
+                state_hidden=F("own_state__hidden"),
+                state_seen_at=F("own_state__seen_at"),
+                note_id=F("own_note__id"),
+                application_submitted_at=F("own_application__submitted_at"),
+            )
+        )
+
+
+class Source(models.Model):
+    code = models.CharField(max_length=20, unique=True)
+    name = models.CharField(max_length=100)
+    icon_url = models.CharField(blank=True, max_length=1000, null=True)
+
+    def __str__(self) -> str:
+        return self.name
+
+
+class Company(models.Model):
+    name = models.CharField(max_length=200, unique=True)
+    is_deftech = models.BooleanField(default=False, db_index=True)
+
+    def __str__(self) -> str:
+        return self.name
+
+
+class Vacancy(models.Model):
+    source = models.ForeignKey(Source, on_delete=models.PROTECT, related_name="vacancies")
+    company = models.ForeignKey(
+        Company,
+        blank=True,
+        null=True,
+        on_delete=models.SET_NULL,
+        related_name="vacancies",
+    )
+    external_id = models.CharField(max_length=50)
+    title = models.CharField(max_length=200)
+    url = models.URLField(blank=True, max_length=1000, null=True)
+    location = models.CharField(blank=True, max_length=500, null=True)
+    posted_date = models.DateField(blank=True, null=True)
+    is_deftech = models.BooleanField(default=False, db_index=True)
+    scraped_at = models.DateTimeField(default=timezone.now)
+    source_updated_at = models.DateTimeField(blank=True, null=True)
+    description = models.TextField()
+
+    objects = models.Manager()
+    feed = VacancyQuerySet.as_manager()
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=["source", "external_id"], name="vacancies_vacancy_source_external_id_uniq"),
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.source.code}:{self.external_id}"
+
+
+class VacancyState(models.Model):
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    vacancy = models.ForeignKey(Vacancy, on_delete=models.CASCADE)
+    saved = models.BooleanField(default=False)
+    hidden = models.BooleanField(default=False)
+    seen_at = models.DateTimeField(blank=True, null=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=["user", "vacancy"], name="vacancies_state_user_vacancy_uniq"),
+        ]
+
+    def __str__(self) -> str:
+        return f"VacancyState({self.pk})"
+
+
+class VacancyNote(models.Model):
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="vacancy_notes")
+    vacancy = models.ForeignKey(Vacancy, on_delete=models.CASCADE, related_name="notes")
+    text = models.TextField()
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=["user", "vacancy"], name="vacancies_note_user_vacancy_uniq"),
+        ]
+
+    def __str__(self) -> str:
+        return f"VacancyNote({self.pk})"
+
+
+class VacancyApplication(models.Model):
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="vacancy_applications")
+    vacancy = models.ForeignKey(Vacancy, on_delete=models.CASCADE, related_name="applications")
+    cover_letter = models.TextField(blank=True)
+    submitted_at = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=["user", "vacancy"], name="vacancies_application_user_vacancy_uniq"),
+        ]
+
+    def __str__(self) -> str:
+        return f"VacancyApplication({self.pk})"
+
+
+class VacancyMatch(models.Model):
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="vacancy_matches")
+    vacancy = models.ForeignKey(Vacancy, on_delete=models.CASCADE, related_name="matches")
+    score = models.PositiveSmallIntegerField(validators=[MinValueValidator(0), MaxValueValidator(100)])
+    reason = models.TextField(blank=True)
+    evidence = models.JSONField(default=dict, blank=True)
+    precise = models.BooleanField(default=False)
+    scored_at = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=["user", "vacancy"], name="vacancies_match_user_vacancy_uniq"),
+            models.CheckConstraint(condition=models.Q(score__lte=100), name="vacancies_match_score_lte_100"),
+        ]
+
+    def __str__(self) -> str:
+        return f"VacancyMatch({self.pk})"
