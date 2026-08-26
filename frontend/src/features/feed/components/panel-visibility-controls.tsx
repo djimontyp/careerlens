@@ -38,7 +38,7 @@ export function PanelVisibilityControls({
       <DropdownMenuTrigger
         render={
           <Button
-            variant="outline"
+            variant="ghost"
             size="sm"
             className="hidden lg:inline-flex"
             aria-label="Налаштувати вигляд"
