@@ -287,7 +287,7 @@ function EmptyPanel({
   return (
     <section
       aria-label={PANEL_LABELS[panel]}
-      className="flex h-full min-h-0 flex-col overflow-hidden rounded-2xl border bg-background"
+      className="flex h-full min-h-0 flex-col overflow-hidden rounded-2xl border border-surface-border bg-background"
     >
       <header className="flex h-12 shrink-0 items-center border-b px-3">
         <h2 className="min-w-0 truncate text-sm font-semibold">

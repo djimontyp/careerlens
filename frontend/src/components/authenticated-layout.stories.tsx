@@ -58,6 +58,9 @@ export const Desktop: Story = {
   play: async ({ canvasElement, userEvent }) => {
     const canvas = within(canvasElement)
     const workspace = canvas.getByTestId("authenticated-workspace")
+    const ambientBackground = canvasElement.querySelector(
+      '[data-slot="aurora-background"]',
+    )!
     const main = canvas.getByRole("main")
     const sidebar = within(
       canvasElement.querySelector('[data-sidebar="sidebar"]')!,
@@ -95,6 +98,7 @@ export const Desktop: Story = {
       await expect(destination).toHaveAttribute("tabindex", "-1")
     }
     await expect(main).toBeVisible()
+    await expect(ambientBackground).toBeVisible()
     await expect(workspace.scrollHeight).toBe(workspace.clientHeight)
     const surfaceBox = sidebarSurface.getBoundingClientRect()
     const railBox = rail.getBoundingClientRect()
@@ -160,6 +164,9 @@ export const Mobile: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
     const workspace = canvas.getByTestId("authenticated-workspace")
+    const ambientBackground = canvasElement.querySelector(
+      '[data-slot="aurora-background"]',
+    )!
     const banner = canvas.getByRole("banner")
     const header = within(banner)
     const brand = header.getByText("CareerLens")
@@ -168,6 +175,7 @@ export const Mobile: Story = {
       .querySelector('[data-slot="avatar"]')!
 
     await expect(canvas.getByRole("banner")).toBeVisible()
+    await expect(ambientBackground).not.toBeVisible()
     await expect(header.getByText("CareerLens")).toBeVisible()
     await expect(
       canvas.getByRole("button", { name: "Профіль Ada Lovelace" }),
@@ -393,8 +401,13 @@ export const DesktopFeedWorkspace: Story = {
       .getByRole("heading", { name: "Стрічка" })
       .closest("header")!
       .getBoundingClientRect()
+    const headerStyle = getComputedStyle(
+      header.getByRole("heading", { name: "Стрічка" }).closest("header")!,
+    )
     const separatorBox = header.getByRole("separator").getBoundingClientRect()
 
+    await expect(headerStyle.borderTopWidth).toBe("1px")
+    await expect(headerStyle.borderInlineStartWidth).toBe("1px")
     await expect(
       Math.abs(
         separatorBox.top +
@@ -412,6 +425,14 @@ export const DesktopFeedWorkspace: Story = {
     await expect(
       canvas.getByRole("region", { name: "Список вакансій" }),
     ).toBeVisible()
+  },
+}
+
+export const DesktopFeedWorkspaceDark: Story = {
+  ...DesktopFeedWorkspace,
+  globals: {
+    viewport: { value: "desktop", isRotated: false },
+    theme: "dark",
   },
 }
 

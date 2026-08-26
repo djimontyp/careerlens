@@ -20,7 +20,11 @@ type AppSidebarProps = {
 
 export function AppSidebar({ user, loggingOut, onLogout }: AppSidebarProps) {
   return (
-    <Sidebar variant="floating" collapsible="icon">
+    <Sidebar
+      variant="floating"
+      collapsible="icon"
+      className="[&_[data-slot=sidebar-inner]]:bg-sidebar/72 [&_[data-slot=sidebar-inner]]:backdrop-blur-xl"
+    >
       <SidebarHeader>
         <div className="flex h-12 items-center gap-2 px-2 group-data-[collapsible=icon]:h-8 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0">
           <HugeiconsIcon icon={Monocle01Icon} className="size-5 shrink-0" />
