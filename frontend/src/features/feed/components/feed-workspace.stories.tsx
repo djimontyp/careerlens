@@ -292,7 +292,7 @@ export const Refresh: Story = {
             title: "Senior Python Developer",
             company: "Acme",
             location: "Remote",
-            posted_date: new Date().toISOString().slice(0, 10),
+            posted_date: new Intl.DateTimeFormat("sv-SE").format(),
             source: { code: "dou", name: "DOU", icon_url: null },
             url: null,
           },
@@ -324,7 +324,7 @@ export const Refresh: Story = {
     )
     await expect(dateJump.showPicker).toHaveBeenCalledOnce()
     fireEvent.change(dateJump, {
-      target: { value: new Date().toISOString().slice(0, 10) },
+      target: { value: new Intl.DateTimeFormat("sv-SE").format() },
     })
     await expect(dateJump).toHaveValue("")
     await userEvent.click(refresh)

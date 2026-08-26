@@ -137,24 +137,29 @@ export const Desktop: Story = {
           (avatarBox.left + avatarBox.width / 2),
       ),
     ).toBeLessThanOrEqual(1)
-    await expect(
-      Math.abs(
-        brandIcon.getBoundingClientRect().top +
-          brandIcon.getBoundingClientRect().height / 2 -
-          (banner.getBoundingClientRect().top +
-            banner.getBoundingClientRect().height / 2),
-      ),
-    ).toBeLessThanOrEqual(1)
-    const sidebarCenter =
-      sidebarSurface.getBoundingClientRect().left +
-      sidebarSurface.getBoundingClientRect().width / 2
-
+    await waitFor(() =>
+      expect(
+        Math.abs(
+          brandIcon.getBoundingClientRect().top +
+            brandIcon.getBoundingClientRect().height / 2 -
+            (banner.getBoundingClientRect().top +
+              banner.getBoundingClientRect().height / 2),
+        ),
+      ).toBeLessThanOrEqual(1),
+    )
     for (const icon of navigation.querySelectorAll("svg")) {
-      const iconBox = icon.getBoundingClientRect()
+      await waitFor(() => {
+        const iconBox = icon.getBoundingClientRect()
+        const sidebarBox = sidebarSurface.getBoundingClientRect()
 
-      await expect(
-        Math.abs(iconBox.left + iconBox.width / 2 - sidebarCenter),
-      ).toBeLessThanOrEqual(1)
+        expect(
+          Math.abs(
+            iconBox.left +
+              iconBox.width / 2 -
+              (sidebarBox.left + sidebarBox.width / 2),
+          ),
+        ).toBeLessThanOrEqual(1)
+      })
     }
   },
 }
