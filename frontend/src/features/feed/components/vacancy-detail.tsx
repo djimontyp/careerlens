@@ -3,6 +3,7 @@ import { useEffect, useState } from "react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
+import { WorkspaceHeader } from "@/components/workspace-header"
 import {
   fetchFeedDetail,
   type VacancyDetail as VacancyDetailData,
@@ -88,10 +89,10 @@ export function VacancyDetail({
       .slice(0, 3) ?? []
 
   return (
-    <article className="@container min-h-full overflow-y-auto">
-      <header className="sticky top-0 z-10 border-b bg-background px-4 py-3">
+    <article className="@container relative flex min-h-0 flex-1">
+      <WorkspaceHeader className="absolute inset-x-0 top-0 z-10 h-24 overflow-hidden border-b px-4 py-3">
         <div className="flex items-start justify-between gap-3">
-          <h3 className="text-lg font-semibold leading-tight">
+          <h3 className="line-clamp-2 text-lg font-semibold leading-tight">
             {vacancy.title}
           </h3>
           <div className="flex shrink-0 items-start gap-1">
@@ -125,8 +126,11 @@ export function VacancyDetail({
             hidden={override?.hidden ?? vacancy.hidden}
           />
         </div>
-      </header>
-      <div className="grid min-w-0 gap-6 p-4 @min-[760px]:grid-cols-[minmax(0,1fr)_18rem] @min-[760px]:items-start">
+      </WorkspaceHeader>
+      <div
+        data-testid="detail-scroll-region"
+        className="grid min-h-0 min-w-0 flex-1 gap-6 overflow-y-auto px-4 pt-24 pb-4 @min-[760px]:grid-cols-[minmax(0,1fr)_18rem] @min-[760px]:items-start"
+      >
         <div className="min-w-0 max-w-[80ch] whitespace-pre-wrap text-sm leading-6">
           {vacancy.description}
         </div>

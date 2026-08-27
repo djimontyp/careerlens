@@ -17,7 +17,7 @@ export function FeedDateJump({ visibleDate, onJump }: FeedDateJumpProps) {
     <>
       <Button
         type="button"
-        variant="outline"
+        variant="ghost"
         size="sm"
         className="max-w-32 text-foreground"
         aria-label="Перейти до дати"

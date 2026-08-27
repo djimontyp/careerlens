@@ -44,7 +44,7 @@ export function FeedModeControl({
       <DropdownMenuTrigger
         render={
           <Button
-            variant="outline"
+            variant="ghost"
             size="sm"
             className={mobile ? "h-[44px]" : undefined}
             aria-label={`Режим: ${label}`}

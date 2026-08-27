@@ -26,6 +26,7 @@
   --color-state-hover: var(--state-hover);
   --color-input: var(--input);
   --color-border: var(--border);
+  --color-surface-border: var(--surface-border);
   --color-destructive: var(--destructive);
   --color-accent-foreground: var(--accent-foreground);
   --color-accent: var(--accent);
@@ -51,6 +52,22 @@
 }
 
 :root {
+  --ambient-aurora:
+    radial-gradient(
+      circle at 18% 22%,
+      oklch(0.88 0.07 198.5 / 45%),
+      transparent 34%
+    ),
+    radial-gradient(
+      circle at 78% 30%,
+      oklch(0.91 0.055 228 / 38%),
+      transparent 38%
+    ),
+    radial-gradient(
+      circle at 58% 86%,
+      oklch(0.94 0.04 170 / 35%),
+      transparent 42%
+    );
   --background: oklch(1 0 0);
   --foreground: oklch(0.148 0.004 228.8);
   --card: oklch(1 0 0);
@@ -67,6 +84,7 @@
   --accent-foreground: oklch(0.218 0.008 223.9);
   --destructive: oklch(0.577 0.245 27.325);
   --border: oklch(0.925 0.005 214.3);
+  --surface-border: oklch(0.72 0.01 214.3);
   --input: oklch(0.925 0.005 214.3);
   --ring: oklch(0.723 0.014 214.4);
   --state-hover: oklch(0.93 0.006 214.3);
@@ -83,11 +101,27 @@
   --sidebar-primary-foreground: oklch(0.985 0.005 198.5);
   --sidebar-accent: oklch(0.963 0.002 197.1);
   --sidebar-accent-foreground: oklch(0.218 0.008 223.9);
-  --sidebar-border: oklch(0.925 0.005 214.3);
+  --sidebar-border: var(--surface-border);
   --sidebar-ring: oklch(0.723 0.014 214.4);
 }
 
 .dark {
+  --ambient-aurora:
+    radial-gradient(
+      circle at 18% 22%,
+      oklch(0.42 0.08 205 / 38%),
+      transparent 36%
+    ),
+    radial-gradient(
+      circle at 78% 30%,
+      oklch(0.35 0.065 238 / 34%),
+      transparent 40%
+    ),
+    radial-gradient(
+      circle at 58% 86%,
+      oklch(0.32 0.055 175 / 28%),
+      transparent 44%
+    );
   --background: oklch(0.218 0.008 223.9);
   --foreground: oklch(0.987 0.002 197.1);
   --card: oklch(0.24 0.008 223.9);
@@ -104,6 +138,7 @@
   --accent-foreground: oklch(0.987 0.002 197.1);
   --destructive: oklch(0.704 0.191 22.216);
   --border: oklch(1 0 0 / 10%);
+  --surface-border: oklch(1 0 0 / 24%);
   --input: oklch(1 0 0 / 15%);
   --ring: oklch(0.56 0.021 213.5);
   --state-hover: oklch(0.33 0.012 214.4);
@@ -119,8 +154,18 @@
   --sidebar-primary-foreground: oklch(0.18 0.04 198.5);
   --sidebar-accent: oklch(0.275 0.011 216.9);
   --sidebar-accent-foreground: oklch(0.987 0.002 197.1);
-  --sidebar-border: oklch(1 0 0 / 10%);
+  --sidebar-border: var(--surface-border);
   --sidebar-ring: oklch(0.56 0.021 213.5);
+}
+
+@keyframes ambient-aurora {
+  from {
+    transform: translate3d(-4%, -3%, 0) scale(1);
+  }
+
+  to {
+    transform: translate3d(4%, 3%, 0) scale(1.08);
+  }
 }
 
 @layer base {

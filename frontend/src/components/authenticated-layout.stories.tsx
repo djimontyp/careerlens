@@ -58,6 +58,9 @@ export const Desktop: Story = {
   play: async ({ canvasElement, userEvent }) => {
     const canvas = within(canvasElement)
     const workspace = canvas.getByTestId("authenticated-workspace")
+    const ambientBackground = canvasElement.querySelector(
+      '[data-slot="aurora-background"]',
+    )!
     const main = canvas.getByRole("main")
     const sidebar = within(
       canvasElement.querySelector('[data-sidebar="sidebar"]')!,
@@ -65,6 +68,10 @@ export const Desktop: Story = {
     const sidebarSurface = canvasElement.querySelector(
       '[data-slot="sidebar-inner"]',
     )!
+    const brandIcon = sidebar
+      .getByText("CareerLens")
+      .parentElement!.querySelector("svg")!
+    const banner = canvas.getByRole("banner")
     const rail = canvas.getByRole("button", {
       name: "Згорнути або розгорнути бічну панель",
     })
@@ -91,6 +98,7 @@ export const Desktop: Story = {
       await expect(destination).toHaveAttribute("tabindex", "-1")
     }
     await expect(main).toBeVisible()
+    await expect(ambientBackground).toBeVisible()
     await expect(workspace.scrollHeight).toBe(workspace.clientHeight)
     const surfaceBox = sidebarSurface.getBoundingClientRect()
     const railBox = rail.getBoundingClientRect()
@@ -101,6 +109,14 @@ export const Desktop: Story = {
     ).toBeLessThanOrEqual(1)
     await expect(railLine.top).toBe("16px")
     await expect(railLine.bottom).toBe("16px")
+    await expect(
+      Math.abs(
+        brandIcon.getBoundingClientRect().top +
+          brandIcon.getBoundingClientRect().height / 2 -
+          (banner.getBoundingClientRect().top +
+            banner.getBoundingClientRect().height / 2),
+      ),
+    ).toBeLessThanOrEqual(1)
 
     await userEvent.click(toggle)
     await waitFor(() =>
@@ -121,6 +137,30 @@ export const Desktop: Story = {
           (avatarBox.left + avatarBox.width / 2),
       ),
     ).toBeLessThanOrEqual(1)
+    await waitFor(() =>
+      expect(
+        Math.abs(
+          brandIcon.getBoundingClientRect().top +
+            brandIcon.getBoundingClientRect().height / 2 -
+            (banner.getBoundingClientRect().top +
+              banner.getBoundingClientRect().height / 2),
+        ),
+      ).toBeLessThanOrEqual(1),
+    )
+    for (const icon of navigation.querySelectorAll("svg")) {
+      await waitFor(() => {
+        const iconBox = icon.getBoundingClientRect()
+        const sidebarBox = sidebarSurface.getBoundingClientRect()
+
+        expect(
+          Math.abs(
+            iconBox.left +
+              iconBox.width / 2 -
+              (sidebarBox.left + sidebarBox.width / 2),
+          ),
+        ).toBeLessThanOrEqual(1)
+      })
+    }
   },
 }
 
@@ -129,6 +169,9 @@ export const Mobile: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
     const workspace = canvas.getByTestId("authenticated-workspace")
+    const ambientBackground = canvasElement.querySelector(
+      '[data-slot="aurora-background"]',
+    )!
     const banner = canvas.getByRole("banner")
     const header = within(banner)
     const brand = header.getByText("CareerLens")
@@ -137,6 +180,7 @@ export const Mobile: Story = {
       .querySelector('[data-slot="avatar"]')!
 
     await expect(canvas.getByRole("banner")).toBeVisible()
+    await expect(ambientBackground).not.toBeVisible()
     await expect(header.getByText("CareerLens")).toBeVisible()
     await expect(
       canvas.getByRole("button", { name: "Профіль Ada Lovelace" }),
@@ -362,8 +406,13 @@ export const DesktopFeedWorkspace: Story = {
       .getByRole("heading", { name: "Стрічка" })
       .closest("header")!
       .getBoundingClientRect()
+    const headerStyle = getComputedStyle(
+      header.getByRole("heading", { name: "Стрічка" }).closest("header")!,
+    )
     const separatorBox = header.getByRole("separator").getBoundingClientRect()
 
+    await expect(headerStyle.borderTopWidth).toBe("1px")
+    await expect(headerStyle.borderInlineStartWidth).toBe("1px")
     await expect(
       Math.abs(
         separatorBox.top +
@@ -381,6 +430,14 @@ export const DesktopFeedWorkspace: Story = {
     await expect(
       canvas.getByRole("region", { name: "Список вакансій" }),
     ).toBeVisible()
+  },
+}
+
+export const DesktopFeedWorkspaceDark: Story = {
+  ...DesktopFeedWorkspace,
+  globals: {
+    viewport: { value: "desktop", isRotated: false },
+    theme: "dark",
   },
 }
 

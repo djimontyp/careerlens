@@ -55,6 +55,12 @@ export const Desktop: Story = {
     await expect(
       canvas.getAllByRole("button", { name: /Перетягнути панель/ }),
     ).toHaveLength(3)
+    const list = canvas.getByRole("region", { name: "Список вакансій" })
+    const header = within(list)
+      .getByRole("heading", { name: "Список вакансій" })
+      .closest("header")!
+
+    await expect(getComputedStyle(header).position).toBe("absolute")
   },
 }
 
@@ -169,6 +175,14 @@ export const DetailAnalysis: Story = {
     await expect(
       await detail.findByText("Senior Python Developer"),
     ).toBeVisible()
+    const header = detail
+      .getByRole("heading", { name: "Senior Python Developer" })
+      .closest("header")!
+    const scrollRegion = detail.getByTestId("detail-scroll-region")
+
+    await expect(getComputedStyle(header).position).toBe("absolute")
+    await expect(getComputedStyle(scrollRegion).overflowY).toBe("auto")
+    await expect(getComputedStyle(scrollRegion).paddingTop).toBe("96px")
     await expect(
       detail.getByText("Build reliable Django services."),
     ).toBeVisible()
@@ -212,6 +226,11 @@ export const DetailAnalysis: Story = {
       expect(useFeedStateStore.getState().overrides[42]?.hidden).toBeFalsy(),
     )
   },
+}
+
+export const DetailGlass: Story = {
+  ...DetailAnalysis,
+  play: undefined,
 }
 
 export const DetailWithNullableFields: Story = {
@@ -273,7 +292,7 @@ export const Refresh: Story = {
             title: "Senior Python Developer",
             company: "Acme",
             location: "Remote",
-            posted_date: new Date().toISOString().slice(0, 10),
+            posted_date: new Intl.DateTimeFormat("sv-SE").format(),
             source: { code: "dou", name: "DOU", icon_url: null },
             url: null,
           },
@@ -305,7 +324,7 @@ export const Refresh: Story = {
     )
     await expect(dateJump.showPicker).toHaveBeenCalledOnce()
     fireEvent.change(dateJump, {
-      target: { value: new Date().toISOString().slice(0, 10) },
+      target: { value: new Intl.DateTimeFormat("sv-SE").format() },
     })
     await expect(dateJump).toHaveValue("")
     await userEvent.click(refresh)

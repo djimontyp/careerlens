@@ -79,7 +79,7 @@ export function AppNavigation({ mobile = false }: AppNavigationProps) {
     <nav aria-label="Основна навігація">
       <SidebarGroup>
         <SidebarGroupContent>
-          <SidebarMenu className="gap-2">
+          <SidebarMenu className="gap-2 group-data-[collapsible=icon]:items-center">
             {destinations.map(({ label, to, icon, enabled }) => (
               <SidebarMenuItem key={to}>
                 <SidebarMenuButton

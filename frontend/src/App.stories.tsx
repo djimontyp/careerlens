@@ -134,5 +134,12 @@ export const SignedIn: Story = {
     await waitFor(() =>
       expect(profile).toHaveAttribute("aria-expanded", "false"),
     )
+    await waitFor(() =>
+      expect(
+        canvasElement.ownerDocument.querySelectorAll(
+          "[data-base-ui-focus-guard]",
+        ),
+      ).toHaveLength(0),
+    )
   },
 }

@@ -26,6 +26,7 @@ import {
 } from "react-router-dom"
 
 import { Button } from "@/components/ui/button"
+import { WorkspaceHeader } from "@/components/workspace-header"
 import {
   Popover,
   PopoverContent,
@@ -56,6 +57,7 @@ import { useFeedLayoutStore } from "@/features/feed/layout/store"
 import type { FeedMode, Vacancy } from "@/features/feed/api"
 import { useIsMobile } from "@/hooks/use-mobile"
 import { useMediaQuery } from "@/hooks/use-media-query"
+import { cn } from "@/lib/utils"
 
 const PANEL_LABELS: Record<FeedPanel, string> = {
   list: "Список вакансій",
@@ -287,9 +289,14 @@ function EmptyPanel({
   return (
     <section
       aria-label={PANEL_LABELS[panel]}
-      className="flex h-full min-h-0 flex-col overflow-hidden rounded-2xl border bg-background"
+      className="relative flex h-full min-h-0 flex-col overflow-hidden rounded-2xl border border-surface-border bg-background"
     >
-      <header className="flex h-12 shrink-0 items-center border-b px-3">
+      <WorkspaceHeader
+        className={cn(
+          "z-10 flex h-12 shrink-0 items-center border-b px-3",
+          panel === "list" && "absolute inset-x-0 top-0",
+        )}
+      >
         <h2 className="min-w-0 truncate text-sm font-semibold">
           {PANEL_LABELS[panel]}
         </h2>
@@ -302,7 +309,7 @@ function EmptyPanel({
           </div>
         )}
         {panel !== "list" && action && <div className="ms-auto">{action}</div>}
-      </header>
+      </WorkspaceHeader>
       {panel === "list" ? (
         <VacancyList
           key={`${mode}:${refreshVersion}`}
@@ -313,6 +320,7 @@ function EmptyPanel({
           onVisibleDateChange={onVisibleDateChange}
           jumpDate={jumpDate}
           onJumpComplete={() => onJump(null)}
+          headerInset
         />
       ) : panel === "detail" ? (
         <VacancyDetail id={selectedId} onStateChange={onStateChange} />
@@ -367,7 +375,7 @@ function MobileDetail({
       aria-label="Деталі вакансії"
       className="flex h-full min-h-0 flex-col bg-background"
     >
-      <header className="flex h-12 shrink-0 items-center border-b px-2">
+      <WorkspaceHeader className="flex h-12 shrink-0 items-center border-b px-2">
         <NavLink
           to={backTo}
           className="inline-flex h-[44px] items-center gap-1.5 rounded-lg px-2.5 text-sm font-medium outline-none hover:bg-state-hover focus-visible:ring-2 focus-visible:ring-primary"
@@ -375,7 +383,7 @@ function MobileDetail({
           <HugeiconsIcon icon={ArrowLeft02Icon} />
           До списку
         </NavLink>
-      </header>
+      </WorkspaceHeader>
       <VacancyDetail id={selectedId} onStateChange={onStateChange} />
     </section>
   )
