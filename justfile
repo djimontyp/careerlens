@@ -5,6 +5,7 @@ _default:
 
 import 'just/dev.just'
 import 'just/mcp.just'
+import 'just/deps.just'
 
 # Start frontend development server with Vite
 [group('frontend')]
