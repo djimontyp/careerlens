@@ -21,6 +21,8 @@ forbidden_paths=0
 
 while IFS= read -r -d '' path; do
     case "${path}" in
+        .env.example | */.env.example)
+            ;;
         .env* | */.env* | .agents/* | .claude/* | .codex/* | .superpowers/* | .mcp.json | .mcp.local.json | */.mcp.local.json | backups/* | */backups/* | media/* | */media/* | data/* | */data/* | *.db | *.db-* | *.sqlite | *.sqlite-* | *.sqlite3 | *.sqlite3-* | *.dump | *.backup | *.bak | *.sql | *.sql.gz | *.pem | *.key | *.p12 | *.pfx | id_rsa | */id_rsa | id_ed25519 | */id_ed25519)
             echo "Forbidden tracked path: ${path}" >&2
             forbidden_paths=$((forbidden_paths + 1))
