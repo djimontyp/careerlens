@@ -1,4 +1,4 @@
-name: careerlens-release-dev
+name: ${COMPOSE_PROJECT_NAME:-careerlens-release-dev}
 
 services:
   db:
@@ -24,7 +24,7 @@ services:
       context: ../..
       dockerfile: deploy/docker/app.Dockerfile
       target: dev
-    image: careerlens:release-dev
+    image: careerlens:${COMPOSE_PROJECT_NAME:-careerlens-release-dev}
     volumes:
       - ../../src:/app/src
     develop:
@@ -67,9 +67,9 @@ services:
 
 networks:
   backend:
-    name: ${COMPOSE_PROJECT_NAME:-careerlens-dev}-backend
+    name: ${COMPOSE_PROJECT_NAME:-careerlens-release-dev}-backend
     driver: bridge
 
 volumes:
   postgres_data:
-    name: ${COMPOSE_PROJECT_NAME:-careerlens-dev}-postgres-data
+    name: ${COMPOSE_PROJECT_NAME:-careerlens-release-dev}-postgres-data
