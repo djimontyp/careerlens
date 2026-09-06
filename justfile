@@ -6,21 +6,30 @@ _default:
 import 'just/dev.just'
 import 'just/mcp.just'
 
+# Start frontend development server with Vite
+[group('frontend')]
 [no-cd]
 frontend-dev:
-    @cd {{ justfile_directory() }}/frontend && npm run dev -- --host
+    @cd {{ justfile_directory() }} && bash scripts/dev-env.sh bash -c 'cd frontend && npm run dev -- --host --port "${CAREERLENS_FRONTEND_PORT:-5173}"'
 
+alias dev-ui := frontend-dev
+
+# Run Storybook component workshop
+[group('frontend')]
 [no-cd]
 frontend-storybook:
     @cd {{ justfile_directory() }}/frontend && npm run storybook -- --no-open
 
 alias storybook := frontend-storybook
 
+# Run frontend unit and component tests with Vitest
+[group('test')]
 [no-cd]
 frontend-test:
     @cd {{ justfile_directory() }}/frontend && npm test
 
 # Run Playwright E2E tests in interactive UI mode
+[group('test')]
 [no-cd]
 frontend-e2e-ui *args:
     @cd {{ justfile_directory() }}/frontend && npx playwright test --ui {{ args }}
@@ -29,6 +38,7 @@ alias e2e-ui := frontend-e2e-ui
 alias test-ui := frontend-e2e-ui
 
 # Run Playwright E2E tests in headless mode
+[group('test')]
 [no-cd]
 frontend-e2e *args:
     @cd {{ justfile_directory() }}/frontend && npx playwright test {{ args }}
@@ -36,16 +46,19 @@ frontend-e2e *args:
 alias e2e := frontend-e2e
 
 # Format Python and frontend code
+[group('check')]
 fmt:
     uv run ruff check --fix .
     uv run ruff format .
     cd frontend && npm run fmt
 
 # Check GitHub Actions workflows
+[group('check')]
 workflow-check:
     docker run --rm --volume "{{ justfile_directory() }}:/repo" --workdir /repo rhysd/actionlint:1.7.12
 
 # Check production Compose configuration without printing secrets
+[group('check')]
 compose-check:
     env \
         CAREERLENS_IMAGE=careerlens:config-check \
@@ -62,6 +75,7 @@ compose-check:
         docker compose --file deploy/compose/production.yml config --quiet
 
 # Check code and delivery configuration
+[group('check')]
 check: workflow-check compose-check
     uv run ruff check .
     uv run ruff format --check .
@@ -70,6 +84,7 @@ check: workflow-check compose-check
     cd frontend && npm run fmt:check
 
 # Export OpenAPI schema of the Ninja API to openapi.json (for Postman import)
+[group('api')]
 api-schema:
     @env \
         APP__ENVIRONMENT=production \
@@ -88,6 +103,7 @@ api-schema:
         uv run python -c "import django,os,json;os.environ.setdefault('DJANGO_SETTINGS_MODULE','config.settings.django');django.setup();from api.root import api;open('openapi.json','w').write(json.dumps(api.get_openapi_schema(),indent=2));print('openapi.json updated')"
 
 # Run static type checking with Mypy
+[group('check')]
 typecheck:
     env \
         APP__ENVIRONMENT=production \
@@ -105,6 +121,7 @@ typecheck:
         uv run mypy
 
 # Run Django production deployment validation checks
+[group('check')]
 deploy-check:
     env \
         APP__ENVIRONMENT=production \
@@ -122,6 +139,7 @@ deploy-check:
         uv run python src/manage.py check --deploy --fail-level WARNING
 
 # Run test suite with Pytest
+[group('test')]
 test *args:
     env \
         APP__ENVIRONMENT=test \
@@ -140,6 +158,7 @@ test *args:
         uv run pytest {{ args }}
 
 # Verify production deployment contracts
+[group('test')]
 container-test:
     bash tests/deploy/verify_frontend_install_test.sh
     bash tests/deploy/verify_backup_script_test.sh
