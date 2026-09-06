@@ -19,3 +19,13 @@ dev-down *args:
 [group('dev')]
 dev-migrate:
     {{ dev_compose }} run --rm app python src/manage.py migrate --noinput
+
+# Set up an isolated Git worktree environment
+[group('worktree')]
+worktree-setup:
+    bash scripts/worktree-setup.sh
+
+# Remove an isolated Git worktree's Docker resources
+[group('worktree')]
+worktree-archive:
+    bash scripts/worktree-archive.sh
