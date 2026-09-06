@@ -4,6 +4,7 @@ _default:
     @just --list --unsorted
 
 import 'just/dev.just'
+import 'just/mcp.just'
 
 [no-cd]
 frontend-dev:
