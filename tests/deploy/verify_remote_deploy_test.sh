@@ -62,7 +62,7 @@ printf '%s\0' "${values[@]}" | env \
     DOCKER_CONFIG_BASE="${test_root}" \
     bash "${repository_root}/deploy/scripts/remote_deploy.sh"
 
-migrate_line="$(grep -n 'compose .* run --rm app python src/manage.py migrate --noinput' "${test_root}/docker.log" | cut -d: -f1)"
+migrate_line="$(grep -n 'compose .* run --rm migrate' "${test_root}/docker.log" | cut -d: -f1)"
 app_line="$(grep -n 'compose .* up --detach --wait app' "${test_root}/docker.log" | cut -d: -f1)"
 
 [[ "${migrate_line}" -lt "${app_line}" ]]
@@ -82,10 +82,37 @@ printf '%s\0' "${values[@]}" | env \
     ROLLBACK_ONLY=true \
     bash "${repository_root}/deploy/scripts/remote_deploy.sh"
 
-if grep -E 'manage\.py (migrate|import_vacancies)' "${test_root}/docker.log"; then
+if grep -E 'run --rm migrate|manage\.py (migrate|import_vacancies)' "${test_root}/docker.log"; then
     echo "Rollback attempted a database mutation" >&2
     exit 1
 fi
 grep 'compose .* up --detach --wait app' "${test_root}/docker.log" >/dev/null
+
+
+run_runtime_case() {
+    env \
+        HOME="${test_root}/home" \
+        PATH="${test_root}/bin:${PATH}" \
+        FAKE_DOCKER_LOG="${test_root}/docker.log" \
+        FAKE_CURL_LOG="${test_root}/curl.log" \
+        FAKE_TEMP_ROOT="${test_root}" \
+        DOCKER_CONFIG_BASE="${test_root}" \
+        bash "${repository_root}/deploy/scripts/remote_deploy.sh"
+}
+
+if printf '%s\0' "${values[@]}" true runtime-user '' | run_runtime_case; then
+    echo "Enabled runtime split accepted a missing password" >&2
+    exit 1
+fi
+printf '%s\0' "${values[@]}" true runtime-user runtime-test-password | run_runtime_case
+[[ -f "${test_root}/home/.careerlens/runtime-role-split.enabled" ]]
+if printf '%s\0' "${values[@]}" | run_runtime_case; then
+    echo "Deployment silently reverted to migration credentials" >&2
+    exit 1
+fi
+if grep -E 'runtime-test-password|database-password' "${test_root}/docker.log"; then
+    echo "Database secrets leaked into Docker command arguments" >&2
+    exit 1
+fi
 
 echo "Remote deploy database mutation contract verified"

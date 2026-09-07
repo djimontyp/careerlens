@@ -50,8 +50,29 @@ docker build \
 [[ "$(docker image inspect --format '{{.Architecture}}' "${image_name}")" == "amd64" ]]
 
 compose config --quiet
+RUNTIME_DATABASE_USER=runtime_contract \
+RUNTIME_DATABASE_PASSWORD=runtime-contract-only-password \
+APP_DATABASE_PASSWORD_ENV=RUNTIME_DATABASE_PASSWORD \
+compose --profile migration config --format json | python3 -c '
+import json
+import sys
+
+config = json.load(sys.stdin)
+app = config["services"]["app"]
+migrate = config["services"]["migrate"]
+assert app["environment"]["APP__DATABASE__USER"] == "runtime_contract"
+assert app["environment"]["APP__DATABASE__PASSWORD_FILE"] == "/run/secrets/app_database_password"
+assert migrate["environment"]["APP__DATABASE__USER"] == "careerlens_contract"
+assert migrate["environment"]["APP__DATABASE__PASSWORD_FILE"] == "/run/secrets/migration_database_password"
+assert "migration_database_password" not in {secret["source"] for secret in app["secrets"]}
+assert "app_database_password" not in {secret["source"] for secret in migrate["secrets"]}
+assert config["secrets"]["app_database_password"]["environment"] == "RUNTIME_DATABASE_PASSWORD"
+assert config["secrets"]["migration_database_password"]["environment"] == "DATABASE_PASSWORD"
+assert not migrate.get("ports")
+assert migrate["command"] == ["python", "src/manage.py", "migrate", "--noinput"]
+'
 compose up --detach --wait db
-compose run --rm app python src/manage.py migrate --noinput
+compose run --rm migrate
 compose up --detach --wait app
 
 app_container="$(compose ps --quiet app)"

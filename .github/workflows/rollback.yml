@@ -121,11 +121,22 @@ jobs:
           APP__DATABASE__DATABASE: ${{ secrets.DATABASE_NAME }}
           APP__DATABASE__USER: ${{ secrets.DATABASE_USER }}
           DATABASE_PASSWORD: ${{ secrets.DATABASE_PASSWORD }}
+          RUNTIME_DATABASE_ROLE_SPLIT: ${{ vars.RUNTIME_DATABASE_ROLE_SPLIT || 'false' }}
+          RUNTIME_DATABASE_USER: ${{ secrets.APP_RUNTIME_DATABASE_USERNAME }}
+          RUNTIME_DATABASE_PASSWORD: ${{ secrets.APP_RUNTIME_DATABASE_PASSWORD }}
           DJANGO_SECRET_KEY: ${{ secrets.DJANGO_SECRET_KEY }}
           DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
           DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
           WORKOS_API_KEY: ${{ secrets.WORKOS_API_KEY }}
         run: |
+          if [[ "${RUNTIME_DATABASE_ROLE_SPLIT}" != true && "${RUNTIME_DATABASE_ROLE_SPLIT}" != false ]]; then
+            echo "Runtime database role split must be true or false" >&2
+            exit 1
+          fi
+          if [[ "${RUNTIME_DATABASE_ROLE_SPLIT}" == true && ( -z "${RUNTIME_DATABASE_USER}" || -z "${RUNTIME_DATABASE_PASSWORD}" ) ]]; then
+            echo "Enabled runtime role split requires both runtime database secrets" >&2
+            exit 1
+          fi
           ssh "${DEPLOY_TARGET}" 'install --directory --mode 700 "${HOME}/.careerlens"'
           scp deploy/compose/production.yml "${DEPLOY_TARGET}:.careerlens/production.yml.new"
           scp deploy/scripts/remote_deploy.sh "${DEPLOY_TARGET}:.careerlens/remote_deploy.sh.new"
@@ -145,7 +156,10 @@ jobs:
               DJANGO_SECRET_KEY \
               WORKOS_API_KEY \
               DOCKERHUB_USERNAME \
-              DOCKERHUB_TOKEN
+              DOCKERHUB_TOKEN \
+              RUNTIME_DATABASE_ROLE_SPLIT \
+              RUNTIME_DATABASE_USER \
+              RUNTIME_DATABASE_PASSWORD
             do
               printf '%s\0' "${!variable}"
             done

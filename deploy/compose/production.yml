@@ -40,13 +40,13 @@ services:
         max-size: 10m
         max-file: "3"
 
-  app:
+  app: &app
     image: ${CAREERLENS_IMAGE:?required}
     platform: linux/amd64
     depends_on:
       db:
         condition: service_healthy
-    environment:
+    environment: &app_environment
       APP__ENVIRONMENT: ${APP__ENVIRONMENT:?required}
       APP__DJANGO__SECRET_KEY_FILE: /run/secrets/django_secret_key
       APP__DJANGO__ALLOWED_HOSTS: ${APP__DJANGO__ALLOWED_HOSTS:?required}
@@ -56,7 +56,7 @@ services:
       APP__AUTH__WORKOS__API_KEY_FILE: /run/secrets/workos_api_key
       APP__AUTH__WORKOS__REDIRECT_URI: ${APP__AUTH__WORKOS__REDIRECT_URI:?required}
       APP__DATABASE__DATABASE: ${APP__DATABASE__DATABASE:?required}
-      APP__DATABASE__USER: ${APP__DATABASE__USER:?required}
+      APP__DATABASE__USER: ${RUNTIME_DATABASE_USER:-${APP__DATABASE__USER:?required}}
       APP__DATABASE__PASSWORD_FILE: /run/secrets/app_database_password
       APP__DATABASE__HOST: db
       APP__DATABASE__PORT: "5432"
@@ -90,6 +90,23 @@ services:
         max-size: 10m
         max-file: "3"
 
+  migrate:
+    <<: *app
+    profiles: [migration]
+    environment:
+      <<: *app_environment
+      APP__DATABASE__USER: ${APP__DATABASE__USER:?required}
+      APP__DATABASE__PASSWORD_FILE: /run/secrets/migration_database_password
+    secrets:
+      - django_secret_key
+      - migration_database_password
+      - workos_api_key
+    ports: []
+    restart: "no"
+    healthcheck:
+      disable: true
+    command: [python, src/manage.py, migrate, --noinput]
+
 networks:
   backend:
     name: ${COMPOSE_PROJECT_NAME:-careerlens-prod}-backend
@@ -101,6 +118,8 @@ volumes:
 
 secrets:
   app_database_password:
+    environment: ${APP_DATABASE_PASSWORD_ENV:-DATABASE_PASSWORD}
+  migration_database_password:
     environment: DATABASE_PASSWORD
   db_database_password:
     environment: DATABASE_PASSWORD
