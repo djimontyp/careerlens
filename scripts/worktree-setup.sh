@@ -11,7 +11,7 @@ if [[ -z "$branch" || "$branch" == "main" || "$branch" == "master" ]]; then
     exit 1
 fi
 
-docker_context="$(bash "$root/scripts/dev-env.sh" bash -c 'printf "%s" "$DOCKER_CONTEXT"')"
+docker_context="$(bash "$root/scripts/dev-env.sh" --no-owner-env bash -c 'printf "%s" "$DOCKER_CONTEXT"')"
 
 DOCKER_CONTEXT="$docker_context" python3 - "$common_dir" "$root" "$branch" <<'PYTHON'
 import fcntl
@@ -112,8 +112,11 @@ with lock_path.open("w", encoding="utf-8") as lock_file:
         if not line.startswith("worktree "):
             continue
         sibling = Path(line.removeprefix("worktree "))
-        if sibling.resolve() == worktree_dir.resolve():
-            continue
+        try:
+            if sibling.samefile(worktree_dir):
+                continue
+        except OSError:
+            pass
         sibling_environment = read_environment(sibling / ".env.worktree")
         for key in ("CAREERLENS_HTTP_PORT", "CAREERLENS_FRONTEND_PORT", "CAREERLENS_DEV_DB_PORT"):
             value = sibling_environment.get(key, "")
