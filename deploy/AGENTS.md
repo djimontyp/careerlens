@@ -6,7 +6,14 @@ These rules apply to every file in `deploy/`.
 
 - `docker/app.Dockerfile` builds the application image.
 - `compose/production.yml` runs the production application and PostgreSQL stack.
-- Production Compose contains only `app` and `db`.
+- Production Compose runs `app` and `db`; `migrate` is a one-shot service behind the `migration` profile.
+- Migration credentials belong only to `db` and `migrate` after runtime role provisioning.
+- Runtime overrides use `RUNTIME_DATABASE_USER`, `RUNTIME_DATABASE_PASSWORD` and
+  `APP_DATABASE_PASSWORD_ENV=RUNTIME_DATABASE_PASSWORD`; legacy deployments retain their existing credentials.
+- `remote_deploy.sh` accepts an optional NUL-delimited suffix: role-split flag, runtime username, runtime password.
+- Production workflows use environment variable `RUNTIME_DATABASE_ROLE_SPLIT=true` and secrets
+  `APP_RUNTIME_DATABASE_USERNAME` plus `APP_RUNTIME_DATABASE_PASSWORD`.
+- After a split-role deployment succeeds, a non-secret server marker refuses later fallback to migration credentials.
 
 ## Image and runtime
 
