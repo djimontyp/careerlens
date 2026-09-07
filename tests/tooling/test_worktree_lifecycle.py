@@ -59,6 +59,10 @@ esac
 """,
     )
     write_executable(fake_bin / "npm", "#!/usr/bin/env bash\nexit 0\n")
+    write_executable(
+        fake_bin / "op",
+        "#!/usr/bin/env bash\necho 'setup must not invoke op' >&2\nexit 91\n",
+    )
     write_executable(fake_bin / "uv", "#!/usr/bin/env bash\nexit 0\n")
 
     subprocess.run(["git", "init", "--initial-branch=feature/orca"], cwd=repository, check=True, capture_output=True)
@@ -103,6 +107,62 @@ def test_setup_is_idempotent_and_keeps_worktree_state_private(
     assert "APP__DATABASE__PASSWORD=" in first_content
 
     second_run = run_script(repository, environment, "scripts/worktree-setup.sh")
+
+    assert second_run.returncode == 0, second_run.stderr
+    assert worktree_environment.read_text(encoding="utf-8") == first_content
+
+
+def test_setup_does_not_read_owner_fifo(
+    isolated_repository: tuple[Path, dict[str, str]],
+) -> None:
+    repository, environment = isolated_repository
+    os.mkfifo(repository / ".env")
+    environment.pop("USE_OP")
+
+    setup = run_script(repository, environment, "scripts/worktree-setup.sh")
+
+    assert setup.returncode == 0, setup.stderr
+    assert (repository / ".env.worktree").exists()
+
+
+def test_setup_recognizes_same_worktree_with_different_path_case(
+    isolated_repository: tuple[Path, dict[str, str]],
+) -> None:
+    repository, environment = isolated_repository
+    subprocess.run(["git", "add", "."], cwd=repository, check=True, capture_output=True)
+    subprocess.run(
+        [
+            "git",
+            "-c",
+            "user.name=Test",
+            "-c",
+            "user.email=test@example.com",
+            "commit",
+            "-m",
+            "fixture",
+        ],
+        cwd=repository,
+        check=True,
+        capture_output=True,
+    )
+    linked_worktree = repository.parent / "linked"
+    subprocess.run(
+        ["git", "worktree", "add", "-b", "feature/linked", str(linked_worktree)],
+        cwd=repository,
+        check=True,
+        capture_output=True,
+    )
+    case_variant = linked_worktree.with_name(linked_worktree.name.upper())
+    linked_worktree.rename(case_variant)
+    if not case_variant.is_dir() or linked_worktree.resolve() == case_variant.resolve():
+        pytest.skip("requires a case-insensitive filesystem")
+
+    first_run = run_script(case_variant, environment, "scripts/worktree-setup.sh")
+    assert first_run.returncode == 0, first_run.stderr
+    worktree_environment = case_variant / ".env.worktree"
+    first_content = worktree_environment.read_text(encoding="utf-8")
+
+    second_run = run_script(case_variant, environment, "scripts/worktree-setup.sh")
 
     assert second_run.returncode == 0, second_run.stderr
     assert worktree_environment.read_text(encoding="utf-8") == first_content

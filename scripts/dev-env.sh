@@ -11,10 +11,15 @@ if [[ -n "$common_dir" ]]; then
 fi
 
 env_file="$root/.env"
-if [[ ! -e "$env_file" && -n "$main_repository" && -e "$main_repository/.env" ]]; then
-    env_file="$main_repository/.env"
-elif [[ ! -e "$env_file" ]]; then
+if [[ "${1:-}" == "--no-owner-env" ]]; then
+    shift
     env_file="$root/.env.example"
+elif [[ ! -e "$env_file" ]]; then
+    if [[ -n "$main_repository" && -e "$main_repository/.env" ]]; then
+        env_file="$main_repository/.env"
+    else
+        env_file="$root/.env.example"
+    fi
 fi
 
 load_dotenv() {
