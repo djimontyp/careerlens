@@ -9,3 +9,7 @@ CareerLens is:
 - **Distraction-free viewing** - clean interface focused on fast, productive job hunting without clutter
 - **Job search tracking** - saved vacancies, application tracking, and personal notes for each role
 - **Precise filters** - filter by companies, salary range, publication dates, and other criteria
+
+## Architecture
+
+The maintained C4 model lives in [IcePanel](https://app.icepanel.io/landscapes/zsv8gphn0T0n2Y93h1NS). Start with the Level 1 system context and its scope in [docs/architecture/c4.md](docs/architecture/c4.md).
