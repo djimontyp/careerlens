@@ -53,6 +53,10 @@ class Company(models.Model):
 
 
 class Vacancy(models.Model):
+    class DescriptionFormat(models.TextChoices):
+        SOURCE = "source", "Source text"
+        MARKDOWN = "markdown", "Markdown"
+
     source = models.ForeignKey(Source, on_delete=models.PROTECT, related_name="vacancies")
     company = models.ForeignKey(
         Company,
@@ -70,6 +74,11 @@ class Vacancy(models.Model):
     scraped_at = models.DateTimeField(default=timezone.now)
     source_updated_at = models.DateTimeField(blank=True, null=True)
     description = models.TextField()
+    description_format = models.CharField(
+        choices=DescriptionFormat.choices,
+        default=DescriptionFormat.SOURCE,
+        max_length=8,
+    )
 
     objects = models.Manager()
     feed = VacancyQuerySet.as_manager()

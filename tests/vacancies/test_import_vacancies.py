@@ -56,6 +56,7 @@ def test_import_vacancies_is_idempotent_and_updates_existing_records() -> None:
     assert vacancy.scraped_at.isoformat() == "2026-08-20T10:30:00+00:00"
     assert vacancy.source_updated_at.isoformat() == "2026-08-21T08:15:00+00:00"
     assert vacancy.source.icon_url == "/source-icons/dou.png"
+    assert vacancy.description_format == "markdown"
     assert match_model.objects.get(user=user, vacancy=vacancy).score == 81
     assert note_model.objects.get(user=user, vacancy=vacancy).text == "Власна нотатка"
     assert application_model.objects.get(user=user, vacancy=vacancy).cover_letter == "Власний супровідний лист"

@@ -83,6 +83,7 @@ class VacancyPayload(BaseModel):
     scraped_at: datetime | None = None
     source_updated_at: datetime | None = None
     description: str = Field(min_length=1)
+    description_format: Literal["source", "markdown"] = "source"
     match: MatchPayload | None = None
     note: str | None = Field(default=None, min_length=1)
     application: ApplicationPayload | None = None
@@ -150,6 +151,8 @@ class Command(BaseCommand):
                         defaults["scraped_at"] = item.scraped_at
                     if "source_updated_at" in item.model_fields_set:
                         defaults["source_updated_at"] = item.source_updated_at
+                    if "description_format" in item.model_fields_set:
+                        defaults["description_format"] = item.description_format
                     vacancy, created = Vacancy.objects.update_or_create(
                         source=source,
                         external_id=item.external_id,
