@@ -1,5 +1,7 @@
 # CareerLens
 
+Development workflow, verification commands and contribution boundaries: [CONTRIBUTING.md](CONTRIBUTING.md).
+
 CareerLens is:
 
 - **Unified job feed** - aggregates vacancies from multiple job sources in one place

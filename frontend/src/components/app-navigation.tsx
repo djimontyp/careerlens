@@ -1,7 +1,7 @@
 import {
-  BotIcon,
-  BriefcaseBusinessIcon,
-  Target01Icon,
+  AiScanIcon,
+  NewsIcon as NewspaperIcon,
+  Target02Icon,
 } from "@hugeicons/core-free-icons"
 import { HugeiconsIcon } from "@hugeicons/react"
 import { Link, useLocation } from "react-router-dom"
@@ -19,11 +19,24 @@ const destinations = [
   {
     label: "Стрічка",
     to: "/feed",
-    icon: BriefcaseBusinessIcon,
+    icon: NewspaperIcon,
+    iconName: "news",
     enabled: true,
   },
-  { label: "Інтереси", to: "/interests", icon: Target01Icon, enabled: false },
-  { label: "Мій агент", to: "/agent", icon: BotIcon, enabled: false },
+  {
+    label: "Інтереси",
+    to: "/interests",
+    icon: Target02Icon,
+    iconName: "target",
+    enabled: false,
+  },
+  {
+    label: "Мій агент",
+    to: "/agent",
+    icon: AiScanIcon,
+    iconName: "ai-scan",
+    enabled: false,
+  },
 ] as const
 
 type AppNavigationProps = {
@@ -39,11 +52,15 @@ export function AppNavigation({ mobile = false }: AppNavigationProps) {
         aria-label="Основна навігація"
         className="grid shrink-0 grid-cols-3 border-t bg-background pb-[env(safe-area-inset-bottom)] md:hidden"
       >
-        {destinations.map(({ label, to, icon, enabled }) => {
+        {destinations.map(({ label, to, icon, iconName, enabled }) => {
           const isActive = enabled && pathname.startsWith(to)
           const content = (
             <>
-              <HugeiconsIcon icon={icon} className="size-5" />
+              <HugeiconsIcon
+                icon={icon}
+                className="size-5"
+                data-navigation-icon={iconName}
+              />
               <span className="text-xs font-medium">{label}</span>
             </>
           )
@@ -80,7 +97,7 @@ export function AppNavigation({ mobile = false }: AppNavigationProps) {
       <SidebarGroup>
         <SidebarGroupContent>
           <SidebarMenu className="gap-2 group-data-[collapsible=icon]:items-center">
-            {destinations.map(({ label, to, icon, enabled }) => (
+            {destinations.map(({ label, to, icon, iconName, enabled }) => (
               <SidebarMenuItem key={to}>
                 <SidebarMenuButton
                   tooltip={label}
@@ -93,7 +110,7 @@ export function AppNavigation({ mobile = false }: AppNavigationProps) {
                   tabIndex={enabled ? undefined : -1}
                   render={enabled ? <Link to={to} /> : undefined}
                 >
-                  <HugeiconsIcon icon={icon} />
+                  <HugeiconsIcon icon={icon} data-navigation-icon={iconName} />
                   <span>{label}</span>
                 </SidebarMenuButton>
               </SidebarMenuItem>

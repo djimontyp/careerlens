@@ -90,6 +90,11 @@ export const Desktop: Story = {
     await expect(
       within(navigation).getByRole("link", { name: "Стрічка" }),
     ).toHaveAttribute("aria-current", "page")
+    await expect(
+      within(navigation)
+        .getByRole("link", { name: "Стрічка" })
+        .querySelector('[data-navigation-icon="news"]'),
+    ).not.toBeNull()
     for (const label of ["Інтереси", "Мій агент"]) {
       const destination = within(navigation).getByRole("button", {
         name: label,
@@ -97,6 +102,16 @@ export const Desktop: Story = {
       await expect(destination).toHaveAttribute("aria-disabled", "true")
       await expect(destination).toHaveAttribute("tabindex", "-1")
     }
+    await expect(
+      within(navigation)
+        .getByRole("button", { name: "Інтереси" })
+        .querySelector('[data-navigation-icon="target"]'),
+    ).not.toBeNull()
+    await expect(
+      within(navigation)
+        .getByRole("button", { name: "Мій агент" })
+        .querySelector('[data-navigation-icon="ai-scan"]'),
+    ).not.toBeNull()
     await expect(main).toBeVisible()
     await expect(ambientBackground).toBeVisible()
     await expect(workspace.scrollHeight).toBe(workspace.clientHeight)
@@ -203,10 +218,19 @@ export const Mobile: Story = {
 
     await expect(navigation).toBeVisible()
     await expect(feed).toHaveAttribute("aria-current", "page")
+    await expect(
+      feed.querySelector('[data-navigation-icon="news"]'),
+    ).not.toBeNull()
     await expect(within(navigation).getByText("Інтереси")).toBeVisible()
     await expect(within(navigation).getByText("Мій агент")).toBeVisible()
     await expect(interests).toBeDisabled()
     await expect(agent).toBeDisabled()
+    await expect(
+      interests.querySelector('[data-navigation-icon="target"]'),
+    ).not.toBeNull()
+    await expect(
+      agent.querySelector('[data-navigation-icon="ai-scan"]'),
+    ).not.toBeNull()
     for (const destination of [feed, interests, agent]) {
       await expect(
         destination.getBoundingClientRect().height,
@@ -307,10 +331,11 @@ export const MobileFeedWorkspace: Story = {
     ).toBeVisible()
     await expect(header.getByRole("heading", { name: "Стрічка" })).toBeVisible()
     const filters = header.getByRole("button", { name: "Фільтри" })
-    const mode = header.getByRole("button", { name: "Режим: Активні" })
 
     await expect(filters).toBeVisible()
-    await expect(mode.getBoundingClientRect().height).toBeGreaterThanOrEqual(44)
+    await expect(
+      header.queryByRole("button", { name: /^Режим:/ }),
+    ).not.toBeInTheDocument()
     await expect(filters.getBoundingClientRect().width).toBeGreaterThanOrEqual(
       44,
     )
@@ -386,9 +411,30 @@ export const DesktopFiltersPopover: Story = {
 export const DesktopFeedWorkspace: Story = {
   globals: { viewport: { value: "desktop", isRotated: false } },
   beforeEach: () => {
+    const originalFetch = window.fetch
+    window.fetch = async (input, init) => {
+      const url = new URL(String(input), window.location.origin)
+      if (
+        (init?.method ?? "GET") === "GET" &&
+        url.pathname === "/api/v1/feed" &&
+        url.searchParams.get("mode") === "active" &&
+        url.searchParams.get("limit") === "20"
+      ) {
+        return Response.json({
+          items: [],
+          next_cursor: null,
+        } satisfies FeedResponse)
+      }
+      throw new Error(
+        `Unexpected story request: ${init?.method ?? "GET"} ${url}`,
+      )
+    }
     localStorage.removeItem(FEED_LAYOUT_STORAGE_KEY)
     useFeedLayoutStore.getState().reset()
-    return () => useFeedLayoutStore.getState().reset()
+    return () => {
+      window.fetch = originalFetch
+      useFeedLayoutStore.getState().reset()
+    }
   },
   args: {
     children: <FeedWorkspace />,
@@ -397,6 +443,7 @@ export const DesktopFeedWorkspace: Story = {
   },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
+    await expect(await canvas.findByText("Вакансій поки немає")).toBeVisible()
     const header = within(
       canvas.getByRole("banner", { name: "Верхня навігація" }),
     )

@@ -12,6 +12,10 @@ import {
   FeedMobileActions,
   FeedWorkspace,
 } from "@/features/feed/components/feed-workspace"
+import {
+  flushPendingNotesBeforeLogout,
+  useVacancyNotesStore,
+} from "@/features/feed/state/notes"
 
 function App() {
   const [user, setUser] = useState<User | null>()
@@ -70,7 +74,16 @@ function App() {
       onLogout={async () => {
         setLoggingOut(true)
         try {
+          // The bounded flush may still leave a draft unsaved (a failed
+          // write or one that hit the timeout). Drafts and the unload
+          // guard are only discarded once logout has actually succeeded,
+          // right before the reload that makes them moot; if logout
+          // itself fails (network error, 5xx, CSRF 403), the user stays
+          // signed in and the unsaved drafts, their error/retry state and
+          // the unload guard must still be there for another attempt.
+          await flushPendingNotesBeforeLogout()
           await logout()
+          useVacancyNotesStore.getState().reset()
           window.location.reload()
         } catch (error) {
           console.error(error)

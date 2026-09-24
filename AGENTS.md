@@ -9,6 +9,16 @@
 
 Before changing any scoped area, read its `AGENTS.md`. After the change, re-read it and update instructions made stale by the change.
 
+## Delivery workflow
+
+- See `CONTRIBUTING.md` for reproducible checks and handoff expectations. Keep durable rules here, feature contracts beside their code or in linked docs, and execution logs out of instructions.
+- Confirm the active worktree, branch and runtime targets before writes. Preserve unrelated changes and owner environment files; Git isolation alone does not isolate ports, databases or Docker resources.
+- When restoring behavior, compare the reference's committed code separately from its local experiments. Record the intended differences; do not blindly copy the old implementation.
+- Agree on material product or design changes before implementation. Once the scope is authorized, complete its fixes and verification autonomously; ask again only for a new decision, risk or authority.
+- Finish one bounded vertical slice: behavior, API contract where needed, regression evidence, UI states and relevant docs. Do not expand into adjacent features while that slice is incomplete.
+- Preparation does not authorize commit, push, deployment, live collection or external mutations. Report local verification separately from publication and runtime evidence.
+- Add harness rules only for a demonstrated failure or recurring decision. Prefer improving an existing command or scoped instruction over another framework, checklist or mandatory artifact. Do not require personal plugins to run project checks.
+
 ## Python dependencies
 
 `pyproject.toml` is the dependency source of truth. `uv.lock` is the generated exact resolution.
@@ -53,6 +63,7 @@ Before changing any scoped area, read its `AGENTS.md`. After the change, re-read
 
 - Do not add private helper functions prefixed with `_`. Keep one-off logic inline; give reusable logic a domain name and place it in the owning module.
 - Demo data loading is dev/test-only and must never run from production or rollback workflows.
+- The project targets Python 3.14: `except A, B:` without parentheses is valid (PEP 758) and is the form `ruff format` produces. Do not "fix" it; verify syntax with `uv run python`, not a system interpreter.
 
 ## Code work
 
@@ -67,6 +78,7 @@ Before changing any scoped area, read its `AGENTS.md`. After the change, re-read
 - Equivalent partial mutations share one resource endpoint instead of duplicating route logic.
 - On API changes, update `openapi.json` via `just api-schema` to keep the schema up to date.
 - Every operation must fully describe inputs, types, examples, tags, success and error responses, authentication and relevant headers or cookies. The generated schema must match `openapi.json`.
+- Schema equality does not prove runtime fidelity. For changed responses, verify the actual HTTP status and body, including validation errors and user-owned side effects, against the declared contract.
 
 ## Authentication security
 
@@ -83,6 +95,7 @@ Before changing any scoped area, read its `AGENTS.md`. After the change, re-read
 - Use Playwright E2E only for a real SPA-Django boundary that lower levels cannot prove. When selected, apply `playwright-best-practices` to its implementation.
 - Keep the real WorkOS redirect and environment flow as an explicit manual smoke check unless a deterministic isolated provider environment exists.
 - Add infrastructure, helpers, matrices and coverage targets only for a current risk or demonstrated repetition.
+- Start with the cheapest check that observes the changed risk. Documentation-only changes do not require the entire product suite; release preparation requires the relevant full gates. Report exact commands, outcomes and unverified boundaries instead of treating test counts as proof of completeness.
 
 <!-- context7 -->
 Use Context7 MCP to fetch current documentation whenever the user asks about a library, framework, SDK, API, CLI tool, or cloud service — even well-known ones like React, Next.js, Prisma, Express, Tailwind, Django, or Spring Boot. This includes API syntax, configuration, version migration, library-specific debugging, setup instructions, and CLI tool usage. Use even when you think you know the answer — your training data may not reflect recent changes. Prefer this over web search for library docs.

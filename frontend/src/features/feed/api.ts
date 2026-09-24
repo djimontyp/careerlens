@@ -1,4 +1,4 @@
-import { apiGet, apiPatchJson } from "@/lib/api"
+import { apiDelete, apiGet, apiPatchJson, apiPutJson } from "@/lib/api"
 import type { VacancyMatch } from "@/features/vacancies/types"
 
 type VacancySource = {
@@ -29,6 +29,13 @@ export type Vacancy = {
 export type VacancyDetail = Vacancy & {
   description: string
   description_status: "markdown" | "source"
+  note: string
+  application: VacancyApplication | null
+}
+
+export type VacancyApplication = {
+  submitted_at: string
+  cover_letter: string
 }
 
 export type FeedResponse = {
@@ -65,4 +72,30 @@ export function updateVacancyState(id: number, patch: VacancyStatePatch) {
     `feed/${id}/state`,
     patch,
   )
+}
+
+export function updateVacancyNote(
+  id: number,
+  note: string,
+  init?: Pick<RequestInit, "keepalive">,
+) {
+  return apiPutJson<{ note: string }, { note: string }>(
+    `feed/${id}/note`,
+    { note },
+    init,
+  )
+}
+
+export function updateVacancyApplication(
+  id: number,
+  application: VacancyApplication,
+) {
+  return apiPutJson<VacancyApplication, VacancyApplication>(
+    `feed/${id}/application`,
+    application,
+  )
+}
+
+export function deleteVacancyApplication(id: number) {
+  return apiDelete(`feed/${id}/application`)
 }

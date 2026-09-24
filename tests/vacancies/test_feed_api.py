@@ -221,6 +221,25 @@ def test_feed_detail_returns_description_and_only_the_current_users_match() -> N
 
 
 @pytest.mark.django_db
+def test_feed_detail_reports_stored_markdown_representation() -> None:
+    source = Source.objects.create(code="dou", name="DOU")
+    vacancy = Vacancy.objects.create(
+        source=source,
+        external_id="markdown-detail",
+        title="Python Developer",
+        description="## Про роль\n\n- Будувати API",
+        description_format="markdown",
+    )
+    client = Client()
+    client.force_login(User.objects.create_user(email="ada@example.com"))
+
+    response = client.get(f"/api/v1/feed/{vacancy.id}")
+
+    assert response.status_code == 200
+    assert response.json()["description_status"] == "markdown"
+
+
+@pytest.mark.django_db
 def test_feed_detail_returns_404_for_unknown_vacancy() -> None:
     user = User.objects.create_user(email="ada@example.com")
     client = Client()

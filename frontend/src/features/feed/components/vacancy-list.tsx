@@ -56,9 +56,19 @@ export function VacancyList({
 
   useEffect(() => {
     const controller = new AbortController()
+    const previousOverrides = useFeedStateStore.getState().overrides
     onLoadingChange?.(true)
     fetchFeed(mode, cursor, controller.signal).then(
       (feed) => {
+        if (controller.signal.aborted) return
+        for (const item of feed.items) {
+          useFeedStateStore
+            .getState()
+            .revalidate(item.id, previousOverrides[item.id], {
+              has_note: item.has_note,
+              application_submitted_at: item.application_submitted_at,
+            })
+        }
         setState((current) => ({
           key: requestKey,
           items: cursor ? [...current.items, ...feed.items] : feed.items,
@@ -287,9 +297,11 @@ export function VacancyList({
                           )}
                         </VacancyTitle>
                         <VacancyStatusIndicators
-                          hasNote={vacancy.has_note}
+                          hasNote={override?.has_note ?? vacancy.has_note}
                           applicationSubmittedAt={
-                            vacancy.application_submitted_at
+                            override?.application_submitted_at !== undefined
+                              ? override.application_submitted_at
+                              : vacancy.application_submitted_at
                           }
                           saved={saved}
                           hidden={hidden}

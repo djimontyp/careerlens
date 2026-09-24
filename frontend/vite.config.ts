@@ -8,6 +8,8 @@ import path from "node:path"
 import { storybookTest } from "@storybook/addon-vitest/vitest-plugin"
 import { playwright } from "@vitest/browser-playwright"
 
+const backendUrl = `http://127.0.0.1:${process.env.CAREERLENS_HTTP_PORT ?? "9090"}`
+
 // More info at: https://storybook.js.org/docs/next/writing-tests/integrations/vitest-addon
 export default defineConfig({
   plugins: [react(), tailwindcss()],
@@ -22,9 +24,9 @@ export default defineConfig({
   server: {
     host: "0.0.0.0",
     proxy: {
-      "/api": "http://127.0.0.1:9090",
-      "/login": "http://127.0.0.1:9090",
-      "/callback": "http://127.0.0.1:9090",
+      "/api": backendUrl,
+      "/login": backendUrl,
+      "/callback": backendUrl,
     },
   },
   test: {

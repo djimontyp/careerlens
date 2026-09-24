@@ -30,7 +30,9 @@ class VacancyQuerySet(models.QuerySet["Vacancy"]):
                 state_hidden=F("own_state__hidden"),
                 state_seen_at=F("own_state__seen_at"),
                 note_id=F("own_note__id"),
+                note_text=F("own_note__text"),
                 application_submitted_at=F("own_application__submitted_at"),
+                application_cover_letter=F("own_application__cover_letter"),
             )
         )
 
@@ -53,6 +55,10 @@ class Company(models.Model):
 
 
 class Vacancy(models.Model):
+    class DescriptionFormat(models.TextChoices):
+        SOURCE = "source", "Source text"
+        MARKDOWN = "markdown", "Markdown"
+
     source = models.ForeignKey(Source, on_delete=models.PROTECT, related_name="vacancies")
     company = models.ForeignKey(
         Company,
@@ -70,6 +76,11 @@ class Vacancy(models.Model):
     scraped_at = models.DateTimeField(default=timezone.now)
     source_updated_at = models.DateTimeField(blank=True, null=True)
     description = models.TextField()
+    description_format = models.CharField(
+        choices=DescriptionFormat.choices,
+        default=DescriptionFormat.SOURCE,
+        max_length=8,
+    )
 
     objects = models.Manager()
     feed = VacancyQuerySet.as_manager()

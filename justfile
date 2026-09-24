@@ -89,6 +89,8 @@ check: workflow-check compose-check
 api-schema:
     @env \
         APP__ENVIRONMENT=production \
+        APP__DJANGO__DEBUG=false \
+        APP__DEV__AUTOLOGIN=false \
         APP__DJANGO__SECRET_KEY=api-schema-only-secret-key-with-at-least-32-characters \
         APP__DJANGO__ALLOWED_HOSTS='["app.example.invalid"]' \
         APP__CORE__SITE_URL=https://app.example.invalid \
@@ -108,6 +110,8 @@ api-schema:
 typecheck:
     env \
         APP__ENVIRONMENT=production \
+        APP__DJANGO__DEBUG=false \
+        APP__DEV__AUTOLOGIN=false \
         APP__DJANGO__SECRET_KEY=typecheck-only-secret-key-with-at-least-32-characters \
         APP__DJANGO__ALLOWED_HOSTS='["app.example.invalid"]' \
         APP__CORE__SITE_URL=https://app.example.invalid \
@@ -126,6 +130,8 @@ typecheck:
 deploy-check:
     env \
         APP__ENVIRONMENT=production \
+        APP__DJANGO__DEBUG=false \
+        APP__DEV__AUTOLOGIN=false \
         APP__DJANGO__SECRET_KEY=deploy-check-only-secret-G7vQ2mN8xP4rT9kL6sW3cY5hF1jD0bA8uZ \
         APP__DJANGO__ALLOWED_HOSTS='["app.example.invalid"]' \
         APP__CORE__SITE_URL=https://app.example.invalid \
@@ -144,6 +150,8 @@ deploy-check:
 test *args:
     env \
         APP__ENVIRONMENT=test \
+        APP__DJANGO__DEBUG=false \
+        APP__DEV__AUTOLOGIN=false \
         APP__DJANGO__SECRET_KEY=test-only-secret-key-with-at-least-32-characters \
         APP__DJANGO__ALLOWED_HOSTS='["testserver"]' \
         APP__CORE__SITE_URL=http://testserver \

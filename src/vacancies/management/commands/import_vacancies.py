@@ -83,6 +83,7 @@ class VacancyPayload(BaseModel):
     scraped_at: datetime | None = None
     source_updated_at: datetime | None = None
     description: str = Field(min_length=1)
+    description_format: Literal["source", "markdown"] = "source"
     match: MatchPayload | None = None
     note: str | None = Field(default=None, min_length=1)
     application: ApplicationPayload | None = None
@@ -141,6 +142,7 @@ class Command(BaseCommand):
                         "url": str(item.url) if item.url else None,
                         "posted_date": item.posted_date,
                         "description": item.description,
+                        "description_format": item.description_format,
                     }
                     if "location" in item.model_fields_set:
                         defaults["location"] = item.location
