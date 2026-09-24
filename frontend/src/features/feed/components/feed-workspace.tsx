@@ -42,7 +42,6 @@ import {
 } from "@/components/ui/sheet"
 import { ResizeHandle } from "@/features/feed/components/resize-handle"
 import { FeedDateJump } from "@/features/feed/components/feed-date-jump"
-import { FeedModeControl } from "@/features/feed/components/feed-mode-control"
 import { FeedRefreshButton } from "@/features/feed/components/feed-refresh-button"
 import { SortablePanel } from "@/features/feed/components/sortable-panel"
 import { VacancyList } from "@/features/feed/components/vacancy-list"
@@ -241,18 +240,7 @@ export function FeedDesktopActions() {
 }
 
 export function FeedMobileActions() {
-  const [searchParams] = useSearchParams()
-  const requestedMode = searchParams.get("mode")
-  const mode: FeedMode =
-    requestedMode === "saved" || requestedMode === "hidden"
-      ? requestedMode
-      : "active"
-  return (
-    <>
-      <FeedModeControl mode={mode} mobile />
-      <FilterSheet iconOnly />
-    </>
-  )
+  return <FilterSheet iconOnly />
 }
 
 function EmptyPanel({
@@ -291,25 +279,31 @@ function EmptyPanel({
       aria-label={PANEL_LABELS[panel]}
       className="relative flex h-full min-h-0 flex-col overflow-hidden rounded-2xl border border-surface-border bg-background"
     >
-      <WorkspaceHeader
-        className={cn(
-          "z-10 flex h-12 shrink-0 items-center border-b px-3",
-          panel === "list" && "absolute inset-x-0 top-0",
-        )}
-      >
-        <h2 className="min-w-0 truncate text-sm font-semibold">
-          {PANEL_LABELS[panel]}
-        </h2>
-        {panel === "list" && (
-          <div className="ms-auto flex shrink-0 items-center gap-1">
-            <FeedModeControl mode={mode} />
-            <FeedDateJump visibleDate={visibleDate} onJump={onJump} />
-            <FeedRefreshButton refreshing={refreshing} onRefresh={onRefresh} />
-            {action}
-          </div>
-        )}
-        {panel !== "list" && action && <div className="ms-auto">{action}</div>}
-      </WorkspaceHeader>
+      {panel !== "detail" && (
+        <WorkspaceHeader
+          className={cn(
+            "z-10 flex h-12 shrink-0 items-center border-b px-3",
+            panel === "list" && "absolute inset-x-0 top-0",
+          )}
+        >
+          <h2 className="min-w-0 truncate text-sm font-semibold">
+            {panel === "list" ? "Вакансії" : PANEL_LABELS[panel]}
+          </h2>
+          {panel === "list" && (
+            <div className="ms-auto flex shrink-0 items-center gap-1">
+              <FeedDateJump visibleDate={visibleDate} onJump={onJump} />
+              <FeedRefreshButton
+                refreshing={refreshing}
+                onRefresh={onRefresh}
+              />
+              {action}
+            </div>
+          )}
+          {panel !== "list" && action && (
+            <div className="ms-auto">{action}</div>
+          )}
+        </WorkspaceHeader>
+      )}
       {panel === "list" ? (
         <VacancyList
           key={`${mode}:${refreshVersion}`}
@@ -323,7 +317,12 @@ function EmptyPanel({
           headerInset
         />
       ) : panel === "detail" ? (
-        <VacancyDetail id={selectedId} onStateChange={onStateChange} />
+        <VacancyDetail
+          id={selectedId}
+          onStateChange={onStateChange}
+          withPanelHeader
+          panelAction={action}
+        />
       ) : (
         <div
           data-testid="feed-scroll-region"

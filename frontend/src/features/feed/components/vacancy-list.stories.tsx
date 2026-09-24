@@ -99,7 +99,9 @@ export const LoadedAndInfinite: Story = {
                   hidden: false,
                   seen: true,
                   has_note: true,
-                  application_submitted_at: new Date().toISOString(),
+                  application_submitted_at: new Date()
+                    .toISOString()
+                    .slice(0, 10),
                 },
               ],
               next_cursor: "next",

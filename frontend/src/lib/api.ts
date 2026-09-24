@@ -70,3 +70,26 @@ export function apiPatchJson<T, B>(path: string, body: B): Promise<T> {
     body: JSON.stringify(body),
   })
 }
+
+export function apiPutJson<T, B>(
+  path: string,
+  body: B,
+  init?: Pick<RequestInit, "keepalive">,
+): Promise<T> {
+  const headers = new Headers({ "Content-Type": "application/json" })
+  const token = csrfToken()
+  if (token) headers.set("X-CSRFToken", decodeURIComponent(token))
+  return request<T>(path, {
+    method: "PUT",
+    headers,
+    body: JSON.stringify(body),
+    ...init,
+  })
+}
+
+export function apiDelete(path: string): Promise<void> {
+  const headers = new Headers()
+  const token = csrfToken()
+  if (token) headers.set("X-CSRFToken", decodeURIComponent(token))
+  return request<void>(path, { method: "DELETE", headers })
+}

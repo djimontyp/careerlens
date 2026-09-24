@@ -37,3 +37,25 @@ export function formatPublicationDate(
     month: "short",
   }).format(date)
 }
+
+export function formatFullPublicationDate(value: string) {
+  return new Intl.DateTimeFormat("uk-UA", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  }).format(new Date(`${value}T00:00:00`))
+}
+
+// The earliest submitted_at the server accepts; keeps the date picker's
+// min aligned with the API's lower bound.
+export const MIN_SUBMITTED_AT = "2000-01-01"
+
+// The application-date contract (server validation and the date picker's
+// max) is anchored to the Kyiv calendar date, not the viewer's local date,
+// so this reads the reference instant through that time zone explicitly
+// rather than through the browser's own zone.
+export function kyivToday(reference: Date = new Date()): string {
+  return new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Kyiv" }).format(
+    reference,
+  )
+}
