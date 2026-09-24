@@ -98,6 +98,25 @@ def test_import_vacancies_preserves_fields_omitted_by_legacy_v1(tmp_path: Path) 
 
 
 @pytest.mark.django_db
+def test_import_vacancies_replaces_description_format_with_description(tmp_path: Path) -> None:
+    vacancy_model = apps.get_model("vacancies", "Vacancy")
+    user = get_user_model().objects.create_user(email="demo@example.com")
+    call_command("import_vacancies", DEMO_FIXTURE, user_email=user.email)
+    payload = json.loads(DEMO_FIXTURE.read_text(encoding="utf-8"))
+    markdown_vacancy = next(item for item in payload["vacancies"] if item["external_id"] == "demo-001")
+    markdown_vacancy.pop("description_format")
+    markdown_vacancy["description"] = "Python *developer* with 3+ years"
+    source_fixture = tmp_path / "source-description.json"
+    source_fixture.write_text(json.dumps({"version": 1, "vacancies": [markdown_vacancy]}), encoding="utf-8")
+
+    call_command("import_vacancies", source_fixture, user_email=user.email)
+
+    vacancy = vacancy_model.objects.get(source__code="dou", external_id="demo-001")
+    assert vacancy.description == "Python *developer* with 3+ years"
+    assert vacancy.description_format == "source"
+
+
+@pytest.mark.django_db
 def test_import_vacancies_requires_an_explicit_user_for_demo_matches() -> None:
     with pytest.raises(CommandError, match="--user-email"):
         call_command("import_vacancies", DEMO_FIXTURE)

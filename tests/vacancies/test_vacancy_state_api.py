@@ -54,7 +54,7 @@ def test_feed_projects_only_the_current_users_state_without_extra_queries(django
     assert items[vacancy.id]["hidden"] is False
     assert items[vacancy.id]["seen"] is False
     assert items[vacancy.id]["has_note"] is True
-    assert items[vacancy.id]["application_submitted_at"] == "2026-08-22T09:30:00Z"
+    assert items[vacancy.id]["application_submitted_at"] == "2026-08-22"
     assert items[private_vacancy.id]["has_note"] is False
     assert items[private_vacancy.id]["application_submitted_at"] is None
     assert "Private" not in response.content.decode()

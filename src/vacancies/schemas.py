@@ -1,8 +1,9 @@
 from datetime import date, datetime
-from typing import Any, Literal
+from typing import Any, Literal, cast
 
+from django.utils import timezone
 from ninja import Schema
-from pydantic import ConfigDict, Field, HttpUrl, model_validator
+from pydantic import ConfigDict, Field, HttpUrl, field_validator, model_validator
 
 
 class SourceOut(Schema):
@@ -56,6 +57,58 @@ class VacancyStateOut(Schema):
         return obj.seen_at is not None
 
 
+class VacancyNoteIn(Schema):
+    model_config = ConfigDict(json_schema_extra={"examples": [{"note": "Ask about the on-call rotation."}]})
+
+    note: str = Field(
+        max_length=4096,
+        description="The current user's private note, up to 4096 characters. An empty value removes the note.",
+    )
+
+
+class VacancyNoteOut(Schema):
+    model_config = ConfigDict(json_schema_extra={"examples": [{"note": "Ask about the on-call rotation."}]})
+
+    note: str = Field(description="The current user's saved private note, or an empty string after removal.")
+
+
+MIN_APPLICATION_SUBMITTED_AT = date(2000, 1, 1)
+
+
+class VacancyApplicationIn(Schema):
+    model_config = ConfigDict(
+        json_schema_extra={"examples": [{"submitted_at": "2026-08-22", "cover_letter": "My motivation."}]}
+    )
+
+    submitted_at: date = Field(
+        description="Calendar date when the current user submitted the application; "
+        "not earlier than 2000-01-01 and not later than today in Europe/Kyiv."
+    )
+    cover_letter: str = Field(
+        "",
+        max_length=4096,
+        description="Optional private copy of the submitted cover letter, up to 4096 characters.",
+    )
+
+    @field_validator("submitted_at")
+    @classmethod
+    def reject_out_of_range_dates(cls, value: date) -> date:
+        if value < MIN_APPLICATION_SUBMITTED_AT:
+            raise ValueError(f"Submission date cannot be earlier than {MIN_APPLICATION_SUBMITTED_AT.isoformat()}.")
+        if value > timezone.localdate():
+            raise ValueError("Submission date cannot be in the future.")
+        return value
+
+
+class VacancyApplicationOut(Schema):
+    model_config = ConfigDict(
+        json_schema_extra={"examples": [{"submitted_at": "2026-08-22", "cover_letter": "My motivation."}]}
+    )
+
+    submitted_at: date = Field(description="Calendar date when the current user submitted the application.")
+    cover_letter: str = Field(description="The current user's private cover letter copy.")
+
+
 class VacancyOut(Schema):
     model_config = ConfigDict(
         json_schema_extra={
@@ -75,7 +128,7 @@ class VacancyOut(Schema):
                     "hidden": False,
                     "seen": True,
                     "has_note": True,
-                    "application_submitted_at": "2026-08-22T09:30:00Z",
+                    "application_submitted_at": "2026-08-22",
                     "match": {
                         "score": 86,
                         "reason": "Strong Python and Django overlap.",
@@ -112,8 +165,9 @@ class VacancyOut(Schema):
     hidden: bool = Field(description="Whether the current user hid the vacancy.")
     seen: bool = Field(description="Whether the current user opened the vacancy.")
     has_note: bool = Field(description="Whether the current user has a note for the vacancy.")
-    application_submitted_at: datetime | None = Field(
-        description="When the current user submitted an application, or null when not submitted."
+    application_submitted_at: date | None = Field(
+        description="Calendar date, in the project's local time zone, when the current user submitted an "
+        "application, or null when not submitted."
     )
 
     @staticmethod
@@ -152,6 +206,12 @@ class VacancyOut(Schema):
     def resolve_has_note(obj: Any) -> bool:
         return obj.note_id is not None
 
+    @staticmethod
+    def resolve_application_submitted_at(obj: Any) -> date | None:
+        if obj.application_submitted_at is None:
+            return None
+        return timezone.localtime(obj.application_submitted_at).date()
+
 
 class FeedOut(Schema):
     items: list[VacancyOut] = Field(description="Vacancies in stable newest-first order.")
@@ -159,9 +219,28 @@ class FeedOut(Schema):
 
 
 class VacancyDetailOut(VacancyOut):
-    description: str = Field(description="Vacancy description safe for direct text rendering.")
-    description_status: Literal["markdown", "source"] = Field(description="Description representation.")
+    description: str = Field(description="Complete vacancy description supplied by the source or stored as Markdown.")
+    description_status: Literal["markdown", "source"] = Field(
+        description="Stored description representation: Markdown or unformatted source text."
+    )
+    note: str = Field(description="The current user's private note, or an empty string when none exists.")
+    application: VacancyApplicationOut | None = Field(
+        description="The current user's application record, or null when the vacancy has not been marked as applied."
+    )
 
     @staticmethod
-    def resolve_description_status(obj: Any) -> Literal["source"]:
-        return "source"
+    def resolve_description_status(obj: Any) -> Literal["markdown", "source"]:
+        return cast(Literal["markdown", "source"], obj.description_format)
+
+    @staticmethod
+    def resolve_note(obj: Any) -> str:
+        return obj.note_text or ""
+
+    @staticmethod
+    def resolve_application(obj: Any) -> dict[str, Any] | None:
+        if obj.application_submitted_at is None:
+            return None
+        return {
+            "submitted_at": timezone.localtime(obj.application_submitted_at).date(),
+            "cover_letter": obj.application_cover_letter or "",
+        }

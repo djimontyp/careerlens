@@ -258,7 +258,7 @@
                       "hidden": false,
                       "seen": true,
                       "has_note": true,
-                      "application_submitted_at": "2026-08-22T09:30:00Z",
+                      "application_submitted_at": "2026-08-22",
                       "match": {
                         "score": 86,
                         "reason": "Strong Python and Django overlap.",
@@ -482,6 +482,341 @@
           },
           "required": true
         },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ]
+      }
+    },
+    "/api/v1/feed/{vacancy_id}/note": {
+      "put": {
+        "operationId": "config_api_v1_feed_set_note",
+        "summary": "Save vacancy note",
+        "parameters": [
+          {
+            "in": "cookie",
+            "name": "csrftoken",
+            "schema": {
+              "description": "CSRF cookie issued by GET /api/v1/me.",
+              "title": "Csrftoken",
+              "type": "string"
+            },
+            "required": true,
+            "description": "CSRF cookie issued by GET /api/v1/me."
+          },
+          {
+            "in": "header",
+            "name": "X-CSRFToken",
+            "schema": {
+              "description": "Value matching the csrftoken cookie.",
+              "title": "X-Csrftoken",
+              "type": "string"
+            },
+            "required": true,
+            "description": "Value matching the csrftoken cookie."
+          },
+          {
+            "in": "path",
+            "name": "vacancy_id",
+            "schema": {
+              "description": "CareerLens vacancy identifier.",
+              "title": "Vacancy Id",
+              "type": "integer"
+            },
+            "required": true,
+            "description": "CareerLens vacancy identifier."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VacancyNoteOut"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                },
+                "example": {
+                  "detail": "CSRF check failed"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                },
+                "example": {
+                  "detail": "Not Found"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Content",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationErrorOut"
+                }
+              }
+            }
+          }
+        },
+        "description": "Creates or replaces the current user's private note; an empty note removes it.",
+        "tags": [
+          "feed"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VacancyNoteIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ]
+      }
+    },
+    "/api/v1/feed/{vacancy_id}/application": {
+      "put": {
+        "operationId": "config_api_v1_feed_set_application",
+        "summary": "Save vacancy application",
+        "parameters": [
+          {
+            "in": "cookie",
+            "name": "csrftoken",
+            "schema": {
+              "description": "CSRF cookie issued by GET /api/v1/me.",
+              "title": "Csrftoken",
+              "type": "string"
+            },
+            "required": true,
+            "description": "CSRF cookie issued by GET /api/v1/me."
+          },
+          {
+            "in": "header",
+            "name": "X-CSRFToken",
+            "schema": {
+              "description": "Value matching the csrftoken cookie.",
+              "title": "X-Csrftoken",
+              "type": "string"
+            },
+            "required": true,
+            "description": "Value matching the csrftoken cookie."
+          },
+          {
+            "in": "path",
+            "name": "vacancy_id",
+            "schema": {
+              "description": "CareerLens vacancy identifier.",
+              "title": "Vacancy Id",
+              "type": "integer"
+            },
+            "required": true,
+            "description": "CareerLens vacancy identifier."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VacancyApplicationOut"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                },
+                "example": {
+                  "detail": "CSRF check failed"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                },
+                "example": {
+                  "detail": "Not Found"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Content",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationErrorOut"
+                }
+              }
+            }
+          }
+        },
+        "description": "Creates or replaces the current user's private application record.",
+        "tags": [
+          "feed"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VacancyApplicationIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ]
+      },
+      "delete": {
+        "operationId": "config_api_v1_feed_delete_application",
+        "summary": "Remove vacancy application",
+        "parameters": [
+          {
+            "in": "cookie",
+            "name": "csrftoken",
+            "schema": {
+              "description": "CSRF cookie issued by GET /api/v1/me.",
+              "title": "Csrftoken",
+              "type": "string"
+            },
+            "required": true,
+            "description": "CSRF cookie issued by GET /api/v1/me."
+          },
+          {
+            "in": "header",
+            "name": "X-CSRFToken",
+            "schema": {
+              "description": "Value matching the csrftoken cookie.",
+              "title": "X-Csrftoken",
+              "type": "string"
+            },
+            "required": true,
+            "description": "Value matching the csrftoken cookie."
+          },
+          {
+            "in": "path",
+            "name": "vacancy_id",
+            "schema": {
+              "description": "CareerLens vacancy identifier.",
+              "title": "Vacancy Id",
+              "type": "integer"
+            },
+            "required": true,
+            "description": "CareerLens vacancy identifier."
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                },
+                "example": {
+                  "detail": "CSRF check failed"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                },
+                "example": {
+                  "detail": "Not Found"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Content",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationErrorOut"
+                }
+              }
+            }
+          }
+        },
+        "description": "Removes only the current user's application record for the vacancy.",
+        "tags": [
+          "feed"
+        ],
         "security": [
           {
             "SessionAuth": []
@@ -792,7 +1127,7 @@
       "VacancyOut": {
         "examples": [
           {
-            "application_submitted_at": "2026-08-22T09:30:00Z",
+            "application_submitted_at": "2026-08-22",
             "company": "Acme",
             "has_note": true,
             "hidden": false,
@@ -954,14 +1289,14 @@
           "application_submitted_at": {
             "anyOf": [
               {
-                "format": "date-time",
+                "format": "date",
                 "type": "string"
               },
               {
                 "type": "null"
               }
             ],
-            "description": "When the current user submitted an application, or null when not submitted.",
+            "description": "Calendar date, in the project's local time zone, when the current user submitted an application, or null when not submitted.",
             "title": "Application Submitted At"
           }
         },
@@ -986,10 +1321,37 @@
         "title": "VacancyOut",
         "type": "object"
       },
+      "VacancyApplicationOut": {
+        "examples": [
+          {
+            "cover_letter": "My motivation.",
+            "submitted_at": "2026-08-22"
+          }
+        ],
+        "properties": {
+          "submitted_at": {
+            "description": "Calendar date when the current user submitted the application.",
+            "format": "date",
+            "title": "Submitted At",
+            "type": "string"
+          },
+          "cover_letter": {
+            "description": "The current user's private cover letter copy.",
+            "title": "Cover Letter",
+            "type": "string"
+          }
+        },
+        "required": [
+          "submitted_at",
+          "cover_letter"
+        ],
+        "title": "VacancyApplicationOut",
+        "type": "object"
+      },
       "VacancyDetailOut": {
         "examples": [
           {
-            "application_submitted_at": "2026-08-22T09:30:00Z",
+            "application_submitted_at": "2026-08-22",
             "company": "Acme",
             "has_note": true,
             "hidden": false,
@@ -1151,29 +1513,45 @@
           "application_submitted_at": {
             "anyOf": [
               {
-                "format": "date-time",
+                "format": "date",
                 "type": "string"
               },
               {
                 "type": "null"
               }
             ],
-            "description": "When the current user submitted an application, or null when not submitted.",
+            "description": "Calendar date, in the project's local time zone, when the current user submitted an application, or null when not submitted.",
             "title": "Application Submitted At"
           },
           "description": {
-            "description": "Vacancy description safe for direct text rendering.",
+            "description": "Complete vacancy description supplied by the source or stored as Markdown.",
             "title": "Description",
             "type": "string"
           },
           "description_status": {
-            "description": "Description representation.",
+            "description": "Stored description representation: Markdown or unformatted source text.",
             "enum": [
               "markdown",
               "source"
             ],
             "title": "Description Status",
             "type": "string"
+          },
+          "note": {
+            "description": "The current user's private note, or an empty string when none exists.",
+            "title": "Note",
+            "type": "string"
+          },
+          "application": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/VacancyApplicationOut"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The current user's application record, or null when the vacancy has not been marked as applied."
           }
         },
         "required": [
@@ -1194,7 +1572,9 @@
           "has_note",
           "application_submitted_at",
           "description",
-          "description_status"
+          "description_status",
+          "note",
+          "application"
         ],
         "title": "VacancyDetailOut",
         "type": "object"
@@ -1284,6 +1664,157 @@
           }
         },
         "title": "VacancyStateIn",
+        "type": "object"
+      },
+      "VacancyNoteOut": {
+        "examples": [
+          {
+            "note": "Ask about the on-call rotation."
+          }
+        ],
+        "properties": {
+          "note": {
+            "description": "The current user's saved private note, or an empty string after removal.",
+            "title": "Note",
+            "type": "string"
+          }
+        },
+        "required": [
+          "note"
+        ],
+        "title": "VacancyNoteOut",
+        "type": "object"
+      },
+      "ValidationErrorOut": {
+        "examples": [
+          {
+            "detail": [
+              {
+                "ctx": {
+                  "max_length": 4096
+                },
+                "loc": [
+                  "body",
+                  "payload",
+                  "note"
+                ],
+                "msg": "String should have at most 4096 characters",
+                "type": "string_too_long"
+              }
+            ]
+          }
+        ],
+        "properties": {
+          "detail": {
+            "description": "Validation errors identifying why the request was rejected.",
+            "items": {
+              "$ref": "#/components/schemas/ValidationIssueOut"
+            },
+            "title": "Detail",
+            "type": "array"
+          }
+        },
+        "required": [
+          "detail"
+        ],
+        "title": "ValidationErrorOut",
+        "type": "object"
+      },
+      "ValidationIssueOut": {
+        "properties": {
+          "type": {
+            "description": "Machine-readable validation error code, for example string_too_long.",
+            "title": "Type",
+            "type": "string"
+          },
+          "loc": {
+            "description": "Path to the invalid input, including its request source and field name.",
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "title": "Loc",
+            "type": "array"
+          },
+          "msg": {
+            "description": "Human-readable explanation of the invalid input.",
+            "title": "Msg",
+            "type": "string"
+          },
+          "ctx": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Optional validation context, such as max_length; omitted when the validator supplies no context.",
+            "title": "Ctx"
+          }
+        },
+        "required": [
+          "type",
+          "loc",
+          "msg"
+        ],
+        "title": "ValidationIssueOut",
+        "type": "object"
+      },
+      "VacancyNoteIn": {
+        "examples": [
+          {
+            "note": "Ask about the on-call rotation."
+          }
+        ],
+        "properties": {
+          "note": {
+            "description": "The current user's private note, up to 4096 characters. An empty value removes the note.",
+            "maxLength": 4096,
+            "title": "Note",
+            "type": "string"
+          }
+        },
+        "required": [
+          "note"
+        ],
+        "title": "VacancyNoteIn",
+        "type": "object"
+      },
+      "VacancyApplicationIn": {
+        "examples": [
+          {
+            "cover_letter": "My motivation.",
+            "submitted_at": "2026-08-22"
+          }
+        ],
+        "properties": {
+          "submitted_at": {
+            "description": "Calendar date when the current user submitted the application; not earlier than 2000-01-01 and not later than today in Europe/Kyiv.",
+            "format": "date",
+            "title": "Submitted At",
+            "type": "string"
+          },
+          "cover_letter": {
+            "default": "",
+            "description": "Optional private copy of the submitted cover letter, up to 4096 characters.",
+            "maxLength": 4096,
+            "title": "Cover Letter",
+            "type": "string"
+          }
+        },
+        "required": [
+          "submitted_at"
+        ],
+        "title": "VacancyApplicationIn",
         "type": "object"
       }
     },

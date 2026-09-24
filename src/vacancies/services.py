@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from datetime import date
+from datetime import date, datetime, time
 from typing import Literal
 
 from django.core import signing
@@ -9,7 +9,7 @@ from django.utils import timezone
 from pydantic import BaseModel, ValidationError
 
 from accounts.models import User
-from vacancies.models import Vacancy, VacancyState
+from vacancies.models import Vacancy, VacancyApplication, VacancyNote, VacancyState
 
 FeedMode = Literal["active", "saved", "hidden"]
 
@@ -111,3 +111,39 @@ class VacancyStateService:
         if update_fields:
             state.save(update_fields=update_fields)
         return state
+
+
+@dataclass(frozen=True)
+class VacancyNoteService:
+    user: User
+
+    def set(self, vacancy_id: int, *, note: str) -> str:
+        vacancy = Vacancy.objects.get(pk=vacancy_id)
+        if not note:
+            VacancyNote.objects.filter(user=self.user, vacancy=vacancy).delete()
+            return ""
+        saved_note, _ = VacancyNote.objects.update_or_create(
+            user=self.user,
+            vacancy=vacancy,
+            defaults={"text": note},
+        )
+        return saved_note.text
+
+
+@dataclass(frozen=True)
+class VacancyApplicationService:
+    user: User
+
+    def set(self, vacancy_id: int, *, submitted_at: date, cover_letter: str) -> VacancyApplication:
+        vacancy = Vacancy.objects.get(pk=vacancy_id)
+        submitted_datetime = timezone.make_aware(datetime.combine(submitted_at, time.min))
+        application, _ = VacancyApplication.objects.update_or_create(
+            user=self.user,
+            vacancy=vacancy,
+            defaults={"submitted_at": submitted_datetime, "cover_letter": cover_letter},
+        )
+        return application
+
+    def delete(self, vacancy_id: int) -> None:
+        vacancy = Vacancy.objects.get(pk=vacancy_id)
+        VacancyApplication.objects.filter(user=self.user, vacancy=vacancy).delete()

@@ -30,7 +30,9 @@ class VacancyQuerySet(models.QuerySet["Vacancy"]):
                 state_hidden=F("own_state__hidden"),
                 state_seen_at=F("own_state__seen_at"),
                 note_id=F("own_note__id"),
+                note_text=F("own_note__text"),
                 application_submitted_at=F("own_application__submitted_at"),
+                application_cover_letter=F("own_application__cover_letter"),
             )
         )
 
