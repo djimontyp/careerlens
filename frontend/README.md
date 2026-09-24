@@ -2,6 +2,9 @@
 
 Clean-room frontend foundation for CareerLens.
 
+The vacancy detail card supports source text or Markdown descriptions, state actions,
+AI match disclosure, private notes and application tracking.
+
 ## Tech Stack
 
 - **UI:** React 19, TypeScript

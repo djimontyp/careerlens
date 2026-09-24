@@ -3,11 +3,20 @@
 ## State
 
 - Durable UI preferences live in a versioned Zustand store; primitives do not access storage.
+- Vacancy note drafts and pending writes belong to the session-scoped feature store, not the Sheet/editor lifecycle. Keep private drafts out of persistent browser storage. Reopening an editor must reuse its pending operation and recover errors.
+- Confirmed note/application changes update shared feed metadata. A GET may refresh cached values only if those fields have not changed since the request started.
+
+## UI changes
+
+- Use the existing components and spacing, color and motion tokens. Preserve approved layout decisions; inspect the rendered result in Storybook at relevant desktop and mobile sizes before claiming visual completion.
+- Keep reference comparisons and intentional departures in the feature documentation, not only in chat. A screenshot or old implementation is evidence to inspect, not an instruction to copy everything.
 
 ## Tests
 
 - Storybook stories are the canonical source for component states, user interactions, responsive behavior and accessibility. Run them with Storybook/Vitest Browser; Playwright is the browser provider, not a second test source. Treat an accessibility violation as a failing test.
 - Stub only the API boundary and keep method, path, status, headers and body aligned with `openapi.json` and the real Django contract.
+- For changes to async editing, cover the relevant failure timeline: delayed responses, close/reopen, error/retry or stale reads must not lose drafts or overwrite newer values. Test the affected timeline, not a generic matrix on every component.
+- Each story owns its mocks and shared state and cleans up pending work. Use registered viewport names and assert the effective size when responsive behavior is the test's premise.
 - Use semantic roles, labels and visible names. Wait for observable states; fixed sleeps and timeout inflation are forbidden.
 - Keep Playwright Test specs for application flows that cross the SPA-Django boundary; do not duplicate Storybook component, theme or accessibility assertions there.
 - Keep Playwright UI available for interactive development, locator inspection, browser manipulation and debugging; using the tool does not make a mocked browser check integration evidence.
