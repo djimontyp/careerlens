@@ -87,6 +87,10 @@ jobs:
       - name: Install frontend dependencies
         run: npm ci --prefix frontend
 
+      - name: Install browser test runtime
+        working-directory: frontend
+        run: npx playwright install --with-deps chromium
+
       - name: Check code quality
         run: just check
 
@@ -95,6 +99,12 @@ jobs:
 
       - name: Run tests
         run: just test
+
+      - name: Run frontend unit, interaction and accessibility tests
+        run: just frontend-test
+
+      - name: Build frontend with TypeScript checks
+        run: npm run build --prefix frontend
 
       - name: Run Django deployment checks
         run: just deploy-check
