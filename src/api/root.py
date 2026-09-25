@@ -4,6 +4,8 @@ from ninja.security import SessionAuth
 from api.health import health_router
 from config.api.v1.accounts import accounts_router
 from config.api.v1.feed import feed_router
+from config.api.v1.interests import interests_router
+from config.api.v1.sources import sources_router
 
 api = NinjaAPI(
     auth=SessionAuth(),
@@ -17,6 +19,8 @@ api = NinjaAPI(
         "tags": [
             {"name": "accounts", "description": "Current-user session and account operations."},
             {"name": "feed", "description": "Vacancy feed operations."},
+            {"name": "interests", "description": "Personal vacancy interests that scope the feed."},
+            {"name": "sources", "description": "Vacancy source catalogue."},
             {"name": "health", "description": "Public service health probes."},
         ]
     },
@@ -24,3 +28,5 @@ api = NinjaAPI(
 api.add_router("", health_router)
 api.add_router("/api/v1", accounts_router)
 api.add_router("/api/v1", feed_router)
+api.add_router("/api/v1", interests_router)
+api.add_router("/api/v1", sources_router)
