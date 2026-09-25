@@ -1,4 +1,10 @@
-import { type KeyboardEvent, useEffect, useRef, useState } from "react"
+import {
+  type KeyboardEvent,
+  type ReactNode,
+  useEffect,
+  useRef,
+  useState,
+} from "react"
 
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -27,6 +33,8 @@ type VacancyListProps = {
   onJumpComplete?: () => void
   titleLevel?: 2 | 3
   headerInset?: boolean
+  activeEmptyState?: ReactNode
+  activeBanner?: ReactNode
 }
 
 export function VacancyList({
@@ -39,6 +47,8 @@ export function VacancyList({
   onJumpComplete,
   titleLevel = 3,
   headerInset = false,
+  activeEmptyState,
+  activeBanner,
 }: VacancyListProps) {
   const VacancyTitle = `h${titleLevel}` as const
   const listRef = useRef<HTMLUListElement>(null)
@@ -219,7 +229,7 @@ export function VacancyList({
           ? "Немає збережених вакансій"
           : mode === "hidden"
             ? "Немає прихованих вакансій"
-            : "Вакансій поки немає"}
+            : (activeEmptyState ?? "Вакансій поки немає")}
       </div>
     )
   }
@@ -261,11 +271,17 @@ export function VacancyList({
       data-testid="feed-scroll-region"
       className="flex min-h-0 flex-1 flex-col"
     >
+      {activeBanner && (
+        <div className={cn(headerInset && "pt-12")}>{activeBanner}</div>
+      )}
       <ul
         ref={listRef}
         role="listbox"
         aria-label="Вакансії"
-        className={cn("min-h-0 flex-1 overflow-y-auto", headerInset && "pt-12")}
+        className={cn(
+          "min-h-0 flex-1 overflow-y-auto",
+          !activeBanner && headerInset && "pt-12",
+        )}
         onKeyDown={handleListKeyDown}
       >
         {groups.map((group) => (
