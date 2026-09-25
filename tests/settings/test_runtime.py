@@ -207,3 +207,10 @@ def test_production_requires_exact_workos_callback(redirect_uri: str) -> None:
 
     with pytest.raises(ValidationError, match="APP__AUTH__WORKOS__REDIRECT_URI"):
         AppSettings.model_validate(configured)
+
+
+def test_interest_limit_defaults_to_ten_and_rejects_zero() -> None:
+    assert AppSettings.model_validate(MINIMUM_PRODUCTION).interests.max_per_user == 10
+
+    with pytest.raises(ValidationError, match="max_per_user"):
+        AppSettings.model_validate({**MINIMUM_PRODUCTION, "interests": {"max_per_user": 0}})

@@ -11,6 +11,8 @@ from django.utils import timezone
 if TYPE_CHECKING:
     from accounts.models import User
 
+SOURCE_CODE_MAX_LENGTH = 20
+
 
 class VacancyQuerySet(models.QuerySet["Vacancy"]):
     def for_user(self, user: User) -> VacancyQuerySet:
@@ -37,10 +39,17 @@ class VacancyQuerySet(models.QuerySet["Vacancy"]):
         )
 
 
+class SourceQuerySet(models.QuerySet["Source"]):
+    def catalog(self) -> SourceQuerySet:
+        return self.order_by("name")
+
+
 class Source(models.Model):
-    code = models.CharField(max_length=20, unique=True)
+    code = models.CharField(max_length=SOURCE_CODE_MAX_LENGTH, unique=True)
     name = models.CharField(max_length=100)
     icon_url = models.CharField(blank=True, max_length=1000, null=True)
+
+    objects = SourceQuerySet.as_manager()
 
     def __str__(self) -> str:
         return self.name
