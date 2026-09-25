@@ -5,6 +5,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from accounts.settings import AuthSettings
 from config.settings.domains import CoreSettings, DevSettings, DjangoSettings, PostgresDatabaseSettings
+from interests.settings import InterestsSettings
 
 
 class AppSettings(BaseSettings):
@@ -23,6 +24,7 @@ class AppSettings(BaseSettings):
     auth: AuthSettings = Field(default_factory=AuthSettings)
     dev: DevSettings = Field(default_factory=DevSettings)
     core: CoreSettings = Field(default_factory=CoreSettings)
+    interests: InterestsSettings = Field(default_factory=InterestsSettings)
     database: PostgresDatabaseSettings
 
     @property
