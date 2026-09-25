@@ -28,7 +28,7 @@ const destinations = [
     to: "/interests",
     icon: Target02Icon,
     iconName: "target",
-    enabled: false,
+    enabled: true,
   },
   {
     label: "Мій агент",

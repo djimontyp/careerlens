@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react-vite"
-import { Monocle01Icon } from "@hugeicons/core-free-icons"
+import { Monocle01Icon, Target02Icon } from "@hugeicons/core-free-icons"
 import { HugeiconsIcon } from "@hugeicons/react"
 import { MemoryRouter } from "react-router-dom"
 import { expect, fn, waitFor, within } from "storybook/test"
@@ -16,6 +16,8 @@ import {
   FEED_LAYOUT_STORAGE_KEY,
   useFeedLayoutStore,
 } from "@/features/feed/layout/store"
+import { InterestsPage } from "@/features/interests/components/interests-page"
+import type { Interest, InterestsResponse } from "@/features/interests/api"
 import { SHELL_STORAGE_KEY, useShellStore } from "@/features/shell/store"
 
 const user = {
@@ -25,6 +27,33 @@ const user = {
   last_name: "Lovelace",
   avatar_url: null,
 } satisfies User
+
+const DEFAULT_INTEREST: InterestsResponse = {
+  items: [
+    {
+      id: 1,
+      name: "Python",
+      keywords: ["python"],
+      stop_words: [],
+      sources: [],
+      is_active: true,
+      created_at: "2026-09-24T10:00:00Z",
+    },
+  ],
+  limit: 10,
+}
+
+function routeByPath(
+  respond: (url: string) => Response | PromiseLike<Response> | undefined,
+) {
+  return async (input: RequestInfo | URL) => {
+    const url = String(input)
+    if (url.includes("/api/v1/interests")) {
+      return Response.json(DEFAULT_INTEREST)
+    }
+    return (await respond(url)) ?? new Response(null, { status: 404 })
+  }
+}
 
 const meta = {
   title: "Layout/AuthenticatedLayout",
@@ -95,17 +124,16 @@ export const Desktop: Story = {
         .getByRole("link", { name: "Стрічка" })
         .querySelector('[data-navigation-icon="news"]'),
     ).not.toBeNull()
-    for (const label of ["Інтереси", "Мій агент"]) {
-      const destination = within(navigation).getByRole("button", {
-        name: label,
-      })
-      await expect(destination).toHaveAttribute("aria-disabled", "true")
-      await expect(destination).toHaveAttribute("tabindex", "-1")
-    }
+    const interestsLink = within(navigation).getByRole("link", {
+      name: "Інтереси",
+    })
+    await expect(interestsLink).toHaveAttribute("href", "/interests")
+    await expect(interestsLink).not.toHaveAttribute("aria-current")
+    const agent = within(navigation).getByRole("button", { name: "Мій агент" })
+    await expect(agent).toHaveAttribute("aria-disabled", "true")
+    await expect(agent).toHaveAttribute("tabindex", "-1")
     await expect(
-      within(navigation)
-        .getByRole("button", { name: "Інтереси" })
-        .querySelector('[data-navigation-icon="target"]'),
+      interestsLink.querySelector('[data-navigation-icon="target"]'),
     ).not.toBeNull()
     await expect(
       within(navigation)
@@ -209,7 +237,7 @@ export const Mobile: Story = {
     const navigationBox = navigation.getBoundingClientRect()
     const workspaceBox = workspace.getBoundingClientRect()
     const feed = within(navigation).getByRole("link", { name: "Стрічка" })
-    const interests = within(navigation).getByRole("button", {
+    const interests = within(navigation).getByRole("link", {
       name: "Інтереси",
     })
     const agent = within(navigation).getByRole("button", {
@@ -223,7 +251,6 @@ export const Mobile: Story = {
     ).not.toBeNull()
     await expect(within(navigation).getByText("Інтереси")).toBeVisible()
     await expect(within(navigation).getByText("Мій агент")).toBeVisible()
-    await expect(interests).toBeDisabled()
     await expect(agent).toBeDisabled()
     await expect(
       interests.querySelector('[data-navigation-icon="target"]'),
@@ -282,6 +309,28 @@ export const FeedDetailNavigation: Story = {
   },
 }
 
+export const InterestsRoute: Story = {
+  parameters: { initialEntries: ["/interests"] },
+  args: { headerTitle: "Інтереси" },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    const navigation = canvas.getByRole("navigation", {
+      name: "Основна навігація",
+    })
+    await expect(
+      within(navigation).getByRole("link", { name: "Інтереси" }),
+    ).toHaveAttribute("aria-current", "page")
+    await expect(
+      within(navigation).getByRole("link", { name: "Стрічка" }),
+    ).not.toHaveAttribute("aria-current")
+    await expect(
+      within(canvas.getByRole("banner")).getByRole("heading", {
+        name: "Інтереси",
+      }),
+    ).toBeVisible()
+  },
+}
+
 export const MobileFeedWorkspace: Story = {
   globals: { viewport: { value: "mobile", isRotated: false } },
   beforeEach: () => {
@@ -309,13 +358,17 @@ export const MobileFeedWorkspace: Story = {
       ],
       next_cursor: null,
     } satisfies FeedResponse
-    window.fetch = async () => Response.json(feed)
+    window.fetch = routeByPath((url) =>
+      url.includes("/api/v1/feed") ? Response.json(feed) : undefined,
+    )
     return () => (window.fetch = fetch)
   },
   args: {
     children: <FeedWorkspace />,
     headerTitle: "Стрічка",
-    mobileHeaderIcon: <HugeiconsIcon icon={Monocle01Icon} />,
+    mobileHeaderIcon: (
+      <HugeiconsIcon icon={Monocle01Icon} data-icon="monocle" />
+    ),
     mobileHeaderActions: <FeedMobileActions />,
   },
   play: async ({ canvasElement, userEvent }) => {
@@ -425,6 +478,12 @@ export const DesktopFeedWorkspace: Story = {
           next_cursor: null,
         } satisfies FeedResponse)
       }
+      if (
+        (init?.method ?? "GET") === "GET" &&
+        url.pathname === "/api/v1/interests"
+      ) {
+        return Response.json(DEFAULT_INTEREST)
+      }
       throw new Error(
         `Unexpected story request: ${init?.method ?? "GET"} ${url}`,
       )
@@ -526,5 +585,52 @@ export const PersistedCollapsed: Story = {
     await expect(
       JSON.parse(localStorage.getItem(SHELL_STORAGE_KEY)!).state.sidebarOpen,
     ).toBe(true)
+  },
+}
+
+export const InterestsPageMobile: Story = {
+  globals: { viewport: { value: "mobile", isRotated: false } },
+  parameters: { initialEntries: ["/interests"] },
+  beforeEach: () => {
+    const fetch = window.fetch
+    const interests: Interest[] = Array.from({ length: 10 }, (_, index) => ({
+      id: index + 1,
+      name: `Interest ${index + 1}`,
+      keywords: ["python"],
+      stop_words: [],
+      sources: [],
+      is_active: true,
+      created_at: "2026-09-24T10:00:00Z",
+    }))
+    window.fetch = async (input) => {
+      const url = String(input)
+      if (url.includes("/api/v1/interests")) {
+        return Response.json({ items: interests, limit: 10 })
+      }
+      return new Response(null, { status: 404 })
+    }
+    return () => (window.fetch = fetch)
+  },
+  args: {
+    children: <InterestsPage />,
+    headerTitle: "Інтереси",
+    mobileHeaderIcon: <HugeiconsIcon icon={Target02Icon} data-icon="target" />,
+  },
+  play: async ({ canvasElement }) => {
+    await expect(window.innerWidth).toBe(390)
+    const canvas = within(canvasElement)
+    const workspace = canvas.getByTestId("authenticated-workspace")
+    const page = await waitFor(() => {
+      const element = canvasElement.querySelector<HTMLElement>(
+        '[data-slot="interests-page"]',
+      )
+      if (!element) throw new Error("interests page root not rendered yet")
+      return element
+    })
+
+    await waitFor(() =>
+      expect(page.scrollHeight).toBeGreaterThan(page.clientHeight),
+    )
+    await expect(workspace.scrollHeight).toBe(workspace.clientHeight)
   },
 }

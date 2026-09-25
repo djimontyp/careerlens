@@ -1,6 +1,13 @@
 import type { Meta, StoryObj } from "@storybook/react-vite"
 import { MemoryRouter } from "react-router-dom"
-import { expect, fireEvent, fn, waitFor, within } from "storybook/test"
+import {
+  expect,
+  fireEvent,
+  fn,
+  type Mock,
+  waitFor,
+  within,
+} from "storybook/test"
 
 import { FeedWorkspace } from "@/features/feed/components/feed-workspace"
 import {
@@ -8,6 +15,37 @@ import {
   useFeedLayoutStore,
 } from "@/features/feed/layout/store"
 import { useFeedStateStore } from "@/features/feed/state/store"
+import type { InterestsResponse } from "@/features/interests/api"
+
+const DEFAULT_INTEREST: InterestsResponse = {
+  items: [
+    {
+      id: 1,
+      name: "Python",
+      keywords: ["python"],
+      stop_words: [],
+      sources: [],
+      is_active: true,
+      created_at: "2026-09-24T10:00:00Z",
+    },
+  ],
+  limit: 10,
+}
+
+function routeByPath(
+  respond: (
+    url: string,
+    init?: RequestInit,
+  ) => Response | PromiseLike<Response> | undefined,
+) {
+  return async (input: RequestInfo | URL, init?: RequestInit) => {
+    const url = String(input)
+    if (url.includes("/api/v1/interests")) {
+      return Response.json(DEFAULT_INTEREST)
+    }
+    return (await respond(url, init)) ?? new Response(null, { status: 404 })
+  }
+}
 
 const meta = {
   title: "Feed/Workspace",
@@ -15,7 +53,11 @@ const meta = {
   parameters: { layout: "fullscreen" },
   beforeEach: () => {
     const fetch = window.fetch
-    window.fetch = async () => Response.json({ items: [], next_cursor: null })
+    window.fetch = routeByPath((url) =>
+      url.includes("/api/v1/feed")
+        ? Response.json({ items: [], next_cursor: null })
+        : undefined,
+    )
     localStorage.removeItem(FEED_LAYOUT_STORAGE_KEY)
     useFeedLayoutStore.getState().reset()
     useFeedStateStore.setState({ overrides: {} })
@@ -34,6 +76,8 @@ const meta = {
 
 export default meta
 type Story = StoryObj<typeof meta>
+
+let refreshFetchMock: Mock<(input: RequestInfo | URL) => Promise<Response>>
 
 export const Desktop: Story = {
   globals: { viewport: { value: "desktop", isRotated: false } },
@@ -110,8 +154,8 @@ export const DetailAnalysis: Story = {
   beforeEach: ({ parameters }) => {
     const fetch = window.fetch
     let state = { saved: false, hidden: false, seen: false }
-    window.fetch = async (input, init) => {
-      if (String(input).includes("feed/42/state")) {
+    window.fetch = routeByPath((url, init) => {
+      if (url.includes("feed/42/state")) {
         if (init?.method !== "PATCH") {
           return new Response(null, { status: 405 })
         }
@@ -122,7 +166,7 @@ export const DetailAnalysis: Story = {
         state = { ...state, ...payload }
         return Response.json(state)
       }
-      if (String(input).includes("feed/42")) {
+      if (url.includes("feed/42")) {
         return Response.json({
           id: 42,
           title: "Senior Python Developer",
@@ -164,8 +208,10 @@ export const DetailAnalysis: Story = {
           },
         })
       }
-      return Response.json({ items: [], next_cursor: null })
-    }
+      return url.includes("/api/v1/feed")
+        ? Response.json({ items: [], next_cursor: null })
+        : undefined
+    })
     return () => (window.fetch = fetch)
   },
   play: async ({ canvasElement, userEvent }) => {
@@ -356,33 +402,35 @@ export const DetailWithNullableFields: Story = {
   parameters: { initialEntries: ["/?vacancy=43"] },
   beforeEach: () => {
     const fetch = window.fetch
-    window.fetch = async (input) =>
-      Response.json(
-        String(input).includes("feed/43")
-          ? {
-              id: 43,
-              title: "Backend Developer",
-              company: null,
-              location: null,
-              posted_date: null,
-              scraped_at: "2026-08-21T10:30:00Z",
-              source_updated_at: null,
-              is_deftech: false,
-              source: { code: "telegram", name: "Telegram", icon_url: null },
-              url: null,
-              description: "Вакансія з Telegram.",
-              description_status: "source",
-              saved: false,
-              hidden: false,
-              seen: true,
-              has_note: false,
-              application_submitted_at: null,
-              note: "",
-              application: null,
-              match: null,
-            }
-          : { items: [], next_cursor: null },
-      )
+    window.fetch = routeByPath((url) => {
+      if (url.includes("feed/43")) {
+        return Response.json({
+          id: 43,
+          title: "Backend Developer",
+          company: null,
+          location: null,
+          posted_date: null,
+          scraped_at: "2026-08-21T10:30:00Z",
+          source_updated_at: null,
+          is_deftech: false,
+          source: { code: "telegram", name: "Telegram", icon_url: null },
+          url: null,
+          description: "Вакансія з Telegram.",
+          description_status: "source",
+          saved: false,
+          hidden: false,
+          seen: true,
+          has_note: false,
+          application_submitted_at: null,
+          note: "",
+          application: null,
+          match: null,
+        })
+      }
+      return url.includes("/api/v1/feed")
+        ? Response.json({ items: [], next_cursor: null })
+        : undefined
+    })
     return () => (window.fetch = fetch)
   },
   play: async ({ canvasElement }) => {
@@ -412,22 +460,27 @@ export const Refresh: Story = {
   globals: { viewport: { value: "desktop", isRotated: false } },
   beforeEach: () => {
     const fetch = window.fetch
-    window.fetch = fn(async () =>
-      Response.json({
-        items: [
-          {
-            id: 42,
-            title: "Senior Python Developer",
-            company: "Acme",
-            location: "Remote",
-            posted_date: new Intl.DateTimeFormat("sv-SE").format(),
-            source: { code: "dou", name: "DOU", icon_url: null },
-            url: null,
-          },
-        ],
-        next_cursor: null,
-      }),
+    refreshFetchMock = fn(
+      routeByPath((url) =>
+        url.includes("/api/v1/feed")
+          ? Response.json({
+              items: [
+                {
+                  id: 42,
+                  title: "Senior Python Developer",
+                  company: "Acme",
+                  location: "Remote",
+                  posted_date: new Intl.DateTimeFormat("sv-SE").format(),
+                  source: { code: "dou", name: "DOU", icon_url: null },
+                  url: null,
+                },
+              ],
+              next_cursor: null,
+            })
+          : undefined,
+      ),
     )
+    window.fetch = refreshFetchMock
     return () => (window.fetch = fetch)
   },
   play: async ({ canvasElement, userEvent }) => {
@@ -456,7 +509,13 @@ export const Refresh: Story = {
     })
     await expect(dateJump).toHaveValue("")
     await userEvent.click(refresh)
-    await waitFor(() => expect(window.fetch).toHaveBeenCalledTimes(2))
+    await waitFor(() =>
+      expect(
+        refreshFetchMock.mock.calls.filter(([input]) =>
+          String(input).includes("/api/v1/feed"),
+        ),
+      ).toHaveLength(2),
+    )
   },
 }
 
@@ -562,5 +621,120 @@ export const MobileDetailAnalysis: Story = {
         description.getBoundingClientRect().bottom,
     ).toBeLessThanOrEqual(32)
     await expect(analysis.getBoundingClientRect().height).toBeLessThan(240)
+  },
+}
+
+export const ActiveWithoutInterests: Story = {
+  globals: { viewport: { value: "desktop", isRotated: false } },
+  beforeEach: () => {
+    const fetch = window.fetch
+    window.fetch = async (input) => {
+      const url = String(input)
+      if (url.includes("/api/v1/interests")) {
+        return Response.json({ items: [], limit: 10 })
+      }
+      if (url.includes("/api/v1/feed")) {
+        return Response.json({ items: [], next_cursor: null })
+      }
+      return new Response(null, { status: 404 })
+    }
+    return () => (window.fetch = fetch)
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+
+    const ctas = await canvas.findAllByRole("link", {
+      name: "Створити інтерес",
+    })
+    await expect(ctas).toHaveLength(1)
+    await expect(ctas[0]).toHaveAttribute("href", "/interests")
+    await expect(canvas.queryByText("Вакансій поки немає")).toBeNull()
+  },
+}
+
+export const ActiveAllPaused: Story = {
+  globals: { viewport: { value: "desktop", isRotated: false } },
+  beforeEach: () => {
+    const fetch = window.fetch
+    window.fetch = async (input) => {
+      const url = String(input)
+      if (url.includes("/api/v1/interests")) {
+        return Response.json({
+          items: [{ ...DEFAULT_INTEREST.items[0], is_active: false }],
+          limit: 10,
+        })
+      }
+      if (url.includes("/api/v1/feed")) {
+        return Response.json({ items: [], next_cursor: null })
+      }
+      return new Response(null, { status: 404 })
+    }
+    return () => (window.fetch = fetch)
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+
+    const ctas = await canvas.findAllByRole("link", { name: "До інтересів" })
+    await expect(ctas).toHaveLength(1)
+    await expect(ctas[0]).toHaveAttribute("href", "/interests")
+  },
+}
+
+export const ActiveSavedWithoutInterests: Story = {
+  globals: { viewport: { value: "desktop", isRotated: false } },
+  beforeEach: () => {
+    const fetch = window.fetch
+    window.fetch = async (input) => {
+      const url = String(input)
+      if (url.includes("/api/v1/interests")) {
+        return Response.json({ items: [], limit: 10 })
+      }
+      if (url.includes("/api/v1/feed")) {
+        return Response.json({
+          items: [
+            {
+              id: 42,
+              title: "Senior Python Developer",
+              company: "Acme",
+              location: "Remote",
+              posted_date: new Date().toISOString().slice(0, 10),
+              scraped_at: new Date().toISOString(),
+              source_updated_at: null,
+              is_deftech: false,
+              source: { code: "dou", name: "DOU", icon_url: null },
+              url: null,
+              match: null,
+              saved: true,
+              hidden: false,
+              seen: false,
+              has_note: false,
+              application_submitted_at: null,
+            },
+          ],
+          next_cursor: null,
+        })
+      }
+      return new Response(null, { status: 404 })
+    }
+    return () => (window.fetch = fetch)
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    const list = within(canvas.getByRole("region", { name: "Список вакансій" }))
+    const scrollRegion = await list.findByTestId("feed-scroll-region")
+
+    const ctas = await list.findAllByRole("link", {
+      name: "Створити інтерес",
+    })
+    await expect(ctas).toHaveLength(1)
+    await expect(ctas[0]).toHaveAttribute("href", "/interests")
+    await expect(scrollRegion.firstElementChild).toHaveTextContent(
+      "Ще немає жодного інтересу",
+    )
+    await expect(
+      canvas.queryByText(
+        "Додайте перший інтерес, і стрічка покаже вакансії за ним.",
+      ),
+    ).toBeNull()
   },
 }

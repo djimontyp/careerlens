@@ -58,6 +58,16 @@ def test_bridge_maps_validated_configuration(monkeypatch: pytest.MonkeyPatch) ->
         "HOST": "db.invalid",
         "PORT": 5432,
     }
+    assert module.INTERESTS_MAX_PER_USER == 10
+    assert "django.contrib.postgres" in module.INSTALLED_APPS
+    assert "interests" in module.INSTALLED_APPS
+
+
+def test_bridge_maps_interest_limit_from_the_environment(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("APP__INTERESTS__MAX_PER_USER", "7")
+    module = import_settings(monkeypatch)
+
+    assert module.INTERESTS_MAX_PER_USER == 7
 
 
 def test_bridge_enables_production_transport_security(monkeypatch: pytest.MonkeyPatch) -> None:

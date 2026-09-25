@@ -184,7 +184,7 @@
             "name": "mode",
             "schema": {
               "default": "active",
-              "description": "User-specific feed mode.",
+              "description": "User-specific feed mode: active lists vacancies that match one of the user's active interests or that the user saved or applied to, never hidden ones; saved and hidden list the user's own saved or hidden vacancies without the interest filter.",
               "enum": [
                 "active",
                 "saved",
@@ -194,7 +194,7 @@
               "type": "string"
             },
             "required": false,
-            "description": "User-specific feed mode."
+            "description": "User-specific feed mode: active lists vacancies that match one of the user's active interests or that the user saved or applied to, never hidden ones; saved and hidden list the user's own saved or hidden vacancies without the interest filter."
           },
           {
             "in": "query",
@@ -823,6 +823,430 @@
           }
         ]
       }
+    },
+    "/api/v1/interests": {
+      "get": {
+        "operationId": "config_api_v1_interests_list_interests",
+        "summary": "List interests",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InterestListOut"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                },
+                "example": {
+                  "detail": "Unauthorized"
+                }
+              }
+            }
+          }
+        },
+        "description": "Returns the current user's interests, active first and newest first, with the per-user limit.",
+        "tags": [
+          "interests"
+        ],
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ]
+      },
+      "post": {
+        "operationId": "config_api_v1_interests_create_interest",
+        "summary": "Create interest",
+        "parameters": [
+          {
+            "in": "cookie",
+            "name": "csrftoken",
+            "schema": {
+              "description": "CSRF cookie issued by GET /api/v1/me.",
+              "title": "Csrftoken",
+              "type": "string"
+            },
+            "required": true,
+            "description": "CSRF cookie issued by GET /api/v1/me."
+          },
+          {
+            "in": "header",
+            "name": "X-CSRFToken",
+            "schema": {
+              "description": "Value matching the csrftoken cookie.",
+              "title": "X-Csrftoken",
+              "type": "string"
+            },
+            "required": true,
+            "description": "Value matching the csrftoken cookie."
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InterestOut"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                },
+                "example": {
+                  "detail": "Unauthorized"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                },
+                "example": {
+                  "detail": "CSRF check Failed"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                },
+                "example": {
+                  "detail": "Interest limit reached."
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Content",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationErrorOut"
+                }
+              }
+            }
+          }
+        },
+        "description": "Creates an interest for the current user; the name is derived from the keywords when omitted.",
+        "tags": [
+          "interests"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InterestIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ]
+      }
+    },
+    "/api/v1/interests/{interest_id}": {
+      "patch": {
+        "operationId": "config_api_v1_interests_update_interest",
+        "summary": "Update interest",
+        "parameters": [
+          {
+            "in": "cookie",
+            "name": "csrftoken",
+            "schema": {
+              "description": "CSRF cookie issued by GET /api/v1/me.",
+              "title": "Csrftoken",
+              "type": "string"
+            },
+            "required": true,
+            "description": "CSRF cookie issued by GET /api/v1/me."
+          },
+          {
+            "in": "header",
+            "name": "X-CSRFToken",
+            "schema": {
+              "description": "Value matching the csrftoken cookie.",
+              "title": "X-Csrftoken",
+              "type": "string"
+            },
+            "required": true,
+            "description": "Value matching the csrftoken cookie."
+          },
+          {
+            "in": "path",
+            "name": "interest_id",
+            "schema": {
+              "description": "Interest identifier.",
+              "title": "Interest Id",
+              "type": "integer"
+            },
+            "required": true,
+            "description": "Interest identifier."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InterestOut"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                },
+                "example": {
+                  "detail": "Unauthorized"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                },
+                "example": {
+                  "detail": "CSRF check Failed"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                },
+                "example": {
+                  "detail": "Not Found"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Content",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationErrorOut"
+                }
+              }
+            }
+          }
+        },
+        "description": "Partially updates the current user's interest, including pausing and resuming it.",
+        "tags": [
+          "interests"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InterestPatchIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ]
+      },
+      "delete": {
+        "operationId": "config_api_v1_interests_delete_interest",
+        "summary": "Delete interest",
+        "parameters": [
+          {
+            "in": "cookie",
+            "name": "csrftoken",
+            "schema": {
+              "description": "CSRF cookie issued by GET /api/v1/me.",
+              "title": "Csrftoken",
+              "type": "string"
+            },
+            "required": true,
+            "description": "CSRF cookie issued by GET /api/v1/me."
+          },
+          {
+            "in": "header",
+            "name": "X-CSRFToken",
+            "schema": {
+              "description": "Value matching the csrftoken cookie.",
+              "title": "X-Csrftoken",
+              "type": "string"
+            },
+            "required": true,
+            "description": "Value matching the csrftoken cookie."
+          },
+          {
+            "in": "path",
+            "name": "interest_id",
+            "schema": {
+              "description": "Interest identifier.",
+              "title": "Interest Id",
+              "type": "integer"
+            },
+            "required": true,
+            "description": "Interest identifier."
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                },
+                "example": {
+                  "detail": "Unauthorized"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                },
+                "example": {
+                  "detail": "CSRF check Failed"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                },
+                "example": {
+                  "detail": "Not Found"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Content",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationErrorOut"
+                }
+              }
+            }
+          }
+        },
+        "description": "Deletes the current user's interest; saved and applied vacancies are not affected.",
+        "tags": [
+          "interests"
+        ],
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ]
+      }
+    },
+    "/api/v1/sources": {
+      "get": {
+        "operationId": "config_api_v1_sources_sources",
+        "summary": "List vacancy sources",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/SourceOut"
+                  },
+                  "title": "Response",
+                  "type": "array"
+                },
+                "example": [
+                  {
+                    "code": "dou",
+                    "name": "DOU",
+                    "icon_url": "/source-icons/dou.png"
+                  }
+                ]
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                },
+                "example": {
+                  "detail": "Unauthorized"
+                }
+              }
+            }
+          }
+        },
+        "description": "Returns the vacancy source catalogue ordered by name.",
+        "tags": [
+          "sources"
+        ],
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ]
+      }
     }
   },
   "components": {
@@ -931,7 +1355,7 @@
         "properties": {
           "mode": {
             "default": "active",
-            "description": "User-specific feed mode.",
+            "description": "User-specific feed mode: active lists vacancies that match one of the user's active interests or that the user saved or applied to, never hidden ones; saved and hidden list the user's own saved or hidden vacancies without the interest filter.",
             "enum": [
               "active",
               "saved",
@@ -1816,6 +2240,292 @@
         ],
         "title": "VacancyApplicationIn",
         "type": "object"
+      },
+      "InterestListOut": {
+        "examples": [
+          {
+            "items": [
+              {
+                "created_at": "2026-09-24T10:00:00Z",
+                "id": 7,
+                "is_active": true,
+                "keywords": [
+                  "python",
+                  "django"
+                ],
+                "name": "Python backend",
+                "sources": [
+                  {
+                    "code": "dou",
+                    "icon_url": "/source-icons/dou.png",
+                    "name": "DOU"
+                  }
+                ],
+                "stop_words": [
+                  "senior"
+                ]
+              }
+            ],
+            "limit": 10
+          }
+        ],
+        "properties": {
+          "items": {
+            "description": "Interests of the current user, active first, newest first.",
+            "items": {
+              "$ref": "#/components/schemas/InterestOut"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "limit": {
+            "description": "Maximum number of interests one user may keep.",
+            "title": "Limit",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "items",
+          "limit"
+        ],
+        "title": "InterestListOut",
+        "type": "object"
+      },
+      "InterestOut": {
+        "examples": [
+          {
+            "created_at": "2026-09-24T10:00:00Z",
+            "id": 7,
+            "is_active": true,
+            "keywords": [
+              "python",
+              "django"
+            ],
+            "name": "Python backend",
+            "sources": [
+              {
+                "code": "dou",
+                "icon_url": "/source-icons/dou.png",
+                "name": "DOU"
+              }
+            ],
+            "stop_words": [
+              "senior"
+            ]
+          }
+        ],
+        "properties": {
+          "id": {
+            "description": "Interest identifier.",
+            "title": "Id",
+            "type": "integer"
+          },
+          "name": {
+            "description": "Display name.",
+            "title": "Name",
+            "type": "string"
+          },
+          "keywords": {
+            "description": "Normalised keywords.",
+            "items": {
+              "type": "string"
+            },
+            "title": "Keywords",
+            "type": "array"
+          },
+          "stop_words": {
+            "description": "Normalised stop words.",
+            "items": {
+              "type": "string"
+            },
+            "title": "Stop Words",
+            "type": "array"
+          },
+          "sources": {
+            "description": "Selected sources; empty means every source.",
+            "items": {
+              "$ref": "#/components/schemas/SourceOut"
+            },
+            "title": "Sources",
+            "type": "array"
+          },
+          "is_active": {
+            "description": "False while the interest is paused.",
+            "title": "Is Active",
+            "type": "boolean"
+          },
+          "created_at": {
+            "description": "Creation time.",
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "keywords",
+          "stop_words",
+          "sources",
+          "is_active",
+          "created_at"
+        ],
+        "title": "InterestOut",
+        "type": "object"
+      },
+      "InterestIn": {
+        "additionalProperties": false,
+        "examples": [
+          {
+            "keywords": [
+              "python",
+              "django"
+            ],
+            "name": "Python backend",
+            "sources": [
+              "dou"
+            ],
+            "stop_words": [
+              "senior"
+            ]
+          }
+        ],
+        "properties": {
+          "name": {
+            "default": "",
+            "description": "Display name; derived from the first two keywords when empty.",
+            "maxLength": 100,
+            "title": "Name",
+            "type": "string"
+          },
+          "keywords": {
+            "description": "Whole words matched case-insensitively in the title or description; whitespace is collapsed and case-insensitive duplicates removed, then 1 to 30 tokens remain, each at most 50 characters and containing a letter or digit.",
+            "items": {
+              "type": "string"
+            },
+            "title": "Keywords",
+            "type": "array"
+          },
+          "stop_words": {
+            "description": "Whole words that exclude a vacancy when found in its title; whitespace is collapsed and case-insensitive duplicates removed, then 0 to 30 tokens remain, each at most 50 characters and containing a letter or digit; must not overlap keywords.",
+            "items": {
+              "type": "string"
+            },
+            "title": "Stop Words",
+            "type": "array"
+          },
+          "sources": {
+            "description": "Source codes to search; empty means every source.",
+            "items": {
+              "maxLength": 20,
+              "minLength": 1,
+              "type": "string"
+            },
+            "maxItems": 30,
+            "title": "Sources",
+            "type": "array"
+          }
+        },
+        "required": [
+          "keywords"
+        ],
+        "title": "InterestIn",
+        "type": "object"
+      },
+      "InterestPatchIn": {
+        "additionalProperties": false,
+        "examples": [
+          {
+            "is_active": false
+          },
+          {
+            "keywords": [
+              "python",
+              "fastapi"
+            ]
+          },
+          {
+            "name": "",
+            "sources": []
+          }
+        ],
+        "properties": {
+          "name": {
+            "anyOf": [
+              {
+                "maxLength": 100,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "New display name; empty string re-derives it from keywords.",
+            "title": "Name"
+          },
+          "keywords": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Replacement keywords when supplied; whitespace is collapsed and case-insensitive duplicates removed, then 1 to 30 tokens remain, each at most 50 characters and containing a letter or digit.",
+            "title": "Keywords"
+          },
+          "stop_words": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Replacement stop words when supplied; an empty list clears them. Whitespace is collapsed and case-insensitive duplicates removed, then 0 to 30 tokens remain, each at most 50 characters and containing a letter or digit; must not overlap keywords.",
+            "title": "Stop Words"
+          },
+          "sources": {
+            "anyOf": [
+              {
+                "items": {
+                  "maxLength": 20,
+                  "minLength": 1,
+                  "type": "string"
+                },
+                "maxItems": 30,
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Replacement source codes when supplied; an empty list means every source.",
+            "title": "Sources"
+          },
+          "is_active": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "False pauses the interest, true resumes it.",
+            "title": "Is Active"
+          }
+        },
+        "title": "InterestPatchIn",
+        "type": "object"
       }
     },
     "securitySchemes": {
@@ -1835,6 +2545,14 @@
     {
       "name": "feed",
       "description": "Vacancy feed operations."
+    },
+    {
+      "name": "interests",
+      "description": "Personal vacancy interests that scope the feed."
+    },
+    {
+      "name": "sources",
+      "description": "Vacancy source catalogue."
     },
     {
       "name": "health",

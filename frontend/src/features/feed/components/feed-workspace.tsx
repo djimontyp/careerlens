@@ -54,6 +54,8 @@ import {
 } from "@/features/feed/layout/geometry"
 import { useFeedLayoutStore } from "@/features/feed/layout/store"
 import type { FeedMode, Vacancy } from "@/features/feed/api"
+import { InterestsCallout } from "@/features/interests/components/interests-callout"
+import { useInterests } from "@/features/interests/use-interests"
 import { useIsMobile } from "@/hooks/use-mobile"
 import { useMediaQuery } from "@/hooks/use-media-query"
 import { cn } from "@/lib/utils"
@@ -84,6 +86,23 @@ export function FeedWorkspace() {
     (loading: boolean) => setRefreshing(loading),
     [],
   )
+  const interestsState = useInterests()
+  const activeInterests = interestsState.interests.filter(
+    (interest) => interest.is_active,
+  ).length
+  const showInterestsNotice =
+    interestsState.status === "ready" &&
+    activeInterests === 0 &&
+    mode === "active"
+  const interestsCalloutVariant = interestsState.interests.length
+    ? "paused"
+    : "none"
+  const activeEmptyState = showInterestsNotice ? (
+    <InterestsCallout variant={interestsCalloutVariant} />
+  ) : undefined
+  const activeBanner = showInterestsNotice ? (
+    <InterestsCallout compact variant={interestsCalloutVariant} />
+  ) : undefined
   const order = useFeedLayoutStore((state) => state.order)
   const visibility = useFeedLayoutStore((state) => state.visibility)
   const widths = useFeedLayoutStore((state) => state.widths)
@@ -137,7 +156,13 @@ export function FeedWorkspace() {
         onStateChange={handleStateChange}
       />
     ) : (
-      <MobileList selectedId={selectedId} onSelect={handleSelect} mode={mode} />
+      <MobileList
+        selectedId={selectedId}
+        onSelect={handleSelect}
+        mode={mode}
+        activeEmptyState={activeEmptyState}
+        activeBanner={activeBanner}
+      />
     )
   }
 
@@ -188,6 +213,8 @@ export function FeedWorkspace() {
                         selectedId={selectedId}
                         onSelect={handleSelect}
                         onStateChange={handleStateChange}
+                        activeEmptyState={activeEmptyState}
+                        activeBanner={activeBanner}
                         refreshVersion={refreshVersion}
                         refreshing={refreshing}
                         onRefresh={() =>
@@ -250,6 +277,8 @@ function EmptyPanel({
   selectedId,
   onSelect,
   onStateChange,
+  activeEmptyState,
+  activeBanner,
   refreshVersion,
   refreshing,
   onRefresh,
@@ -265,6 +294,8 @@ function EmptyPanel({
   selectedId: number | null
   onSelect: (id: number) => void
   onStateChange: (state: Partial<Pick<Vacancy, "saved" | "hidden">>) => void
+  activeEmptyState?: ReactNode
+  activeBanner?: ReactNode
   refreshVersion: number
   refreshing: boolean
   onRefresh: () => void
@@ -315,6 +346,8 @@ function EmptyPanel({
           jumpDate={jumpDate}
           onJumpComplete={() => onJump(null)}
           headerInset
+          activeEmptyState={activeEmptyState}
+          activeBanner={activeBanner}
         />
       ) : panel === "detail" ? (
         <VacancyDetail
@@ -339,10 +372,14 @@ function MobileList({
   selectedId,
   onSelect,
   mode,
+  activeEmptyState,
+  activeBanner,
 }: {
   selectedId: number | null
   onSelect: (id: number) => void
   mode: FeedMode
+  activeEmptyState?: ReactNode
+  activeBanner?: ReactNode
 }) {
   return (
     <section
@@ -355,6 +392,8 @@ function MobileList({
         selectedId={selectedId}
         onSelect={onSelect}
         titleLevel={2}
+        activeEmptyState={activeEmptyState}
+        activeBanner={activeBanner}
       />
     </section>
   )
