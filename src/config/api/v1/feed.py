@@ -28,7 +28,14 @@ from vacancies.services import (
 
 
 class FeedQuery(Schema):
-    mode: FeedMode = Field("active", description="User-specific feed mode.")
+    mode: FeedMode = Field(
+        "active",
+        description=(
+            "User-specific feed mode: active lists vacancies that match one of the user's active interests "
+            "or that the user saved or applied to, never hidden ones; saved and hidden list the user's own "
+            "saved or hidden vacancies without the interest filter."
+        ),
+    )
     cursor: str | None = Field(None, description="Opaque cursor returned by the previous response.")
     limit: int = Field(20, ge=1, le=100, description="Number of vacancies to return.")
 
