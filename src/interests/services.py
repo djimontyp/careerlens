@@ -41,6 +41,8 @@ class InterestService:
 
     def create(self, *, name: str, keywords: list[str], stop_words: list[str], source_codes: list[str]) -> Interest:
         with transaction.atomic():
+            # Serialize the limit check even when the user has no interests yet.
+            User.objects.select_for_update().get(pk=self.user.pk)
             if Interest.objects.for_user(self.user).count() >= settings.INTERESTS_MAX_PER_USER:
                 raise InterestLimitReached
             sources = self.resolve_sources(source_codes)
@@ -64,7 +66,7 @@ class InterestService:
         is_active: bool | None = None,
     ) -> Interest:
         with transaction.atomic():
-            interest = Interest.objects.for_user(self.user).get(pk=interest_id)
+            interest = Interest.objects.for_user(self.user).select_for_update().get(pk=interest_id)
             if keywords is not None:
                 interest.keywords = keywords
             if stop_words is not None:
