@@ -72,6 +72,9 @@ Before changing any scoped area, read its `AGENTS.md`. After the change, re-read
 - Reusable ORM composition and user scoping belong in custom QuerySets. Class-based services own use cases, permissions, transactions and business invariants. Routers and views only adapt HTTP.
 - Keep services cohesive and named after one domain responsibility; do not create generic service bases, factories or interfaces until a second real implementation requires them.
 - Apply SOLID at actual change boundaries without replacing direct framework contracts with speculative layers.
+- Interest matching has one rule: `interests.matching` builds one alternation pattern per token list and
+  `Interest.vacancy_filter` applies it in the database. Never re-implement it in Python and never emit one regex per keyword.
+- Feed `active` mode shows vacancies that match an active interest or that the user saved or applied to, never hidden ones.
 
 ## API contracts
 
