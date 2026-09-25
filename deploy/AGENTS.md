@@ -14,6 +14,10 @@ These rules apply to every file in `deploy/`.
 - Production workflows use environment variable `RUNTIME_DATABASE_ROLE_SPLIT=true` and secrets
   `APP_RUNTIME_DATABASE_USERNAME` plus `APP_RUNTIME_DATABASE_PASSWORD`.
 - After a split-role deployment succeeds, a non-secret server marker refuses later fallback to migration credentials.
+- A migration that creates tables needs the runtime role to have privileges on them:
+  provisioning must grant them through `ALTER DEFAULT PRIVILEGES FOR ROLE <migration role>`
+  (tables and sequences) or explicit grants before the deploy; verify the runtime role can
+  read and write every new table.
 
 ## Image and runtime
 

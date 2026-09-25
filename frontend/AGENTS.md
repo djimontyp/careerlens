@@ -22,4 +22,11 @@
 - Keep Playwright UI available for interactive development, locator inspection, browser manipulation and debugging; using the tool does not make a mocked browser check integration evidence.
 - Do not automate real WorkOS credentials or provider redirects in CI. Verify that path with the explicit release smoke check.
 - Add page objects, shared fixtures, browser projects or retained artifacts only when current repetition or diagnosis requires them.
-- Run Storybook tests with `npx vitest --project=storybook`; run selected E2E with `npm run test:e2e -- <path-or-grep>`.
+- Run Storybook tests with `npx vitest --project=storybook`; run `npm run test:unit` for `node:test` coverage; run selected E2E with `npm run test:e2e -- <path-or-grep>`.
+
+## Forms
+
+- Compose forms from the shadcn `Field` primitives and wire `aria-describedby` and `aria-invalid` on the control by hand; the base-nova `Field` does not do it.
+- Map API 422 issues to fields by `loc[2]`; anything without a known field falls back to a form-level `role="alert"` message.
+- Client-side token normalisation mirrors the server (`parseTokens` ↔ `normalize_tokens`) and is covered by `node:test`.
+- Stories that exercise mutations set the `csrftoken` cookie in `beforeEach` and assert method, path, headers and body.

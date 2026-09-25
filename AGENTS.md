@@ -73,6 +73,9 @@ Before changing any scoped area, read its `AGENTS.md`. After the change, re-read
 - Keep services cohesive and named after one domain responsibility; do not create generic service bases, factories or interfaces until a second real implementation requires them.
 - Apply SOLID at actual change boundaries without replacing direct framework contracts with speculative layers.
 - The external vacancy collector writes `vacancies_source`, `vacancies_company` and `vacancies_vacancy` with raw SQL. A new non-null column there needs a `db_default`; removing or renaming a column the collector writes needs a coordinated collector change.
+- Interest matching has one rule: `interests.matching` builds one alternation pattern per token list and
+  `Interest.vacancy_filter` applies it in the database. Never re-implement it in Python and never emit one regex per keyword.
+- Feed `active` mode shows vacancies that match an active interest or that the user saved or applied to, never hidden ones.
 
 ## API contracts
 
