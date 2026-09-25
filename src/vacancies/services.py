@@ -9,6 +9,7 @@ from django.utils import timezone
 from pydantic import BaseModel, ValidationError
 
 from accounts.models import User
+from interests.models import Interest
 from vacancies.models import Vacancy, VacancyApplication, VacancyNote, VacancyState
 
 FeedMode = Literal["active", "saved", "hidden"]
@@ -41,7 +42,10 @@ class VacancyFeedService:
         vacancies = Vacancy.feed.for_user(self.user).order_by(F("posted_date").desc(nulls_last=True), "-id")
         match mode:
             case "active":
-                vacancies = vacancies.filter(Q(state_hidden=False) | Q(state_hidden__isnull=True))
+                interest_scope = Interest.objects.for_user(self.user).active().vacancy_filter()
+                vacancies = vacancies.filter(Q(state_hidden=False) | Q(state_hidden__isnull=True)).filter(
+                    interest_scope | Q(state_saved=True) | Q(application_submitted_at__isnull=False)
+                )
             case "saved":
                 vacancies = vacancies.filter(Q(state_saved=True))
             case "hidden":

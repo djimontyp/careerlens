@@ -184,7 +184,7 @@
             "name": "mode",
             "schema": {
               "default": "active",
-              "description": "User-specific feed mode.",
+              "description": "User-specific feed mode: active lists vacancies that match one of the user's active interests or that the user saved or applied to, never hidden ones; saved and hidden list the user's own saved or hidden vacancies without the interest filter.",
               "enum": [
                 "active",
                 "saved",
@@ -194,7 +194,7 @@
               "type": "string"
             },
             "required": false,
-            "description": "User-specific feed mode."
+            "description": "User-specific feed mode: active lists vacancies that match one of the user's active interests or that the user saved or applied to, never hidden ones; saved and hidden list the user's own saved or hidden vacancies without the interest filter."
           },
           {
             "in": "query",
@@ -1355,7 +1355,7 @@
         "properties": {
           "mode": {
             "default": "active",
-            "description": "User-specific feed mode.",
+            "description": "User-specific feed mode: active lists vacancies that match one of the user's active interests or that the user saved or applied to, never hidden ones; saved and hidden list the user's own saved or hidden vacancies without the interest filter.",
             "enum": [
               "active",
               "saved",

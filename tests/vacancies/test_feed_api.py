@@ -4,6 +4,7 @@ import pytest
 from django.contrib.auth import get_user_model
 from django.test import Client
 
+from interests.models import Interest
 from vacancies.models import Company, Source, Vacancy, VacancyMatch
 
 User = get_user_model()
@@ -75,8 +76,10 @@ def test_feed_returns_stable_cursor_pages_with_nullable_fields() -> None:
             description="Newer second",
         ),
     ]
+    user = User.objects.create_user(email="ada@example.com")
+    Interest.objects.create(user=user, name="scope", keywords=["developer", "engineer"])
     client = Client()
-    client.force_login(User.objects.create_user(email="ada@example.com"))
+    client.force_login(user)
 
     first = client.get("/api/v1/feed", {"limit": 2})
 
@@ -124,8 +127,10 @@ def test_feed_cursor_continues_within_null_dates() -> None:
         )
         for index in range(3)
     ]
+    user = User.objects.create_user(email="ada@example.com")
+    Interest.objects.create(user=user, name="scope", keywords=["vacancy"])
     client = Client()
-    client.force_login(User.objects.create_user(email="ada@example.com"))
+    client.force_login(user)
 
     first = client.get("/api/v1/feed", {"limit": 2}).json()
     second = client.get("/api/v1/feed", {"limit": 2, "cursor": first["next_cursor"]}).json()
@@ -164,10 +169,11 @@ def test_feed_returns_only_the_current_users_match(django_assert_num_queries: ob
         precise=True,
     )
     VacancyMatch.objects.create(user=other_user, vacancy=unmatched, score=99, reason="Must stay private.")
+    Interest.objects.create(user=user, name="scope", keywords=["developer"])
     client = Client()
     client.force_login(user)
 
-    with django_assert_num_queries(3):
+    with django_assert_num_queries(5):
         response = client.get("/api/v1/feed")
 
     items = {item["id"]: item for item in response.json()["items"]}

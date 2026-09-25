@@ -4,6 +4,7 @@ import pytest
 from django.contrib.auth import get_user_model
 from django.test import Client
 
+from interests.models import Interest
 from vacancies.models import Source, Vacancy, VacancyApplication, VacancyNote, VacancyState
 
 User = get_user_model()
@@ -42,10 +43,11 @@ def test_feed_projects_only_the_current_users_state_without_extra_queries(django
         vacancy=private_vacancy,
         cover_letter="Private letter",
     )
+    Interest.objects.create(user=user, name="scope", keywords=["developer"])
     client = Client()
     client.force_login(user)
 
-    with django_assert_num_queries(3):
+    with django_assert_num_queries(5):
         response = client.get("/api/v1/feed")
 
     assert response.status_code == 200
@@ -160,6 +162,7 @@ def test_feed_modes_filter_only_the_current_users_state() -> None:
     VacancyState.objects.create(user=user, vacancy=saved, saved=True)
     VacancyState.objects.create(user=user, vacancy=hidden, hidden=True)
     VacancyState.objects.create(user=other_user, vacancy=other_hidden, hidden=True)
+    Interest.objects.create(user=user, name="scope", keywords=["APIs"])
     client = Client()
     client.force_login(user)
 
