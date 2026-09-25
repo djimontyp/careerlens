@@ -1,6 +1,12 @@
 import { useEffect, useState } from "react"
-import { Navigate, Route, Routes } from "react-router-dom"
-import { Monocle01Icon } from "@hugeicons/core-free-icons"
+import {
+  matchPath,
+  Navigate,
+  Route,
+  Routes,
+  useLocation,
+} from "react-router-dom"
+import { Monocle01Icon, Target02Icon } from "@hugeicons/core-free-icons"
 import { HugeiconsIcon } from "@hugeicons/react"
 
 import { AuthenticatedLayout } from "@/components/authenticated-layout"
@@ -16,11 +22,15 @@ import {
   flushPendingNotesBeforeLogout,
   useVacancyNotesStore,
 } from "@/features/feed/state/notes"
+import { InterestsPage } from "@/features/interests/components/interests-page"
 
 function App() {
   const [user, setUser] = useState<User | null>()
   const [failed, setFailed] = useState(false)
   const [loggingOut, setLoggingOut] = useState(false)
+  const { pathname } = useLocation()
+  const onInterests =
+    matchPath({ path: "/interests", end: false }, pathname) !== null
   useEffect(() => {
     fetchCurrentUser().then(setUser, () => setFailed(true))
   }, [])
@@ -67,10 +77,15 @@ function App() {
     <AuthenticatedLayout
       user={user}
       loggingOut={loggingOut}
-      headerTitle="Стрічка"
-      headerActions={<FeedDesktopActions />}
-      mobileHeaderIcon={<HugeiconsIcon icon={Monocle01Icon} />}
-      mobileHeaderActions={<FeedMobileActions />}
+      headerTitle={onInterests ? "Інтереси" : "Стрічка"}
+      headerActions={onInterests ? undefined : <FeedDesktopActions />}
+      mobileHeaderIcon={
+        <HugeiconsIcon
+          icon={onInterests ? Target02Icon : Monocle01Icon}
+          data-icon={onInterests ? "target" : "monocle"}
+        />
+      }
+      mobileHeaderActions={onInterests ? undefined : <FeedMobileActions />}
       onLogout={async () => {
         setLoggingOut(true)
         try {
@@ -95,6 +110,7 @@ function App() {
         <Route path="/" element={<Navigate replace to="/feed" />} />
         <Route path="/feed" element={<FeedWorkspace />} />
         <Route path="/feed/detail" element={<FeedWorkspace />} />
+        <Route path="/interests" element={<InterestsPage />} />
       </Routes>
     </AuthenticatedLayout>
   )

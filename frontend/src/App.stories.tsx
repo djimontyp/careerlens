@@ -4,14 +4,30 @@ import { expect, waitFor, within } from "storybook/test"
 
 import App from "@/App"
 import { useVacancyNotesStore } from "@/features/feed/state/notes"
+import type { InterestsResponse } from "@/features/interests/api"
+
+const DEFAULT_INTEREST: InterestsResponse = {
+  items: [
+    {
+      id: 1,
+      name: "Python",
+      keywords: ["python"],
+      stop_words: [],
+      sources: [],
+      is_active: true,
+      created_at: "2026-09-24T10:00:00Z",
+    },
+  ],
+  limit: 10,
+}
 
 const meta = {
   title: "App/Authentication",
   component: App,
   parameters: { layout: "fullscreen" },
   decorators: [
-    (Story) => (
-      <MemoryRouter initialEntries={["/"]}>
+    (Story, context) => (
+      <MemoryRouter initialEntries={context.parameters.initialEntries ?? ["/"]}>
         <Story />
       </MemoryRouter>
     ),
@@ -64,7 +80,11 @@ export const RetryAfterError: Story = {
     const fetch = window.fetch
     let attempt = 0
     window.fetch = async (input) => {
-      if (!String(input).endsWith("/me")) {
+      const url = String(input)
+      if (url.includes("/api/v1/interests")) {
+        return Response.json(DEFAULT_INTEREST)
+      }
+      if (!url.endsWith("/me")) {
         return Response.json({ items: [], next_cursor: null })
       }
       attempt += 1
@@ -97,18 +117,25 @@ export const RetryAfterError: Story = {
 }
 
 export const SignedIn: Story = {
+  globals: { viewport: { value: "mobile", isRotated: false } },
   beforeEach: () => {
     const fetch = window.fetch
-    window.fetch = async (input) =>
-      String(input).endsWith("/me")
-        ? Response.json({
-            id: 1,
-            email: "ada@example.com",
-            first_name: "Ada",
-            last_name: "Lovelace",
-            avatar_url: null,
-          })
-        : Response.json({ items: [], next_cursor: null })
+    window.fetch = async (input) => {
+      const url = String(input)
+      if (url.endsWith("/me")) {
+        return Response.json({
+          id: 1,
+          email: "ada@example.com",
+          first_name: "Ada",
+          last_name: "Lovelace",
+          avatar_url: null,
+        })
+      }
+      if (url.includes("/api/v1/interests")) {
+        return Response.json(DEFAULT_INTEREST)
+      }
+      return Response.json({ items: [], next_cursor: null })
+    }
 
     return () => {
       window.fetch = fetch
@@ -127,6 +154,11 @@ export const SignedIn: Story = {
         "page",
       ),
     )
+    const monocle = canvas
+      .getByRole("banner", { name: "Верхня навігація" })
+      .querySelector('svg[data-icon="monocle"]')
+    await expect(monocle).toBeInTheDocument()
+    await expect(monocle).toBeVisible()
     await userEvent.click(profile)
     await waitFor(() =>
       expect(profile).toHaveAttribute("aria-expanded", "true"),
@@ -168,6 +200,9 @@ export const LogoutAwaitsPendingNoteFlush: Story = {
           last_name: "Lovelace",
           avatar_url: null,
         })
+      }
+      if (url.includes("/api/v1/interests")) {
+        return Response.json(DEFAULT_INTEREST)
       }
       if (url.includes("/feed") && !url.endsWith("/note")) {
         return Response.json({ items: [], next_cursor: null })
@@ -248,6 +283,9 @@ export const LogoutAwaitsInFlightNoteSave: Story = {
           last_name: "Lovelace",
           avatar_url: null,
         })
+      }
+      if (url.includes("/api/v1/interests")) {
+        return Response.json(DEFAULT_INTEREST)
       }
       if (url.includes("/feed") && !url.endsWith("/note")) {
         return Response.json({ items: [], next_cursor: null })
@@ -341,6 +379,9 @@ export const LogoutKeepsGuardWhileLogoutPending: Story = {
           avatar_url: null,
         })
       }
+      if (url.includes("/api/v1/interests")) {
+        return Response.json(DEFAULT_INTEREST)
+      }
       if (url.includes("/feed") && !url.endsWith("/note")) {
         return Response.json({ items: [], next_cursor: null })
       }
@@ -422,6 +463,9 @@ export const LogoutFailurePreservesUnsavedNote: Story = {
           avatar_url: null,
         })
       }
+      if (url.includes("/api/v1/interests")) {
+        return Response.json(DEFAULT_INTEREST)
+      }
       if (url.includes("/feed") && !url.endsWith("/note")) {
         return Response.json({ items: [], next_cursor: null })
       }
@@ -488,5 +532,58 @@ export const LogoutFailurePreservesUnsavedNote: Story = {
     const guardEvent = new Event("beforeunload", { cancelable: true })
     window.dispatchEvent(guardEvent)
     await expect(guardEvent.defaultPrevented).toBe(true)
+  },
+}
+
+export const InterestsPage: Story = {
+  parameters: { initialEntries: ["/interests"] },
+  globals: { viewport: { value: "mobile", isRotated: false } },
+  beforeEach: () => {
+    const fetch = window.fetch
+    window.fetch = async (input) => {
+      const url = String(input)
+      if (url.endsWith("/me")) {
+        return Response.json({
+          id: 1,
+          email: "ada@example.com",
+          first_name: "Ada",
+          last_name: "Lovelace",
+          avatar_url: null,
+        })
+      }
+      if (url.includes("/api/v1/interests")) {
+        return Response.json({ items: [], limit: 10 })
+      }
+      if (url.includes("/api/v1/feed")) {
+        return Response.json({ items: [], next_cursor: null })
+      }
+      return new Response(null, { status: 404 })
+    }
+
+    return () => {
+      window.fetch = fetch
+    }
+  },
+  play: async ({ canvasElement }) => {
+    await expect(window.innerWidth).toBe(390)
+    const canvas = within(canvasElement)
+    await expect(
+      await canvas.findByRole("heading", {
+        level: 2,
+        name: "Ще немає жодного інтересу",
+      }),
+    ).toBeVisible()
+    await expect(
+      within(canvas.getByRole("banner")).getByRole("heading", {
+        name: "Інтереси",
+      }),
+    ).toBeVisible()
+    await expect(canvas.queryByRole("button", { name: "Фільтри" })).toBeNull()
+    await expect(
+      canvas.queryByRole("button", { name: "Налаштувати вигляд" }),
+    ).toBeNull()
+    await expect(
+      canvas.getByRole("banner").querySelector('svg[data-icon="target"]'),
+    ).toBeInTheDocument()
   },
 }
