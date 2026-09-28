@@ -10,6 +10,7 @@
 ## UI changes
 
 - Use the existing components and spacing, color and motion tokens. Preserve approved layout decisions; inspect the rendered result in Storybook at relevant desktop and mobile sizes before claiming visual completion.
+- Every enter/exit animation and non-essential transition must have a `motion-reduce:` variant that removes it; on elements styled by `data-*` animation classes stack it (`motion-reduce:data-open:animate-none`). Cover it with a story that emulates `prefers-reduced-motion` through `cdp()` and asserts the computed `animationName`.
 - Keep reference comparisons and intentional departures in the feature documentation, not only in chat. A screenshot or old implementation is evidence to inspect, not an instruction to copy everything.
 - Size resizable layouts from their actual container, including shell space and gaps. Define each region's scroll owner; keep content and actions reachable when data or viewport changes. Cover the affected composition in Storybook using rendered bounds and reachability, not only CSS visibility or outer scroll dimensions. Use the shared Textarea with finite size bounds.
 
