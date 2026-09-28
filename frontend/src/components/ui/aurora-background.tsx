@@ -1,4 +1,5 @@
 import { cn } from "@/lib/utils"
+import ambientGrain from "@/assets/ambient-grain.png"
 
 export function AuroraBackground({
   className,
@@ -14,7 +15,11 @@ export function AuroraBackground({
       )}
       {...props}
     >
-      <div className="absolute -inset-1/2 animate-[ambient-aurora_70s_ease-in-out_infinite_alternate] bg-[image:var(--ambient-aurora)] bg-[size:180%_180%] opacity-70 blur-3xl will-change-transform motion-reduce:animate-none" />
+      <div className="absolute -inset-1/2 bg-[image:var(--ambient-aurora)] bg-[size:180%_180%] opacity-70 blur-3xl" />
+      <div
+        className="absolute inset-0 bg-[size:64px_64px] bg-repeat opacity-(--ambient-grain-opacity)"
+        style={{ backgroundImage: `url(${ambientGrain})` }}
+      />
     </div>
   )
 }
