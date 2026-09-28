@@ -914,3 +914,93 @@ export const RefreshedServerNote: Story = {
     )
   },
 }
+
+export const NotesSheetResizedFields: Story = {
+  ...RestoredDesktop,
+  globals: { viewport: { value: "mobile", isRotated: false } },
+  play: async ({ canvas, userEvent }) => {
+    expect(window.innerWidth).toBe(390)
+    await userEvent.click(
+      await canvas.findByRole("button", { name: "Мої нотатки" }),
+    )
+    const sheet = await within(document.body).findByRole("dialog", {
+      name: "Мої нотатки",
+    })
+    await userEvent.click(
+      within(sheet).getByRole("button", { name: "Редагувати нотатку" }),
+    )
+    await userEvent.click(
+      within(sheet).getByRole("button", { name: "Редагувати подачу" }),
+    )
+    const fields = within(sheet).getAllByRole(
+      "textbox",
+    ) as HTMLTextAreaElement[]
+    const before = fields.map((field) => field.style.cssText)
+    try {
+      for (const field of fields) {
+        expect(field.rows).toBe(4)
+        expect(field.maxLength).toBe(4096)
+        field.style.height = "2000px"
+      }
+      await waitFor(() => {
+        expect(sheet.getBoundingClientRect().width).toBe(390)
+        for (const field of fields)
+          expect(field.getBoundingClientRect().height).toBeLessThanOrEqual(
+            window.innerHeight * 0.6 + 1,
+          )
+      })
+      for (const name of ["Готово", "Зберегти"]) {
+        const button = within(sheet).getByRole("button", { name })
+        button.focus()
+        await waitFor(() =>
+          expect(button.getBoundingClientRect().bottom).toBeLessThanOrEqual(
+            window.innerHeight,
+          ),
+        )
+      }
+    } finally {
+      fields.forEach((field, index) => {
+        field.style.cssText = before[index]
+      })
+    }
+  },
+}
+
+export const NotesSheetNarrowActions: Story = {
+  ...RestoredDesktop,
+  globals: { viewport: { value: "narrowMobile", isRotated: false } },
+  play: async ({ canvas, userEvent }) => {
+    expect(window.innerWidth).toBe(320)
+    expect(window.innerHeight).toBe(568)
+    await userEvent.click(
+      await canvas.findByRole("button", { name: "Мої нотатки" }),
+    )
+    const sheet = await within(document.body).findByRole("dialog", {
+      name: "Мої нотатки",
+    })
+    await userEvent.click(
+      within(sheet).getByRole("button", { name: "Редагувати подачу" }),
+    )
+    const form = within(sheet)
+      .getByRole("button", { name: "Зберегти" })
+      .closest("form")!
+    await waitFor(() => expect(sheet.getBoundingClientRect().width).toBe(320))
+    const buttons = within(form).getAllByRole("button")
+    expect(buttons.map((button) => button.textContent)).toEqual([
+      "Зберегти",
+      "Скасувати",
+      "Видалити",
+    ])
+    for (const button of buttons) {
+      button.focus()
+      await waitFor(() => {
+        const rect = button.getBoundingClientRect()
+        expect(rect.left).toBeGreaterThanOrEqual(0)
+        expect(rect.right).toBeLessThanOrEqual(window.innerWidth)
+      })
+    }
+    expect(form.parentElement!.scrollWidth).toBeLessThanOrEqual(
+      form.parentElement!.clientWidth,
+    )
+  },
+}

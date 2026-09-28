@@ -1,3 +1,4 @@
+import { Textarea } from "@/components/ui/textarea"
 import { Edit02Icon } from "@hugeicons/core-free-icons"
 import { HugeiconsIcon } from "@hugeicons/react"
 import { useState } from "react"
@@ -135,7 +136,7 @@ export function VacancyApplication({
           </label>
           <label className="flex flex-col gap-1 text-sm">
             <span className="text-muted-foreground">Супровідний текст</span>
-            <textarea
+            <Textarea
               value={draft.cover_letter}
               disabled={pending}
               onChange={(event) =>
@@ -143,7 +144,7 @@ export function VacancyApplication({
               }
               rows={4}
               maxLength={COVER_LETTER_MAX}
-              className="max-h-[60vh] resize-y rounded-lg border border-input bg-transparent px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-primary"
+              className="field-sizing-fixed max-h-[60dvh]"
               placeholder="Короткий опис мотивації…"
             />
           </label>
@@ -152,7 +153,7 @@ export function VacancyApplication({
               {error}
             </p>
           )}
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <Button type="submit" size="sm" disabled={pending}>
               {existing ? "Зберегти" : "Зафіксувати подачу"}
             </Button>
@@ -172,7 +173,7 @@ export function VacancyApplication({
                 type="button"
                 variant="ghost"
                 size="sm"
-                className="ml-auto text-destructive"
+                className="text-destructive"
                 onClick={remove}
                 disabled={pending}
               >

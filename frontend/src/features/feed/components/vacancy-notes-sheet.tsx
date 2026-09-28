@@ -46,7 +46,10 @@ export function VacancyNotesSheet({
           Нотатку не збережено
         </span>
       )}
-      <SheetContent initialFocus={false} className="w-full sm:max-w-2xl!">
+      <SheetContent
+        initialFocus={false}
+        className="data-[side=right]:w-full data-[side=right]:sm:max-w-2xl"
+      >
         <SheetHeader className="border-b pr-12">
           <SheetTitle>Мої нотатки</SheetTitle>
           <SheetDescription>

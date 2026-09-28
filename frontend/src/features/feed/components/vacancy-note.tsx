@@ -1,3 +1,4 @@
+import { Textarea } from "@/components/ui/textarea"
 import { Edit02Icon } from "@hugeicons/core-free-icons"
 import { HugeiconsIcon } from "@hugeicons/react"
 import { useEffect, useState } from "react"
@@ -65,14 +66,14 @@ export function VacancyNote({ vacancy }: { vacancy: VacancyDetail }) {
         </p>
       ) : (
         <>
-          <textarea
+          <Textarea
             id={`note-${vacancy.id}`}
             value={note}
             onChange={(event) => change(vacancy.id, event.target.value)}
             placeholder="Додайте нотатку…"
             rows={4}
             maxLength={NOTE_MAX}
-            className="max-h-[60vh] resize-y rounded-lg border border-input bg-transparent px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-primary"
+            className="field-sizing-fixed max-h-[60dvh]"
           />
           {note && (
             <Button
