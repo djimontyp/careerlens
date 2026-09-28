@@ -54,3 +54,48 @@ export function togglePanel(
     filters: panel === "list" && visibility.list ? false : visibility.filters,
   }
 }
+
+/** Fit preferences without mutating them. A single panel may be below its split minimum. */
+export function fitPanels(
+  available: number,
+  gap: number,
+  order: FeedPanel[],
+  visibility: Record<FeedPanel, boolean>,
+  preferences: Record<FeedPanel, number>,
+  detailSelected: boolean,
+): { order: FeedPanel[]; widths: Record<FeedPanel, number> } {
+  const budget = Math.max(0, available)
+  let visible = order.filter((panel) => visibility[panel])
+  const minimum = (panels: FeedPanel[]) =>
+    panels.reduce((total, panel) => total + PANEL_MIN_WIDTH[panel], 0) +
+    Math.max(0, panels.length - 1) * gap
+  if (minimum(visible) > budget)
+    visible = visible.filter((panel) => panel !== "filters")
+  if (minimum(visible) > budget && visible.length > 1) {
+    visible = [detailSelected ? "detail" : "list"]
+  }
+  const widths = { ...preferences }
+  if (visible.length === 1) {
+    widths[visible[0]] = budget
+    return { order: visible, widths }
+  }
+  const usable = budget - Math.max(0, visible.length - 1) * gap
+  for (const panel of visible)
+    widths[panel] = Math.max(PANEL_MIN_WIDTH[panel], preferences[panel])
+  const total = visible.reduce((sum, panel) => sum + widths[panel], 0)
+  if (total > usable) {
+    const slack = visible.reduce(
+      (sum, panel) => sum + widths[panel] - PANEL_MIN_WIDTH[panel],
+      0,
+    )
+    for (const panel of visible) {
+      widths[panel] -=
+        ((total - usable) * (widths[panel] - PANEL_MIN_WIDTH[panel])) / slack
+    }
+  } else if (visible.length) {
+    widths[
+      visible.includes("detail") ? "detail" : visible[visible.length - 1]
+    ] += usable - total
+  }
+  return { order: visible, widths }
+}

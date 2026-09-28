@@ -47,6 +47,11 @@ const preview: Preview = {
           styles: { width: "844px", height: "481px" },
           type: "mobile",
         },
+        narrowWorkspace: {
+          name: "768×800",
+          styles: { width: "768px", height: "800px" },
+          type: "mobile",
+        },
         mobile: {
           name: "Mobile 390×844",
           styles: { width: "390px", height: "844px" },

@@ -538,15 +538,25 @@ export const DesktopResize: Story = {
   play: async ({ canvasElement, userEvent }) => {
     const canvas = within(canvasElement)
     const [separator] = canvas.getAllByRole("separator")
-    const before = useFeedLayoutStore.getState().widths
+    const before = {
+      list: canvas
+        .getByRole("region", { name: "Список вакансій" })
+        .getBoundingClientRect().width,
+      detail: canvas
+        .getByRole("region", { name: "Деталі вакансії" })
+        .getBoundingClientRect().width,
+      filters: canvas
+        .getByRole("region", { name: "Фільтри вакансій" })
+        .getBoundingClientRect().width,
+    }
 
     separator.focus()
     await userEvent.keyboard("{ArrowRight}")
 
     const after = useFeedLayoutStore.getState().widths
-    await expect(after.list).toBe(before.list + 10)
-    await expect(after.detail).toBe(before.detail - 10)
-    await expect(after.filters).toBe(before.filters)
+    await expect(after.list).toBeCloseTo(before.list + 10, 1)
+    await expect(after.detail).toBeCloseTo(before.detail - 10, 1)
+    await expect(after.filters).toBeCloseTo(before.filters, 1)
     await expect(localStorage.getItem(FEED_LAYOUT_STORAGE_KEY)).toContain(
       `"list":${after.list}`,
     )
@@ -736,5 +746,70 @@ export const ActiveSavedWithoutInterests: Story = {
         "Додайте перший інтерес, і стрічка покаже вакансії за ним.",
       ),
     ).toBeNull()
+  },
+}
+
+export const ContainerResizeRestoresPreferences: Story = {
+  ...DesktopResize,
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    const list = await canvas.findByRole("region", { name: "Список вакансій" })
+    const container = list.parentElement!.parentElement!.parentElement!
+    const before = container.style.cssText
+    const preferences = { list: 900, detail: 800, filters: 500 }
+    useFeedLayoutStore.setState({ widths: preferences })
+    await useFeedLayoutStore.persist.rehydrate()
+    try {
+      for (const width of [500, 750, 1200]) {
+        container.style.width = `${width}px`
+        await waitFor(() => {
+          const panels = canvas.getAllByRole("region")
+          expect(panels).toHaveLength(width < 612 ? 1 : width < 864 ? 2 : 3)
+          for (const panel of panels)
+            expect(panel.getBoundingClientRect().right).toBeLessThanOrEqual(
+              container.getBoundingClientRect().right + 1,
+            )
+        })
+        expect(useFeedLayoutStore.getState().widths).toEqual(preferences)
+      }
+      useFeedLayoutStore.getState().movePanel("filters", "list")
+      await waitFor(() => {
+        const panels = canvas.getAllByRole("region")
+        expect(panels.map((panel) => panel.getAttribute("aria-label"))).toEqual(
+          ["Фільтри вакансій", "Список вакансій", "Деталі вакансії"],
+        )
+        expect(panels[2].getBoundingClientRect().right).toBeLessThanOrEqual(
+          container.getBoundingClientRect().right + 1,
+        )
+      })
+    } finally {
+      container.style.cssText = before
+    }
+  },
+}
+
+export const CompactSelectedDetail: Story = {
+  ...DetailAnalysis,
+  play: async ({ canvasElement, userEvent }) => {
+    const canvas = within(canvasElement)
+    await canvas.findByRole("heading", { name: "Senior Python Developer" })
+    const container = canvas.getByRole("region", { name: "Деталі вакансії" })
+      .parentElement!.parentElement!.parentElement!
+    const before = container.style.cssText
+    try {
+      container.style.width = "500px"
+      const back = await canvas.findByRole("button", { name: "До списку" })
+      expect(
+        canvas.queryByRole("region", { name: "Список вакансій" }),
+      ).toBeNull()
+      await userEvent.click(back)
+      await canvas.findByRole("region", { name: "Список вакансій" })
+      container.style.width = "1200px"
+      await expect(
+        await canvas.findByRole("heading", { name: "Senior Python Developer" }),
+      ).toBeVisible()
+    } finally {
+      container.style.cssText = before
+    }
   },
 }

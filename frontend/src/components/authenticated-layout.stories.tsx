@@ -464,6 +464,7 @@ export const DesktopFiltersPopover: Story = {
 export const DesktopFeedWorkspace: Story = {
   globals: { viewport: { value: "desktop", isRotated: false } },
   beforeEach: () => {
+    useShellStore.getState().setSidebarOpen(true)
     const originalFetch = window.fetch
     window.fetch = async (input, init) => {
       const url = new URL(String(input), window.location.origin)
@@ -680,5 +681,71 @@ export const InterestsPageDesktopDark: Story = {
   globals: {
     viewport: { value: "desktop", isRotated: false },
     theme: "dark",
+  },
+}
+
+// The panel container, including shell padding, owns the width budget.
+async function expectFeedPanelsFit(canvasElement: HTMLElement) {
+  const canvas = within(canvasElement)
+  await waitFor(() => {
+    const panels = canvas
+      .getAllByRole("region")
+      .filter((panel) =>
+        ["Список вакансій", "Деталі вакансії", "Фільтри вакансій"].includes(
+          panel.getAttribute("aria-label") ?? "",
+        ),
+      )
+    expect(panels.length).toBeGreaterThan(0)
+    const bounds =
+      panels[0].parentElement!.parentElement!.getBoundingClientRect()
+    for (const panel of panels) {
+      const rect = panel.getBoundingClientRect()
+      expect(rect.width).toBeGreaterThan(0)
+      expect(rect.left).toBeGreaterThanOrEqual(bounds.left - 1)
+      expect(rect.right).toBeLessThanOrEqual(bounds.right + 1)
+    }
+  })
+}
+
+export const FeedWithSidebarNarrow: Story = {
+  ...DesktopFeedWorkspace,
+  globals: { viewport: { value: "narrowWorkspace", isRotated: false } },
+  play: async ({ canvasElement }) => {
+    expect(window.innerWidth).toBe(768)
+    expect(window.innerHeight).toBe(800)
+    await expectFeedPanelsFit(canvasElement)
+  },
+}
+
+export const FeedWithSidebarCompact: Story = {
+  ...DesktopFeedWorkspace,
+  globals: { viewport: { value: "compactWorkspace", isRotated: false } },
+  play: async ({ canvasElement, userEvent }) => {
+    expect(window.innerWidth).toBe(1024)
+    const preferences = { ...useFeedLayoutStore.getState().widths }
+    await expectFeedPanelsFit(canvasElement)
+    await userEvent.click(
+      within(canvasElement).getByRole("button", {
+        name: "Перемкнути бічну панель",
+      }),
+    )
+    await expectFeedPanelsFit(canvasElement)
+    expect(useFeedLayoutStore.getState().widths).toEqual(preferences)
+  },
+}
+
+export const FeedResizeBounds: Story = {
+  ...DesktopFeedWorkspace,
+  play: async ({ canvasElement, userEvent }) => {
+    expect(window.innerWidth).toBe(1440)
+    const separator = await within(canvasElement).findByRole("separator", {
+      name: "Змінити межу Список вакансій — Деталі вакансії",
+    })
+    separator.focus()
+    await userEvent.keyboard("{Shift>}{ArrowRight>8}{/Shift}")
+    await expectFeedPanelsFit(canvasElement)
+    expect(Number(separator.getAttribute("aria-valuenow"))).toBeLessThanOrEqual(
+      Number(separator.getAttribute("aria-valuemax")) + 1,
+    )
   },
 }
