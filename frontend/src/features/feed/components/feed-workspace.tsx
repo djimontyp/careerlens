@@ -26,6 +26,7 @@ import {
   useRef,
 } from "react"
 import {
+  Link,
   NavLink,
   useLocation,
   useNavigate,
@@ -33,6 +34,7 @@ import {
 } from "react-router-dom"
 
 import { Button } from "@/components/ui/button"
+import { buttonVariants } from "@/components/ui/button-variants"
 import { WorkspaceHeader } from "@/components/workspace-header"
 import {
   Popover,
@@ -119,9 +121,17 @@ export function FeedWorkspace() {
   const interestsCalloutVariant = interestsState.interests.length
     ? "paused"
     : "none"
+  const interestsFallback =
+    mode !== "active" ? undefined : interestsState.status === "failed" ? (
+      <InterestsLoadFailure onRetry={() => void interestsState.reload()} />
+    ) : interestsState.status === "loading" ? (
+      <p role="status">Завантажуємо інтереси…</p>
+    ) : undefined
   const activeEmptyState = showInterestsNotice ? (
     <InterestsCallout variant={interestsCalloutVariant} />
-  ) : undefined
+  ) : (
+    interestsFallback
+  )
   const activeBanner = showInterestsNotice ? (
     <InterestsCallout compact variant={interestsCalloutVariant} />
   ) : undefined
@@ -153,6 +163,13 @@ export function FeedWorkspace() {
       if (!visibility.detail) togglePanel("detail")
       setSearchParams(next)
     }
+  }
+
+  function handleSelectionReplace(id: number | null) {
+    const next = new URLSearchParams(searchParams)
+    if (id === null) next.delete("vacancy")
+    else next.set("vacancy", String(id))
+    setSearchParams(next)
   }
 
   function handleStateChange(
@@ -250,6 +267,7 @@ export function FeedWorkspace() {
                         }
                         selectedId={selectedId}
                         onSelect={handleSelect}
+                        onSelectionReplace={handleSelectionReplace}
                         onStateChange={handleStateChange}
                         activeEmptyState={activeEmptyState}
                         activeBanner={activeBanner}
@@ -291,6 +309,28 @@ export function FeedWorkspace() {
   )
 }
 
+function InterestsLoadFailure({ onRetry }: { onRetry: () => void }) {
+  return (
+    <div className="space-y-3 px-4 py-8 text-center text-sm">
+      <p role="alert" className="font-medium text-foreground">
+        Не вдалося завантажити інтереси
+      </p>
+      <p>Вакансії за інтересами можуть не відображатися.</p>
+      <div className="flex flex-wrap items-center justify-center gap-2">
+        <Button variant="outline" size="sm" onClick={onRetry}>
+          Повторити
+        </Button>
+        <Link
+          to="/interests"
+          className={buttonVariants({ variant: "ghost", size: "sm" })}
+        >
+          До інтересів
+        </Link>
+      </div>
+    </div>
+  )
+}
+
 export function FeedDesktopActions() {
   const visibility = useFeedLayoutStore((state) => state.visibility)
   const togglePanel = useFeedLayoutStore((state) => state.togglePanel)
@@ -320,6 +360,7 @@ function EmptyPanel({
   action,
   selectedId,
   onSelect,
+  onSelectionReplace,
   onBack,
   onStateChange,
   activeEmptyState,
@@ -338,6 +379,7 @@ function EmptyPanel({
   action?: ReactNode
   selectedId: number | null
   onSelect: (id: number) => void
+  onSelectionReplace: (id: number | null) => void
   onBack?: () => void
   onStateChange: (state: Partial<Pick<Vacancy, "saved" | "hidden">>) => void
   activeEmptyState?: ReactNode
@@ -395,6 +437,7 @@ function EmptyPanel({
           mode={mode}
           selectedId={selectedId}
           onSelect={onSelect}
+          onSelectionReplace={onSelectionReplace}
           onLoadingChange={onLoadingChange}
           onVisibleDateChange={onVisibleDateChange}
           jumpDate={jumpDate}

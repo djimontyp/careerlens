@@ -4,6 +4,7 @@
 
 - Durable UI preferences live in a versioned Zustand store; primitives do not access storage.
 - Vacancy note drafts and pending writes belong to the session-scoped feature store, not the Sheet/editor lifecycle. Keep private drafts out of persistent browser storage. Reopening an editor must reuse its pending operation and recover errors.
+- Active feed membership (active interest, saved or applied, never hidden) is decided by the server. When a confirmed unsave or withdrawn application drops a listed vacancy's saved/applied reason, the list refetches the loaded pages and moves selection to the nearest remaining neighbour; the client never guesses interest matches. Saved/hidden modes filter locally.
 - Confirmed note/application changes update shared feed metadata. A GET may refresh cached values only if those fields have not changed since the request started.
 
 ## UI changes

@@ -2,6 +2,7 @@ import type { Meta, StoryObj } from "@storybook/react-vite"
 import { MemoryRouter } from "react-router-dom"
 import { expect, fn, waitFor, within } from "storybook/test"
 
+import type { FeedResponse, Vacancy } from "@/features/feed/api"
 import { VacancyList } from "@/features/feed/components/vacancy-list"
 import { useFeedStateStore } from "@/features/feed/state/store"
 
@@ -357,5 +358,232 @@ export const RetryAfterError: Story = {
     )
     await userEvent.click(canvas.getByRole("button", { name: "Повторити" }))
     await expect(await canvas.findByText("Вакансій поки немає")).toBeVisible()
+  },
+}
+
+function listedVacancy(id: number, patch: Partial<Vacancy> = {}): Vacancy {
+  return {
+    id,
+    title: `Vacancy ${id}`,
+    company: "Acme",
+    location: "Remote",
+    posted_date: "2026-08-21",
+    scraped_at: "2026-08-21T10:30:00Z",
+    source_updated_at: null,
+    is_deftech: false,
+    source: { code: "dou", name: "DOU", icon_url: null },
+    url: null,
+    match: null,
+    saved: false,
+    hidden: false,
+    seen: true,
+    has_note: false,
+    application_submitted_at: null,
+    ...patch,
+  }
+}
+
+function stubFeedSequence(
+  requests: string[],
+  respond: (request: {
+    cursor: string | null
+    attempt: number
+  }) => FeedResponse,
+) {
+  const fetch = window.fetch
+  window.fetch = async (input) => {
+    const url = new URL(String(input), window.location.origin)
+    const cursor = url.searchParams.get("cursor")
+    requests.push(`${url.searchParams.get("mode")}:${cursor ?? "initial"}`)
+    return Response.json(respond({ cursor, attempt: requests.length }))
+  }
+  return () => (window.fetch = fetch)
+}
+
+const activeMembershipRequests: string[] = []
+
+export const ActiveUnsaveRefetchesAndMovesSelection: Story = {
+  args: { mode: "active", selectedId: 42, onSelectionReplace: fn() },
+  beforeEach: () => {
+    activeMembershipRequests.length = 0
+    return stubFeedSequence(activeMembershipRequests, ({ attempt }) => ({
+      items:
+        attempt === 1
+          ? [
+              listedVacancy(41),
+              listedVacancy(42, { saved: true }),
+              listedVacancy(43),
+            ]
+          : [listedVacancy(41), listedVacancy(43)],
+      next_cursor: null,
+    }))
+  },
+  play: async ({ args, canvas }) => {
+    await expect(await canvas.findAllByRole("option")).toHaveLength(3)
+    useFeedStateStore.getState().confirm(42, { saved: false })
+    await waitFor(() =>
+      expect(
+        canvas.queryByRole("option", { name: /Vacancy 42/ }),
+      ).not.toBeInTheDocument(),
+    )
+    await expect(activeMembershipRequests).toEqual([
+      "active:initial",
+      "active:initial",
+    ])
+    await waitFor(() =>
+      expect(args.onSelectionReplace).toHaveBeenCalledWith(43),
+    )
+    await expect(args.onSelectionReplace).toHaveBeenCalledTimes(1)
+  },
+}
+
+export const ActiveUnsaveKeepsSelectionWhileStillListed: Story = {
+  args: { mode: "active", selectedId: 42, onSelectionReplace: fn() },
+  beforeEach: () => {
+    activeMembershipRequests.length = 0
+    return stubFeedSequence(activeMembershipRequests, ({ attempt }) => ({
+      items: [
+        listedVacancy(41),
+        listedVacancy(42, { saved: attempt === 1 }),
+        listedVacancy(43),
+      ],
+      next_cursor: null,
+    }))
+  },
+  play: async ({ args, canvas }) => {
+    await expect(await canvas.findAllByRole("option")).toHaveLength(3)
+    useFeedStateStore.getState().confirm(42, { saved: false })
+    await waitFor(() => expect(activeMembershipRequests).toHaveLength(2))
+    await waitFor(() => expect(canvas.getAllByRole("option")).toHaveLength(3))
+    await expect(
+      canvas.getByRole("option", { name: /Vacancy 42/ }),
+    ).toHaveAttribute("aria-selected", "true")
+    await expect(args.onSelectionReplace).not.toHaveBeenCalled()
+  },
+}
+
+export const ActiveWithdrawnApplicationRefetches: Story = {
+  args: { mode: "active", selectedId: 43, onSelectionReplace: fn() },
+  beforeEach: () => {
+    activeMembershipRequests.length = 0
+    return stubFeedSequence(activeMembershipRequests, ({ attempt }) => ({
+      items:
+        attempt === 1
+          ? [
+              listedVacancy(41),
+              listedVacancy(42, { application_submitted_at: "2026-08-22" }),
+              listedVacancy(43),
+            ]
+          : [listedVacancy(41), listedVacancy(43)],
+      next_cursor: null,
+    }))
+  },
+  play: async ({ args, canvas }) => {
+    await expect(await canvas.findAllByRole("option")).toHaveLength(3)
+    useFeedStateStore.getState().confirm(42, { application_submitted_at: null })
+    await waitFor(() =>
+      expect(
+        canvas.queryByRole("option", { name: /Vacancy 42/ }),
+      ).not.toBeInTheDocument(),
+    )
+    await expect(activeMembershipRequests).toHaveLength(2)
+    await expect(args.onSelectionReplace).not.toHaveBeenCalled()
+  },
+}
+
+export const ActiveUnsaveSelectsPreviousNeighbourAtEnd: Story = {
+  args: { mode: "active", selectedId: 43, onSelectionReplace: fn() },
+  beforeEach: () => {
+    activeMembershipRequests.length = 0
+    return stubFeedSequence(activeMembershipRequests, ({ attempt }) => ({
+      items:
+        attempt === 1
+          ? [listedVacancy(41), listedVacancy(43, { saved: true })]
+          : [listedVacancy(41)],
+      next_cursor: null,
+    }))
+  },
+  play: async ({ args, canvas }) => {
+    await expect(await canvas.findAllByRole("option")).toHaveLength(2)
+    useFeedStateStore.getState().confirm(43, { saved: false })
+    await waitFor(() =>
+      expect(args.onSelectionReplace).toHaveBeenCalledWith(41),
+    )
+  },
+}
+
+export const ActiveUnsaveOfLastItemClearsSelection: Story = {
+  args: { mode: "active", selectedId: 42, onSelectionReplace: fn() },
+  beforeEach: () => {
+    activeMembershipRequests.length = 0
+    return stubFeedSequence(activeMembershipRequests, ({ attempt }) => ({
+      items: attempt === 1 ? [listedVacancy(42, { saved: true })] : [],
+      next_cursor: null,
+    }))
+  },
+  play: async ({ args, canvas }) => {
+    await expect(await canvas.findAllByRole("option")).toHaveLength(1)
+    useFeedStateStore.getState().confirm(42, { saved: false })
+    await waitFor(() =>
+      expect(args.onSelectionReplace).toHaveBeenCalledWith(null),
+    )
+    await expect(await canvas.findByText("Вакансій поки немає")).toBeVisible()
+  },
+}
+
+export const ActiveRefetchRestoresLoadedPages: Story = {
+  args: { mode: "active", selectedId: null, onSelectionReplace: fn() },
+  beforeEach: () => {
+    activeMembershipRequests.length = 0
+    return stubFeedSequence(activeMembershipRequests, ({ cursor, attempt }) =>
+      cursor === "page-2"
+        ? { items: [listedVacancy(44)], next_cursor: null }
+        : {
+            items:
+              attempt === 1
+                ? [listedVacancy(42, { saved: true }), listedVacancy(43)]
+                : [listedVacancy(43)],
+            next_cursor: "page-2",
+          },
+    )
+  },
+  play: async ({ canvas }) => {
+    await waitFor(() => expect(canvas.getAllByRole("option")).toHaveLength(3))
+    useFeedStateStore.getState().confirm(42, { saved: false })
+    await waitFor(() =>
+      expect(activeMembershipRequests).toEqual([
+        "active:initial",
+        "active:page-2",
+        "active:initial",
+        "active:page-2",
+      ]),
+    )
+    await waitFor(() => {
+      expect(canvas.getAllByRole("option")).toHaveLength(2)
+    })
+    await expect(
+      canvas.getByRole("option", { name: /Vacancy 44/ }),
+    ).toBeVisible()
+  },
+}
+
+export const SavedUnsaveRemovesLocallyWithoutRefetch: Story = {
+  args: { mode: "saved", selectedId: 42, onSelectionReplace: fn() },
+  beforeEach: () => {
+    activeMembershipRequests.length = 0
+    return stubFeedSequence(activeMembershipRequests, () => ({
+      items: [
+        listedVacancy(41, { saved: true }),
+        listedVacancy(42, { saved: true }),
+      ],
+      next_cursor: null,
+    }))
+  },
+  play: async ({ args, canvas }) => {
+    await expect(await canvas.findAllByRole("option")).toHaveLength(2)
+    useFeedStateStore.getState().confirm(42, { saved: false })
+    await waitFor(() => expect(canvas.getAllByRole("option")).toHaveLength(1))
+    await expect(activeMembershipRequests).toEqual(["saved:initial"])
+    await expect(args.onSelectionReplace).not.toHaveBeenCalled()
   },
 }

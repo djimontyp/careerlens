@@ -690,6 +690,159 @@ export const ActiveAllPaused: Story = {
   },
 }
 
+export const ActiveUnsaveMovesSelectionToNeighbour: Story = {
+  globals: { viewport: { value: "desktop", isRotated: false } },
+  parameters: { initialEntries: ["/?vacancy=42"] },
+  beforeEach: () => {
+    const fetch = window.fetch
+    let unsaved = false
+    const summary = (id: number, saved: boolean) => ({
+      id,
+      title: `Vacancy ${id}`,
+      company: "Acme",
+      location: "Remote",
+      posted_date: "2026-08-21",
+      scraped_at: "2026-08-21T10:30:00Z",
+      source_updated_at: null,
+      is_deftech: false,
+      source: { code: "dou", name: "DOU", icon_url: null },
+      url: null,
+      match: null,
+      saved,
+      hidden: false,
+      seen: true,
+      has_note: false,
+      application_submitted_at: null,
+    })
+    window.fetch = routeByPath((url, init) => {
+      const detail = /\/api\/v1\/feed\/(\d+)(\/state)?(\?|$)/.exec(url)
+      if (detail?.[2]) {
+        unsaved = true
+        return Response.json({ saved: false, hidden: false, seen: true })
+      }
+      if (detail) {
+        const id = Number(detail[1])
+        return Response.json({
+          ...summary(id, id === 42 && !unsaved),
+          description: `Description ${id}`,
+          description_status: "source",
+          note: "",
+          application: null,
+        })
+      }
+      if (url.includes("/api/v1/feed") && init?.method !== "PATCH") {
+        return Response.json({
+          items: [
+            summary(41, false),
+            ...(unsaved ? [] : [summary(42, true)]),
+            summary(43, false),
+          ],
+          next_cursor: null,
+        })
+      }
+    })
+    return () => (window.fetch = fetch)
+  },
+  play: async ({ canvasElement, userEvent }) => {
+    const canvas = within(canvasElement)
+    const list = within(canvas.getByRole("region", { name: "Список вакансій" }))
+    const detail = within(
+      canvas.getByRole("region", { name: "Деталі вакансії" }),
+    )
+
+    await expect(
+      await list.findByRole("option", { name: /Vacancy 42/ }),
+    ).toHaveAttribute("aria-selected", "true")
+    await userEvent.click(
+      await detail.findByRole("button", { name: "Прибрати зі збережених" }),
+    )
+    await waitFor(() =>
+      expect(
+        list.queryByRole("option", { name: /Vacancy 42/ }),
+      ).not.toBeInTheDocument(),
+    )
+    await expect(
+      await list.findByRole("option", { name: /Vacancy 43/ }),
+    ).toHaveAttribute("aria-selected", "true")
+    await expect(
+      await detail.findByRole("heading", { name: "Vacancy 43" }),
+    ).toBeVisible()
+  },
+}
+
+export const ActiveInterestsLoadFailure: Story = {
+  globals: { viewport: { value: "desktop", isRotated: false } },
+  beforeEach: () => {
+    const fetch = window.fetch
+    let interestsRequests = 0
+    window.fetch = async (input) => {
+      const url = String(input)
+      if (url.includes("/api/v1/interests")) {
+        interestsRequests += 1
+        return interestsRequests === 1
+          ? new Response(null, { status: 500 })
+          : Response.json(DEFAULT_INTEREST)
+      }
+      if (url.includes("/api/v1/feed")) {
+        return Response.json({ items: [], next_cursor: null })
+      }
+      return new Response(null, { status: 404 })
+    }
+    return () => (window.fetch = fetch)
+  },
+  play: async ({ canvasElement, userEvent }) => {
+    const canvas = within(canvasElement)
+    const list = within(canvas.getByRole("region", { name: "Список вакансій" }))
+
+    const alert = await list.findByRole("alert")
+    await expect(alert).toHaveTextContent("Не вдалося завантажити інтереси")
+    await expect(list.queryByText("Вакансій поки немає")).toBeNull()
+    await expect(list.queryByText("Ще немає жодного інтересу")).toBeNull()
+    await expect(
+      list.getByRole("link", { name: "До інтересів" }),
+    ).toHaveAttribute("href", "/interests")
+
+    await userEvent.click(list.getByRole("button", { name: "Повторити" }))
+    await expect(await list.findByText("Вакансій поки немає")).toBeVisible()
+    await expect(list.queryByRole("alert")).toBeNull()
+  },
+}
+
+export const ActiveInterestsLoading: Story = {
+  globals: { viewport: { value: "desktop", isRotated: false } },
+  beforeEach: () => {
+    const fetch = window.fetch
+    const pending = new AbortController()
+    window.fetch = (input, init) => {
+      const url = String(input)
+      if (url.includes("/api/v1/interests")) {
+        return new Promise<Response>((_, reject) => {
+          const abort = () => reject(new DOMException("aborted", "AbortError"))
+          pending.signal.addEventListener("abort", abort)
+          init?.signal?.addEventListener("abort", abort)
+        })
+      }
+      if (url.includes("/api/v1/feed")) {
+        return Promise.resolve(Response.json({ items: [], next_cursor: null }))
+      }
+      return Promise.resolve(new Response(null, { status: 404 }))
+    }
+    return () => {
+      pending.abort()
+      window.fetch = fetch
+    }
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    const list = within(canvas.getByRole("region", { name: "Список вакансій" }))
+
+    await expect(await list.findByText("Завантажуємо інтереси…")).toBeVisible()
+    await expect(list.queryByText("Вакансій поки немає")).toBeNull()
+    await expect(list.queryByRole("link")).toBeNull()
+    await expect(list.queryByRole("alert")).toBeNull()
+  },
+}
+
 export const ActiveSavedWithoutInterests: Story = {
   globals: { viewport: { value: "desktop", isRotated: false } },
   beforeEach: () => {
