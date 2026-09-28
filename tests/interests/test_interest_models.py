@@ -20,6 +20,17 @@ def test_database_rejects_empty_keywords_and_empty_name() -> None:
 
 
 @pytest.mark.django_db
+def test_database_rejects_more_than_thirty_stop_words() -> None:
+    user = User.objects.create_user(email="ada@example.com")
+
+    with transaction.atomic(), pytest.raises(IntegrityError, match="interests_interest_stop_words_max"):
+        Interest.objects.create(
+            user=user, name="x", keywords=["python"], stop_words=[f"s{index}" for index in range(31)]
+        )
+    Interest.objects.create(user=user, name="x", keywords=["python"], stop_words=[f"s{index}" for index in range(30)])
+
+
+@pytest.mark.django_db
 def test_lists_round_trip_and_interests_are_removed_with_their_user() -> None:
     user = User.objects.create_user(email="ada@example.com")
     interest = Interest.objects.create(user=user, name="x", keywords=["C++", "розробник"], stop_words=["senior"])
@@ -39,6 +50,16 @@ def test_by_priority_puts_active_first_then_newest() -> None:
     paused = Interest.objects.create(user=user, name="paused", keywords=["a"], is_active=False)
     older = Interest.objects.create(user=user, name="older", keywords=["b"])
     newer = Interest.objects.create(user=user, name="newer", keywords=["c"])
+
+    assert list(Interest.objects.for_user(user).by_priority()) == [newer, older, paused]
+
+
+@pytest.mark.django_db
+def test_by_priority_keeps_a_later_paused_interest_after_older_active_ones() -> None:
+    user = User.objects.create_user(email="ada@example.com")
+    older = Interest.objects.create(user=user, name="older", keywords=["a"])
+    newer = Interest.objects.create(user=user, name="newer", keywords=["b"])
+    paused = Interest.objects.create(user=user, name="paused", keywords=["c"], is_active=False)
 
     assert list(Interest.objects.for_user(user).by_priority()) == [newer, older, paused]
 

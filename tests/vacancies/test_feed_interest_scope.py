@@ -59,6 +59,31 @@ def test_active_feed_shows_matches_saved_and_applied_but_never_hidden(django_ass
 
 
 @pytest.mark.django_db
+def test_active_feed_excludes_hidden_vacancies_even_when_saved_or_applied() -> None:
+    dou = Source.objects.create(code="dou", name="DOU")
+    user = User.objects.create_user(email="ada@example.com")
+    Interest.objects.create(user=user, name="py", keywords=["python"])
+    visible = vacancy(dou, "Python developer")
+    saved_and_hidden = vacancy(dou, "Rust developer")
+    applied_and_hidden = vacancy(dou, "Go developer")
+    saved_and_applied_and_hidden = vacancy(dou, "Elixir developer")
+    VacancyState.objects.create(user=user, vacancy=saved_and_hidden, saved=True, hidden=True)
+    VacancyState.objects.create(user=user, vacancy=applied_and_hidden, hidden=True)
+    VacancyApplication.objects.create(user=user, vacancy=applied_and_hidden)
+    VacancyState.objects.create(user=user, vacancy=saved_and_applied_and_hidden, saved=True, hidden=True)
+    VacancyApplication.objects.create(user=user, vacancy=saved_and_applied_and_hidden)
+    client = Client()
+    client.force_login(user)
+
+    assert ids(client.get("/api/v1/feed")) == [visible.id]
+    assert set(ids(client.get("/api/v1/feed", {"mode": "hidden"}))) == {
+        saved_and_applied_and_hidden.id,
+        applied_and_hidden.id,
+        saved_and_hidden.id,
+    }
+
+
+@pytest.mark.django_db
 def test_without_active_interests_only_saved_and_applied_remain(django_assert_num_queries: object) -> None:
     dou = Source.objects.create(code="dou", name="DOU")
     user = User.objects.create_user(email="ada@example.com")
