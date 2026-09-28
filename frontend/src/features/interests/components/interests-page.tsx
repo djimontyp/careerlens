@@ -1,4 +1,4 @@
-import { useRef, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -6,7 +6,12 @@ import { InterestCard } from "@/features/interests/components/interest-card"
 import { InterestDeleteDialog } from "@/features/interests/components/interest-delete-dialog"
 import { InterestFormDialog } from "@/features/interests/components/interest-form-dialog"
 import { useInterests } from "@/features/interests/use-interests"
-import { updateInterest, type Interest } from "@/features/interests/api"
+import {
+  isStaleResponse,
+  updateInterest,
+  type Interest,
+} from "@/features/interests/api"
+import { ApiError } from "@/lib/api"
 
 function isUsableFocusTarget(
   element: HTMLElement | null,
@@ -26,27 +31,48 @@ export function InterestsPage() {
   const editTriggerRef = useRef<HTMLElement | null>(null)
   const createButtonRef = useRef<HTMLButtonElement>(null)
   const counterRef = useRef<HTMLParagraphElement>(null)
+  const noticeRef = useRef<HTMLParagraphElement>(null)
+  const [notice, setNotice] = useState<string | null>(null)
   // Tracks whether the form dialog is creating or editing across the whole
   // open/save/reload/close cycle: `editing` itself flips back to `undefined`
   // as soon as we call `onOpenChange(false)`, before the dialog's focus
   // return actually runs, so the return-focus target can't read it.
   const formModeRef = useRef<"create" | "edit">("create")
 
+  // A stale card can vanish with the reload, so the explanation lives on the
+  // page and takes focus from the control that just disappeared.
+  useEffect(() => {
+    if (notice) noticeRef.current?.focus()
+  }, [notice])
+
   function handleEdit(interest: Interest, trigger: HTMLButtonElement | null) {
+    setNotice(null)
     formModeRef.current = "edit"
     editTriggerRef.current = trigger
     setEditing(interest)
   }
 
   function handleCreate() {
+    setNotice(null)
     formModeRef.current = "create"
     setEditing(null)
   }
 
-  function handleToggleActive(interest: Interest) {
-    return updateInterest(interest.id, { is_active: !interest.is_active }).then(
-      reload,
-    )
+  async function handleToggleActive(interest: Interest) {
+    setNotice(null)
+    try {
+      await updateInterest(interest.id, { is_active: !interest.is_active })
+    } catch (error) {
+      if (!isStaleResponse(error)) throw error
+      setNotice(
+        (error as ApiError).status === 404
+          ? "Інтерес більше не існує. Список оновлено."
+          : "Інтерес змінився. Список оновлено.",
+      )
+      await reload()
+      return
+    }
+    await reload()
   }
 
   // The create button and the edit button a create/edit returns focus to
@@ -96,6 +122,16 @@ export function InterestsPage() {
             Створити інтерес
           </Button>
         </div>
+        {notice && (
+          <p
+            ref={noticeRef}
+            role="alert"
+            tabIndex={-1}
+            className="text-sm text-destructive outline-none"
+          >
+            {notice}
+          </p>
+        )}
         {status === "failed" ? (
           <div className="space-y-3 py-8 text-center text-sm">
             <p role="alert">Не вдалося завантажити інтереси.</p>
@@ -144,12 +180,14 @@ export function InterestsPage() {
         interest={editing ?? null}
         onOpenChange={(open) => !open && setEditing(undefined)}
         onSaved={reload}
+        onStale={reload}
         finalFocus={formFinalFocus}
       />
       <InterestDeleteDialog
         interest={deleting}
         onOpenChange={(open) => !open && setDeleting(null)}
         onDeleted={reload}
+        onStale={reload}
         finalFocus={deleteFinalFocus}
       />
     </div>

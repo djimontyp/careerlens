@@ -19,18 +19,21 @@ export function useInterests() {
     // Mutations on different cards can finish their reloads out of order.
     const requestId = ++latestRequest.current
     return fetchInterests(signal).then(
-      (response) => {
-        if (signal?.aborted || requestId !== latestRequest.current) return
+      (response): Interest[] | undefined => {
+        if (signal?.aborted || requestId !== latestRequest.current)
+          return undefined
         setState({
           status: "ready",
           interests: response.items,
           limit: response.limit,
         })
+        return response.items
       },
       () => {
         if (!signal?.aborted && requestId === latestRequest.current) {
           setState((current) => ({ ...current, status: "failed" }))
         }
+        return undefined
       },
     )
   }, [])
@@ -43,8 +46,9 @@ export function useInterests() {
 
   return {
     ...state,
-    // Returns a promise that resolves once the refreshed state has been
-    // applied, so a caller that returns focus to an element whose enabled
+    // Returns a promise that resolves with the applied interests once the
+    // refreshed state is in place (undefined when the request failed or a
+    // newer one superseded it), so a caller that returns focus to an element whose enabled
     // state depends on the fresh count (the create button at the limit, for
     // example) can wait for it instead of closing over stale data.
     reload: () => {

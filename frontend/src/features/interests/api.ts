@@ -66,3 +66,22 @@ export function validationIssues(error: unknown): ValidationIssue[] {
   const detail = (error.detail as { detail?: unknown } | undefined)?.detail
   return Array.isArray(detail) ? (detail as ValidationIssue[]) : []
 }
+
+export function isStaleResponse(error: unknown): boolean {
+  return (
+    error instanceof ApiError && (error.status === 404 || error.status === 409)
+  )
+}
+
+export function overlappingStopWords(
+  issues: ValidationIssue[],
+): string | undefined {
+  for (const issue of issues) {
+    if (issue.loc[2] !== "stop_words") continue
+    const overlap = issue.msg.match(
+      /Keywords and stop words overlap: (.+)$/,
+    )?.[1]
+    if (overlap) return overlap
+  }
+  return undefined
+}
