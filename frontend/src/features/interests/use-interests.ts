@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react"
+import { useCallback, useEffect, useRef, useState } from "react"
 
 import { fetchInterests, type Interest } from "@/features/interests/api"
 
@@ -8,6 +8,7 @@ type InterestsState =
   | { status: "ready"; interests: Interest[]; limit: number }
 
 export function useInterests() {
+  const latestRequest = useRef(0)
   const [state, setState] = useState<InterestsState>({
     status: "loading",
     interests: [],
@@ -15,9 +16,11 @@ export function useInterests() {
   })
 
   const load = useCallback((signal?: AbortSignal) => {
+    // Mutations on different cards can finish their reloads out of order.
+    const requestId = ++latestRequest.current
     return fetchInterests(signal).then(
       (response) => {
-        if (signal?.aborted) return
+        if (signal?.aborted || requestId !== latestRequest.current) return
         setState({
           status: "ready",
           interests: response.items,
@@ -25,7 +28,7 @@ export function useInterests() {
         })
       },
       () => {
-        if (!signal?.aborted) {
+        if (!signal?.aborted && requestId === latestRequest.current) {
           setState((current) => ({ ...current, status: "failed" }))
         }
       },
