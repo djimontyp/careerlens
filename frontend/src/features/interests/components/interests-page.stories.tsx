@@ -11,7 +11,7 @@ const interests: Interest[] = [
     name: "Python backend",
     keywords: ["python", "django"],
     stop_words: ["senior"],
-    sources: [{ code: "dou", name: "DOU", icon_url: null }],
+    sources: [{ code: "dou", name: "DOU", icon_url: "/source-icons/dou.png" }],
     is_active: true,
     created_at: "2026-09-24T10:00:00Z",
   },
@@ -27,8 +27,8 @@ const interests: Interest[] = [
 ]
 
 const sources: Source[] = [
-  { code: "djinni", name: "Djinni", icon_url: null },
-  { code: "dou", name: "DOU", icon_url: null },
+  { code: "djinni", name: "Djinni", icon_url: "/source-icons/djinni.png" },
+  { code: "dou", name: "DOU", icon_url: "/source-icons/dou.png" },
 ]
 
 const CSRF_TOKEN = "story-interests-csrf-token"
@@ -171,7 +171,7 @@ export const Empty: Story = {
     await expect(
       canvas.getByRole("button", { name: "Створити перший інтерес" }),
     ).toBeEnabled()
-    await expect(canvas.getByText("0 із 10")).toBeVisible()
+    await expect(canvas.getByText("0 із 10 інтересів")).toBeVisible()
   },
 }
 
@@ -254,16 +254,31 @@ export const List: Story = {
       within(python.closest("li")!).getByText("django"),
     ).toBeVisible()
     await expect(
-      within(python.closest("li")!).getByText("Стоп-слова: senior"),
+      within(python.closest("li")!).getByText("Не включати: senior"),
     ).toBeVisible()
     await expect(
-      within(python.closest("li")!).getByText("Джерела: DOU"),
+      within(python.closest("li")!).getByRole("list", { name: "Джерела" }),
+    ).toBeVisible()
+    const sourceIcon = within(python.closest("li")!).getByAltText("")
+    await expect(sourceIcon).toHaveAttribute("src", "/source-icons/dou.png")
+    await (sourceIcon as HTMLImageElement).decode()
+    expect((sourceIcon as HTMLImageElement).naturalWidth).toBeGreaterThan(0)
+    await expect(
+      canvas.getByRole("button", { name: "Дії: Python backend" }),
+    ).toBeVisible()
+    await expect(
+      within(python.closest("li")!).getByRole("list", {
+        name: "Ключові слова",
+      }),
+    ).toBeVisible()
+    await expect(
+      canvas.getByRole("button", { name: "Призупинити: Python backend" }),
     ).toBeVisible()
     await expect(within(go.closest("li")!).getByText("На паузі")).toBeVisible()
     await expect(
       within(go.closest("li")!).getByText("Усі джерела"),
     ).toBeVisible()
-    await expect(canvas.getByText("2 із 10")).toBeVisible()
+    await expect(canvas.getByText("2 із 10 інтересів")).toBeVisible()
     await expect(
       canvas.getByRole("button", { name: "Створити інтерес" }),
     ).toBeEnabled()
@@ -318,11 +333,13 @@ export const Mobile: Story = {
     const longCard = canvas
       .getByRole("heading", { level: 2, name: "Довгий токен" })
       .closest("li")!
-    const stopWords = within(longCard).getByText(/^Стоп-слова: b+$/)
+    const stopWords = within(longCard).getByText(/^Не включати: b+$/)
     await waitFor(() =>
       expect(stopWords.scrollWidth).toBeLessThanOrEqual(stopWords.clientWidth),
     )
-    const triggers = canvas.getAllByRole("button", { name: /^Дії: / })
+    const triggers = canvas.getAllByRole("button", {
+      name: /^(Дії|Редагувати|Призупинити|Відновити): /,
+    })
     for (const trigger of triggers) {
       const rect = trigger.getBoundingClientRect()
       expect(rect.width).toBeGreaterThanOrEqual(44)
@@ -361,6 +378,11 @@ export const Create: Story = {
       form.getByLabelText("Ключові слова"),
       "Python, python, go",
     )
+    const sourceIcons = form.getAllByAltText("")
+    expect(sourceIcons.map((icon) => icon.getAttribute("src"))).toEqual([
+      "/source-icons/djinni.png",
+      "/source-icons/dou.png",
+    ])
     await userEvent.click(form.getByRole("checkbox", { name: "DOU" }))
     await userEvent.click(form.getByRole("button", { name: "Створити" }))
 
@@ -714,7 +736,9 @@ export const CreateReachesLimit: Story = {
         canvas.getByRole("button", { name: "Створити інтерес" }),
       ).toBeDisabled(),
     )
-    await waitFor(() => expect(canvas.getByText("3 із 3")).toHaveFocus())
+    await waitFor(() =>
+      expect(canvas.getByText("3 із 3 інтересів")).toHaveFocus(),
+    )
   },
 }
 
@@ -785,10 +809,9 @@ export const Edit: Story = {
   play: async ({ canvasElement, userEvent }) => {
     const canvas = within(canvasElement)
     await canvas.findByRole("heading", { level: 2, name: "Python backend" })
-    const menuTrigger = canvas.getByRole("button", {
-      name: "Дії: Python backend",
-    })
-    await userEvent.click(menuTrigger)
+    await userEvent.click(
+      canvas.getByRole("button", { name: "Дії: Python backend" }),
+    )
     await userEvent.click(
       await screen.findByRole("menuitem", { name: "Редагувати" }),
     )
@@ -840,10 +863,9 @@ export const EditNoChanges: Story = {
   play: async ({ canvasElement, userEvent }) => {
     const canvas = within(canvasElement)
     await canvas.findByRole("heading", { level: 2, name: "Python backend" })
-    const menuTrigger = canvas.getByRole("button", {
-      name: "Дії: Python backend",
-    })
-    await userEvent.click(menuTrigger)
+    await userEvent.click(
+      canvas.getByRole("button", { name: "Дії: Python backend" }),
+    )
     await userEvent.click(
       await screen.findByRole("menuitem", { name: "Редагувати" }),
     )
@@ -879,15 +901,12 @@ export const PauseResume: Story = {
     const canvas = within(canvasElement)
     await canvas.findByRole("heading", { level: 2, name: "Python backend" })
     await userEvent.click(
-      canvas.getByRole("button", { name: "Дії: Python backend" }),
-    )
-    await userEvent.click(
-      await screen.findByRole("menuitem", { name: "Призупинити" }),
+      canvas.getByRole("button", { name: "Призупинити: Python backend" }),
     )
 
     await waitFor(() =>
       expect(
-        canvas.getByRole("button", { name: "Дії: Python backend" }),
+        canvas.getByRole("button", { name: "Відновити: Python backend" }),
       ).toHaveFocus(),
     )
 
@@ -902,11 +921,21 @@ export const PauseResume: Story = {
     )
 
     await userEvent.click(
-      canvas.getByRole("button", { name: "Дії: Python backend" }),
+      canvas.getByRole("button", { name: "Відновити: Python backend" }),
     )
     await waitFor(() =>
-      expect(screen.getByRole("menuitem", { name: "Відновити" })).toBeVisible(),
+      expect(
+        within(pausedCard()).queryByText("На паузі"),
+      ).not.toBeInTheDocument(),
     )
+    await expect(
+      canvas.getByRole("button", { name: "Призупинити: Python backend" }),
+    ).toHaveFocus()
+    expect(
+      requests
+        .filter((request) => request.init?.method === "PATCH")
+        .map((request) => JSON.parse(String(request.init!.body))),
+    ).toEqual([{ is_active: false }, { is_active: true }])
 
     const updated = requests.find(
       (request) =>
@@ -920,6 +949,69 @@ export const PauseResume: Story = {
     expect(JSON.parse(String(updated!.init!.body))).toEqual({
       is_active: false,
     })
+  },
+}
+
+let finishPause: (() => void) | undefined
+
+export const PausePending: Story = {
+  beforeEach: () => {
+    const fetch = window.fetch
+    const items = structuredClone(interests)
+    requests.length = 0
+    finishPause = undefined
+    document.cookie = `csrftoken=${CSRF_TOKEN}; path=/`
+    window.fetch = async (input, init) => {
+      const url = String(input)
+      requests.push({ url, init })
+      if (url.endsWith("/api/v1/interests/1") && init?.method === "PATCH") {
+        await new Promise<void>((resolve) => {
+          finishPause = resolve
+        })
+        items[0].is_active = false
+        return Response.json(items[0])
+      }
+      if (url.endsWith("/api/v1/interests")) {
+        return Response.json({ items, limit: 10 })
+      }
+      return new Response(null, { status: 404 })
+    }
+    return () => {
+      finishPause?.()
+      finishPause = undefined
+      window.fetch = fetch
+      document.cookie =
+        "csrftoken=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT"
+    }
+  },
+  play: async ({ canvasElement, userEvent }) => {
+    const canvas = within(canvasElement)
+    const pause = await canvas.findByRole("button", {
+      name: "Призупинити: Python backend",
+    })
+    await userEvent.click(pause)
+    try {
+      await expect(pause).toHaveAttribute("aria-busy", "true")
+      await expect(pause).toHaveAttribute("aria-disabled", "true")
+      await expect(pause).toHaveFocus()
+      await expect(
+        canvas.getByRole("button", { name: "Дії: Python backend" }),
+      ).toBeDisabled()
+      await userEvent.click(pause)
+      expect(
+        requests.filter((request) => request.init?.method === "PATCH"),
+      ).toHaveLength(1)
+    } finally {
+      finishPause?.()
+    }
+    await waitFor(() =>
+      expect(
+        canvas.getByRole("button", { name: "Відновити: Python backend" }),
+      ).not.toHaveAttribute("aria-busy"),
+    )
+    await expect(
+      canvas.getByRole("button", { name: "Відновити: Python backend" }),
+    ).toHaveFocus()
   },
 }
 
@@ -952,10 +1044,7 @@ export const PauseFailed: Story = {
     })
     const card = heading.closest("li")!
     await userEvent.click(
-      canvas.getByRole("button", { name: "Дії: Python backend" }),
-    )
-    await userEvent.click(
-      await screen.findByRole("menuitem", { name: "Призупинити" }),
+      canvas.getByRole("button", { name: "Призупинити: Python backend" }),
     )
 
     await waitFor(() =>
@@ -964,12 +1053,9 @@ export const PauseFailed: Story = {
       ),
     )
     expect(within(card).queryByText("На паузі")).not.toBeInTheDocument()
-    // Let the menu's own exit animation finish before the story ends, so it
-    // doesn't leave an in-transition focus guard for the next story's axe
-    // pass to trip over.
-    await waitFor(() =>
-      expect(screen.queryByRole("menu")).not.toBeInTheDocument(),
-    )
+    await expect(
+      canvas.getByRole("button", { name: "Призупинити: Python backend" }),
+    ).toHaveFocus()
   },
 }
 
@@ -1269,5 +1355,171 @@ export const DeleteDark: Story = {
     await screen.findByRole("alertdialog", {
       name: "Видалити «Python backend»?",
     })
+  },
+}
+
+async function expectDialogBounds(dialog: HTMLElement) {
+  await Promise.all(
+    dialog.getAnimations().map((animation) => animation.finished),
+  )
+  await waitFor(() => {
+    const rect = dialog.getBoundingClientRect()
+    expect(rect.top).toBeGreaterThanOrEqual(15)
+    expect(rect.bottom).toBeLessThanOrEqual(window.innerHeight - 15)
+    expect(rect.left).toBeGreaterThanOrEqual(15)
+    expect(rect.right).toBeLessThanOrEqual(window.innerWidth - 15)
+    expect(dialog.scrollWidth).toBeLessThanOrEqual(dialog.clientWidth)
+  })
+}
+
+export const DeleteLongNameNarrow: Story = {
+  globals: { viewport: { value: "narrowMobile", isRotated: false } },
+  beforeEach: stubApi(() => ({
+    items: [{ ...structuredClone(interests[0]), name: "Я".repeat(100) }],
+    limit: 10,
+    sources,
+  })),
+  play: async ({ canvas, userEvent }) => {
+    expect(window.innerWidth).toBe(320)
+    await userEvent.click(
+      await canvas.findByRole("button", { name: `Дії: ${"Я".repeat(100)}` }),
+    )
+    await userEvent.click(
+      await screen.findByRole("menuitem", { name: "Видалити" }),
+    )
+    const dialog = await screen.findByRole("alertdialog")
+    await expectDialogBounds(dialog)
+    const cancel = within(dialog).getByRole("button", { name: "Скасувати" })
+    cancel.focus()
+    expect(cancel.getBoundingClientRect().right).toBeLessThanOrEqual(
+      window.innerWidth - 15,
+    )
+    await userEvent.click(cancel)
+    expect(requests.some((request) => request.init?.method === "DELETE")).toBe(
+      false,
+    )
+  },
+}
+
+const resizedForm: Story["play"] = async ({ canvas, userEvent }) => {
+  const trigger = await canvas.findByRole("button", {
+    name: "Дії: Python backend",
+  })
+  await userEvent.click(trigger)
+  await userEvent.click(
+    await screen.findByRole("menuitem", { name: "Редагувати" }),
+  )
+  const dialog = await screen.findByRole("dialog", {
+    name: "Редагувати інтерес",
+  })
+  const fields = [
+    within(dialog).getByRole("textbox", { name: "Ключові слова" }),
+    within(dialog).getByRole("textbox", { name: "Стоп-слова" }),
+  ]
+  const before = fields.map((field) => field.style.cssText)
+  try {
+    fields.forEach((field) => {
+      field.style.height = "2000px"
+    })
+    await expectDialogBounds(dialog)
+    const title = within(dialog).getByRole("heading", {
+      name: "Редагувати інтерес",
+    })
+    const save = within(dialog).getByRole("button", { name: "Зберегти" })
+    const body = within(dialog).getByRole("region", { name: "Поля інтересу" })
+    const owner = window.innerHeight <= 480 ? dialog : body
+    expect(owner.scrollHeight).toBeGreaterThan(owner.clientHeight)
+    const titleTop = title.getBoundingClientRect().top
+    const saveTop = save.getBoundingClientRect().top
+    owner.scrollTop = owner.scrollHeight
+    await waitFor(() => expect(owner.scrollTop).toBeGreaterThan(0))
+    if (window.innerHeight > 480) {
+      expect(
+        Math.abs(title.getBoundingClientRect().top - titleTop),
+      ).toBeLessThan(1)
+      expect(Math.abs(save.getBoundingClientRect().top - saveTop)).toBeLessThan(
+        1,
+      )
+    }
+    const cancel = within(dialog).getByRole("button", { name: "Скасувати" })
+    // Reach cancel through the actual focus order, including scroll into view.
+    fields[1].focus()
+    for (let index = 0; index < 6 && document.activeElement !== cancel; index++)
+      await userEvent.tab()
+    expect(cancel).toHaveFocus()
+    expect(cancel.getBoundingClientRect().bottom).toBeLessThanOrEqual(
+      window.innerHeight - 15,
+    )
+    await userEvent.keyboard("{Enter}")
+    await waitFor(() => expect(trigger).toHaveFocus())
+  } finally {
+    fields.forEach((field, index) => {
+      field.style.cssText = before[index]
+    })
+  }
+}
+
+export const EditResizedFields: Story = {
+  globals: { viewport: { value: "mobile", isRotated: false } },
+  play: async (context) => {
+    expect(window.innerWidth).toBe(390)
+    expect(window.innerHeight).toBe(844)
+    await resizedForm(context)
+  },
+}
+export const EditShortViewport: Story = {
+  globals: { viewport: { value: "shortLandscape", isRotated: false } },
+  play: async (context) => {
+    expect(window.innerWidth).toBe(844)
+    expect(window.innerHeight).toBe(390)
+    await resizedForm(context)
+  },
+}
+export const EditHeightBoundary: Story = {
+  globals: { viewport: { value: "heightBoundary", isRotated: false } },
+  play: async (context) => {
+    expect(window.innerHeight).toBe(480)
+    await resizedForm(context)
+  },
+}
+export const EditAboveHeightBoundary: Story = {
+  globals: { viewport: { value: "aboveHeightBoundary", isRotated: false } },
+  play: async (context) => {
+    expect(window.innerHeight).toBe(481)
+    await resizedForm(context)
+  },
+}
+
+export const CreateValidationNarrow: Story = {
+  globals: { viewport: { value: "narrowMobile", isRotated: false } },
+  play: async ({ canvas, userEvent }) => {
+    expect(window.innerWidth).toBe(320)
+    expect(window.innerHeight).toBe(568)
+    const trigger = await canvas.findByRole("button", {
+      name: "Створити інтерес",
+    })
+    await userEvent.click(trigger)
+    const dialog = await screen.findByRole("dialog", { name: "Новий інтерес" })
+    await userEvent.click(
+      within(dialog).getByRole("button", { name: "Створити" }),
+    )
+    await waitFor(() =>
+      expect(
+        within(dialog).getByText("Вкажіть хоча б одне ключове слово"),
+      ).toBeVisible(),
+    )
+    await expectDialogBounds(dialog)
+    const field = within(dialog).getByRole("textbox", { name: "Ключові слова" })
+    field.focus()
+    expect(field.getBoundingClientRect().bottom).toBeLessThanOrEqual(
+      window.innerHeight - 15,
+    )
+    await userEvent.click(
+      within(dialog).getByRole("button", { name: "Скасувати" }),
+    )
+    expect(requests.some((request) => request.init?.method === "POST")).toBe(
+      false,
+    )
+    await waitFor(() => expect(trigger).toHaveFocus())
   },
 }

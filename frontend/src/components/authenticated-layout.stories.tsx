@@ -632,5 +632,53 @@ export const InterestsPageMobile: Story = {
       expect(page.scrollHeight).toBeGreaterThan(page.clientHeight),
     )
     await expect(workspace.scrollHeight).toBe(workspace.clientHeight)
+    const lastMenu = await canvas.findByRole("button", {
+      name: "Дії: Interest 10",
+    })
+    const navigation = canvas.getByRole("navigation", {
+      name: "Основна навігація",
+    })
+    lastMenu.scrollIntoView({ block: "center" })
+    await waitFor(() => {
+      const bounds = lastMenu.getBoundingClientRect()
+      expect(page.scrollTop).toBeGreaterThan(0)
+      expect(bounds.top).toBeGreaterThanOrEqual(
+        page.getBoundingClientRect().top,
+      )
+      expect(bounds.bottom).toBeLessThanOrEqual(
+        navigation.getBoundingClientRect().top,
+      )
+      expect(bounds.right).toBeLessThanOrEqual(window.innerWidth)
+      expect(
+        document
+          .elementFromPoint(
+            bounds.x + bounds.width / 2,
+            bounds.y + bounds.height / 2,
+          )
+          ?.closest("button"),
+      ).toBe(lastMenu)
+    })
+  },
+}
+
+export const InterestsPageDesktop: Story = {
+  ...InterestsPageMobile,
+  globals: { viewport: { value: "desktop", isRotated: false } },
+  beforeEach: () => {
+    const fetch = window.fetch
+    useShellStore.getState().setSidebarOpen(false)
+    window.fetch = routeByPath(() => undefined)
+    return () => {
+      window.fetch = fetch
+    }
+  },
+  play: undefined,
+}
+
+export const InterestsPageDesktopDark: Story = {
+  ...InterestsPageDesktop,
+  globals: {
+    viewport: { value: "desktop", isRotated: false },
+    theme: "dark",
   },
 }

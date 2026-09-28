@@ -23,7 +23,7 @@ export function InterestsPage() {
   const atLimit = status === "ready" && interests.length >= limit
   const [editing, setEditing] = useState<Interest | null | undefined>(undefined)
   const [deleting, setDeleting] = useState<Interest | null>(null)
-  const menuTriggerRef = useRef<HTMLElement | null>(null)
+  const editTriggerRef = useRef<HTMLElement | null>(null)
   const createButtonRef = useRef<HTMLButtonElement>(null)
   const counterRef = useRef<HTMLParagraphElement>(null)
   // Tracks whether the form dialog is creating or editing across the whole
@@ -34,7 +34,7 @@ export function InterestsPage() {
 
   function handleEdit(interest: Interest, trigger: HTMLButtonElement | null) {
     formModeRef.current = "edit"
-    menuTriggerRef.current = trigger
+    editTriggerRef.current = trigger
     setEditing(interest)
   }
 
@@ -49,7 +49,7 @@ export function InterestsPage() {
     )
   }
 
-  // The create button and the menu trigger a create/edit returns focus to
+  // The create button and the edit button a create/edit returns focus to
   // can become detached (the empty-state CTA unmounts once the list is no
   // longer empty) or disabled (the header button at the interest limit) by
   // the time the dialog's exit animation finishes. Falling back to the
@@ -57,7 +57,7 @@ export function InterestsPage() {
   function formFinalFocus(): HTMLElement | null {
     const target =
       formModeRef.current === "edit"
-        ? menuTriggerRef.current
+        ? editTriggerRef.current
         : createButtonRef.current
     return isUsableFocusTarget(target) ? target : counterRef.current
   }
@@ -77,7 +77,9 @@ export function InterestsPage() {
             tabIndex={-1}
             className="text-sm text-muted-foreground"
           >
-            {status === "ready" ? `${interests.length} із ${limit}` : ""}
+            {status === "ready"
+              ? `${interests.length} із ${limit} інтересів`
+              : ""}
           </p>
           {atLimit && (
             <p id="interests-limit" className="text-sm text-muted-foreground">

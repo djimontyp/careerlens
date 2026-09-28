@@ -20,12 +20,12 @@ import {
   Field,
   FieldDescription,
   FieldError,
+  FieldGroup,
   FieldLabel,
   FieldLegend,
   FieldSet,
 } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import {
   createInterest,
@@ -37,6 +37,7 @@ import {
   validationIssues,
 } from "@/features/interests/api"
 import { joinTokens, parseTokens } from "@/features/interests/tokens"
+import { SourceIdentity } from "@/features/vacancies/components/source-identity"
 import { ApiError } from "@/lib/api"
 
 const MAX_TOKENS = 30
@@ -137,9 +138,20 @@ export function InterestFormDialog({
   onSaved,
   finalFocus,
 }: InterestFormDialogProps) {
+  const [pending, setPending] = useState(false)
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent finalFocus={finalFocus} showCloseButton={false}>
+    <Dialog
+      open={open}
+      onOpenChange={(nextOpen) => {
+        if (!pending) onOpenChange(nextOpen)
+      }}
+    >
+      <DialogContent
+        finalFocus={finalFocus}
+        showCloseButton={false}
+        className="flex flex-col overflow-hidden p-0 [@media(max-height:30rem)]:overflow-y-auto"
+      >
         {/* Base UI keeps this popup mounted for the exit animation and
             unmounts it afterwards, so the form stays visible (rather than
             collapsing to an empty shell) for as long as the dialog does. */}
@@ -148,6 +160,8 @@ export function InterestFormDialog({
           interest={interest}
           onOpenChange={onOpenChange}
           onSaved={onSaved}
+          pending={pending}
+          setPending={setPending}
         />
       </DialogContent>
     </Dialog>
@@ -158,9 +172,17 @@ type InterestFormProps = {
   interest: Interest | null
   onOpenChange: (open: boolean) => void
   onSaved: () => unknown
+  pending: boolean
+  setPending: (pending: boolean) => void
 }
 
-function InterestForm({ interest, onOpenChange, onSaved }: InterestFormProps) {
+function InterestForm({
+  interest,
+  onOpenChange,
+  onSaved,
+  pending,
+  setPending,
+}: InterestFormProps) {
   const ids = {
     name: useId(),
     keywords: useId(),
@@ -182,7 +204,6 @@ function InterestForm({ interest, onOpenChange, onSaved }: InterestFormProps) {
   const [sourcesFailed, setSourcesFailed] = useState(false)
   const [errors, setErrors] = useState<Errors>({})
   const [formError, setFormError] = useState<string | null>(null)
-  const [pending, setPending] = useState(false)
 
   useEffect(() => {
     const controller = new AbortController()
@@ -209,6 +230,7 @@ function InterestForm({ interest, onOpenChange, onSaved }: InterestFormProps) {
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
+    if (pending) return
     const keywords = parseTokens(keywordsText)
     const stopWords = parseTokens(stopWordsText)
     const validationErrors = validateForm(name, keywords, stopWords)
@@ -282,9 +304,9 @@ function InterestForm({ interest, onOpenChange, onSaved }: InterestFormProps) {
       aria-busy={pending}
       noValidate
       onSubmit={handleSubmit}
-      className="flex flex-col gap-4"
+      className="flex min-h-0 flex-col [@media(max-height:30rem)]:shrink-0"
     >
-      <DialogHeader>
+      <DialogHeader className="shrink-0 p-4">
         <DialogTitle>
           {interest ? "Редагувати інтерес" : "Новий інтерес"}
         </DialogTitle>
@@ -294,126 +316,140 @@ function InterestForm({ interest, onOpenChange, onSaved }: InterestFormProps) {
         </DialogDescription>
       </DialogHeader>
 
-      <Field data-invalid={errors.name ? true : undefined}>
-        <FieldLabel htmlFor={ids.name}>Назва</FieldLabel>
-        <Input
-          id={ids.name}
-          value={name}
-          onChange={(event) => setName(event.target.value)}
-          aria-invalid={errors.name ? true : undefined}
-          aria-describedby={
-            errors.name
-              ? `${ids.name}-description ${ids.name}-error`
-              : `${ids.name}-description`
-          }
-        />
-        <FieldDescription id={`${ids.name}-description`}>
-          Необов’язково. Без назви візьмемо перші два ключові слова.
-        </FieldDescription>
-        {errors.name && (
-          <FieldError id={`${ids.name}-error`}>{errors.name}</FieldError>
-        )}
-      </Field>
-
-      <Field data-invalid={errors.keywords ? true : undefined}>
-        <FieldLabel htmlFor={ids.keywords}>Ключові слова</FieldLabel>
-        <Textarea
-          id={ids.keywords}
-          placeholder="python, django"
-          value={keywordsText}
-          onChange={(event) => setKeywordsText(event.target.value)}
-          aria-invalid={errors.keywords ? true : undefined}
-          aria-describedby={
-            errors.keywords
-              ? `${ids.keywords}-description ${ids.keywords}-error`
-              : `${ids.keywords}-description`
-          }
-        />
-        <FieldDescription id={`${ids.keywords}-description`}>
-          Через кому. Шукаємо цілі слова без урахування регістру: go не знайде
-          Google.
-        </FieldDescription>
-        {errors.keywords && (
-          <FieldError id={`${ids.keywords}-error`}>
-            {errors.keywords}
-          </FieldError>
-        )}
-      </Field>
-
-      <Field data-invalid={errors.stop_words ? true : undefined}>
-        <FieldLabel htmlFor={ids.stopWords}>Стоп-слова</FieldLabel>
-        <Textarea
-          id={ids.stopWords}
-          placeholder="senior, lead"
-          value={stopWordsText}
-          onChange={(event) => setStopWordsText(event.target.value)}
-          aria-invalid={errors.stop_words ? true : undefined}
-          aria-describedby={
-            errors.stop_words
-              ? `${ids.stopWords}-description ${ids.stopWords}-error`
-              : `${ids.stopWords}-description`
-          }
-        />
-        <FieldDescription id={`${ids.stopWords}-description`}>
-          Через кому. Вакансії з такими словами в назві не показуємо.
-        </FieldDescription>
-        {errors.stop_words && (
-          <FieldError id={`${ids.stopWords}-error`}>
-            {errors.stop_words}
-          </FieldError>
-        )}
-      </Field>
-
-      <FieldSet
-        aria-describedby={
-          errors.sources
-            ? `${ids.sources}-description ${ids.sources}-error`
-            : `${ids.sources}-description`
-        }
-        data-invalid={errors.sources ? true : undefined}
+      <div
+        role="region"
+        aria-label="Поля інтересу"
+        className="min-h-0 flex-1 overflow-y-auto px-4 py-2 [@media(max-height:30rem)]:min-h-auto [@media(max-height:30rem)]:flex-none [@media(max-height:30rem)]:overflow-visible"
       >
-        <FieldLegend>Джерела</FieldLegend>
-        <FieldDescription id={`${ids.sources}-description`}>
-          Нічого не вибрано означає всі джерела.
-        </FieldDescription>
-        {sourcesFailed ? (
-          <p className="text-sm text-destructive">
-            Не вдалося завантажити джерела.
-          </p>
-        ) : sources === null ? null : sources.length === 0 ? (
-          <p className="text-sm text-muted-foreground">
-            Джерела з’являться після першого імпорту вакансій.
-          </p>
-        ) : (
-          <ul className="grid gap-2 sm:grid-cols-2">
-            {sources.map((source) => (
-              <li key={source.code}>
-                <Label className="flex items-center gap-2">
-                  <Checkbox
-                    value={source.code}
-                    checked={selected.has(source.code)}
-                    aria-invalid={errors.sources ? true : undefined}
-                    onCheckedChange={(checked) =>
-                      toggleSource(source.code, checked === true)
-                    }
-                  />
-                  {source.name}
-                </Label>
-              </li>
-            ))}
-          </ul>
-        )}
-        {errors.sources && (
-          <FieldError id={`${ids.sources}-error`}>{errors.sources}</FieldError>
-        )}
-      </FieldSet>
+        <FieldGroup className="gap-4">
+          <Field data-invalid={errors.name ? true : undefined}>
+            <FieldLabel htmlFor={ids.name}>Назва</FieldLabel>
+            <Input
+              id={ids.name}
+              disabled={pending}
+              value={name}
+              onChange={(event) => setName(event.target.value)}
+              aria-invalid={errors.name ? true : undefined}
+              aria-describedby={
+                errors.name
+                  ? `${ids.name}-description ${ids.name}-error`
+                  : `${ids.name}-description`
+              }
+            />
+            <FieldDescription id={`${ids.name}-description`}>
+              Необов’язково. Без назви візьмемо перші два ключові слова.
+            </FieldDescription>
+            {errors.name && (
+              <FieldError id={`${ids.name}-error`}>{errors.name}</FieldError>
+            )}
+          </Field>
 
-      <DialogFooter>
+          <Field data-invalid={errors.keywords ? true : undefined}>
+            <FieldLabel htmlFor={ids.keywords}>Ключові слова</FieldLabel>
+            <Textarea
+              id={ids.keywords}
+              disabled={pending}
+              placeholder="python, django"
+              value={keywordsText}
+              onChange={(event) => setKeywordsText(event.target.value)}
+              aria-invalid={errors.keywords ? true : undefined}
+              aria-describedby={
+                errors.keywords
+                  ? `${ids.keywords}-description ${ids.keywords}-error`
+                  : `${ids.keywords}-description`
+              }
+            />
+            <FieldDescription id={`${ids.keywords}-description`}>
+              Через кому. Шукаємо цілі слова без урахування регістру: go не
+              знайде Google.
+            </FieldDescription>
+            {errors.keywords && (
+              <FieldError id={`${ids.keywords}-error`}>
+                {errors.keywords}
+              </FieldError>
+            )}
+          </Field>
+
+          <Field data-invalid={errors.stop_words ? true : undefined}>
+            <FieldLabel htmlFor={ids.stopWords}>Стоп-слова</FieldLabel>
+            <Textarea
+              id={ids.stopWords}
+              disabled={pending}
+              placeholder="senior, lead"
+              value={stopWordsText}
+              onChange={(event) => setStopWordsText(event.target.value)}
+              aria-invalid={errors.stop_words ? true : undefined}
+              aria-describedby={
+                errors.stop_words
+                  ? `${ids.stopWords}-description ${ids.stopWords}-error`
+                  : `${ids.stopWords}-description`
+              }
+            />
+            <FieldDescription id={`${ids.stopWords}-description`}>
+              Через кому. Вакансії з такими словами в назві не показуємо.
+            </FieldDescription>
+            {errors.stop_words && (
+              <FieldError id={`${ids.stopWords}-error`}>
+                {errors.stop_words}
+              </FieldError>
+            )}
+          </Field>
+
+          <FieldSet
+            aria-describedby={
+              errors.sources
+                ? `${ids.sources}-description ${ids.sources}-error`
+                : `${ids.sources}-description`
+            }
+            data-invalid={errors.sources ? true : undefined}
+          >
+            <FieldLegend>Джерела</FieldLegend>
+            <FieldDescription id={`${ids.sources}-description`}>
+              Нічого не вибрано означає всі джерела.
+            </FieldDescription>
+            {sourcesFailed ? (
+              <p className="text-sm text-destructive">
+                Не вдалося завантажити джерела.
+              </p>
+            ) : sources === null ? null : sources.length === 0 ? (
+              <p className="text-sm text-muted-foreground">
+                Джерела з’являться після першого імпорту вакансій.
+              </p>
+            ) : (
+              <FieldGroup className="grid gap-2 sm:grid-cols-2">
+                {sources.map((source) => (
+                  <Field key={source.code} orientation="horizontal">
+                    <Checkbox
+                      id={`${ids.sources}-${source.code}`}
+                      value={source.code}
+                      disabled={pending}
+                      checked={selected.has(source.code)}
+                      aria-invalid={errors.sources ? true : undefined}
+                      onCheckedChange={(checked) =>
+                        toggleSource(source.code, checked === true)
+                      }
+                    />
+                    <FieldLabel htmlFor={`${ids.sources}-${source.code}`}>
+                      <SourceIdentity source={source} />
+                    </FieldLabel>
+                  </Field>
+                ))}
+              </FieldGroup>
+            )}
+            {errors.sources && (
+              <FieldError id={`${ids.sources}-error`}>
+                {errors.sources}
+              </FieldError>
+            )}
+          </FieldSet>
+        </FieldGroup>
         {formError && (
           <p role="alert" className="text-sm text-destructive">
             {formError}
           </p>
         )}
+      </div>
+      <DialogFooter className="m-0 shrink-0">
         <Button
           variant="outline"
           type="button"
