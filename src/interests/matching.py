@@ -1,4 +1,5 @@
 import re
+import unicodedata
 from collections.abc import Iterable, Sequence
 
 
@@ -6,7 +7,7 @@ def normalize_tokens(values: Iterable[str]) -> list[str]:
     seen: set[str] = set()
     tokens: list[str] = []
     for value in values:
-        token = " ".join(value.split())
+        token = " ".join(unicodedata.normalize("NFC", value).split())
         key = token.casefold()
         if not token or key in seen:
             continue

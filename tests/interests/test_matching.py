@@ -138,3 +138,7 @@ def test_vacancy_filter_tolerates_a_queryset_that_already_prefetched_sources() -
     scope = Interest.objects.for_user(user).with_sources().vacancy_filter()
 
     assert set(Vacancy.objects.filter(scope).values_list("id", flat=True)) == {python.id}
+
+
+def test_normalize_tokens_treats_nfd_and_nfc_spellings_as_one_token() -> None:
+    assert normalize_tokens(["café", "café", "CAFÉ"]) == ["café"]

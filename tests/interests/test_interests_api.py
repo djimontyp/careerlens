@@ -1,3 +1,6 @@
+import json
+from collections.abc import Callable
+
 import pytest
 from django.contrib.auth import get_user_model
 from django.test import Client, override_settings
@@ -204,3 +207,152 @@ def test_mutations_require_csrf_and_delete_returns_204() -> None:
     assert deleted.status_code == 204
     assert deleted.content == b""
     assert not Interest.objects.filter(pk=interest.id).exists()
+
+
+def post_json(client: Client, path: str, data: object, headers: dict[str, str], method: str = "post") -> object:
+    return getattr(client, method)(path, data=data, content_type="application/json", headers=headers)
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize("character", ["\x00", "​", "­", "‮", "\ud800"], ids=["nul", "zwsp", "shy", "rlo", "surrogate"])
+@pytest.mark.parametrize(
+    ("field", "build"),
+    [
+        ("keywords", lambda value: {"keywords": [f"py{value}thon"]}),
+        ("stop_words", lambda value: {"keywords": ["python"], "stop_words": [f"se{value}nior"]}),
+        ("name", lambda value: {"keywords": ["python"], "name": f"na{value}me"}),
+        ("sources", lambda value: {"keywords": ["python"], "sources": [f"d{value}ou"]}),
+    ],
+)
+def test_forbidden_characters_answer_422_on_create_and_patch_instead_of_a_database_error(
+    character: str, field: str, build: Callable[[str], dict[str, object]]
+) -> None:
+    client, user = logged_in()
+    interest = Interest.objects.create(user=user, name="x", keywords=["python"])
+    headers = csrf_headers(client)
+    body = json.dumps(build(character))  # json.dumps escapes the surrogate as \ud800, as a browser client does
+
+    created = client.post("/api/v1/interests", data=body, content_type="application/json", headers=headers)
+    patch_body = json.dumps({key: value for key, value in build(character).items()})
+    patched = client.patch(
+        f"/api/v1/interests/{interest.id}", data=patch_body, content_type="application/json", headers=headers
+    )
+
+    for response in (created, patched):
+        assert response.status_code == 422
+        assert response.json()["detail"][0]["loc"][:3] == ["body", "payload", field]
+    assert Interest.objects.count() == 1
+    interest.refresh_from_db()
+    assert interest.keywords == ["python"]
+
+
+@pytest.mark.django_db
+def test_nfd_and_nfc_keywords_are_stored_as_one_token() -> None:
+    client, _ = logged_in()
+    headers = csrf_headers(client)
+
+    created = post_json(client, "/api/v1/interests", {"keywords": ["café", "café"]}, headers)
+
+    assert created.status_code == 201
+    assert created.json()["keywords"] == ["café"]
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize("source", ["", "   ", "\t "])
+def test_blank_source_codes_answer_422_and_never_widen_the_interest_to_every_source(source: str) -> None:
+    Source.objects.create(code="dou", name="DOU", icon_url="/source-icons/dou.png")
+    client, user = logged_in()
+    interest = Interest.objects.create(user=user, name="x", keywords=["python"])
+    interest.sources.set(Source.objects.all())
+    headers = csrf_headers(client)
+
+    created = post_json(client, "/api/v1/interests", {"keywords": ["python"], "sources": [source]}, headers)
+    patched = post_json(client, f"/api/v1/interests/{interest.id}", {"sources": [source]}, headers, method="patch")
+
+    for response in (created, patched):
+        assert response.status_code == 422
+        assert response.json()["detail"][0]["loc"][:4] == ["body", "payload", "sources", 0]
+    assert Interest.objects.count() == 1
+    assert list(interest.sources.values_list("code", flat=True)) == ["dou"]
+
+
+@pytest.mark.django_db
+def test_padded_source_codes_are_stripped_on_create_and_patch() -> None:
+    Source.objects.create(code="dou", name="DOU", icon_url="/source-icons/dou.png")
+    client, user = logged_in()
+    interest = Interest.objects.create(user=user, name="x", keywords=["python"])
+    headers = csrf_headers(client)
+
+    created = post_json(client, "/api/v1/interests", {"keywords": ["python"], "sources": [" dou "]}, headers)
+    patched = post_json(client, f"/api/v1/interests/{interest.id}", {"sources": ["\tdou\n"]}, headers, method="patch")
+
+    assert created.status_code == 201
+    assert [source["code"] for source in created.json()["sources"]] == ["dou"]
+    assert patched.status_code == 200
+    assert [source["code"] for source in patched.json()["sources"]] == ["dou"]
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize(
+    ("data", "field"),
+    [
+        ({"is_active": None}, "is_active"),
+        ({"keywords": None}, "keywords"),
+        ({"stop_words": None}, "stop_words"),
+        ({"sources": None}, "sources"),
+        ({"name": None}, "name"),
+        ({"is_active": "true"}, "is_active"),
+        ({"is_active": 1}, "is_active"),
+    ],
+)
+def test_patch_rejects_null_and_coerced_values_with_422_naming_the_field(data: dict[str, object], field: str) -> None:
+    client, user = logged_in()
+    interest = Interest.objects.create(user=user, name="x", keywords=["python"], is_active=False)
+    headers = csrf_headers(client)
+
+    response = post_json(client, f"/api/v1/interests/{interest.id}", data, headers, method="patch")
+
+    assert response.status_code == 422
+    assert response.json()["detail"][0]["loc"] == ["body", "payload", field]
+    interest.refresh_from_db()
+    assert (interest.name, interest.keywords, interest.is_active) == ("x", ["python"], False)
+
+
+@pytest.mark.django_db
+def test_patch_omitted_fields_stay_no_ops() -> None:
+    client, user = logged_in()
+    interest = Interest.objects.create(user=user, name="x", keywords=["python"], stop_words=["senior"])
+    headers = csrf_headers(client)
+
+    response = post_json(client, f"/api/v1/interests/{interest.id}", {"is_active": False}, headers, method="patch")
+
+    assert response.status_code == 200
+    assert response.json()["keywords"] == ["python"]
+    assert response.json()["stop_words"] == ["senior"]
+    assert response.json()["name"] == "x"
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize("method", ["post", "patch"])
+def test_a_5000_character_token_yields_a_small_422_that_does_not_echo_it(method: str) -> None:
+    client, user = logged_in()
+    interest = Interest.objects.create(user=user, name="x", keywords=["python"])
+    headers = csrf_headers(client)
+    path = "/api/v1/interests" if method == "post" else f"/api/v1/interests/{interest.id}"
+
+    response = post_json(client, path, {"keywords": ["x" * 5000]}, headers, method=method)
+
+    assert response.status_code == 422
+    assert len(response.content) < 2048
+    assert "x" * 100 not in response.content.decode()
+
+
+@pytest.mark.django_db
+def test_a_two_megabyte_body_yields_a_small_422() -> None:
+    client, _ = logged_in()
+    headers = csrf_headers(client)
+
+    response = post_json(client, "/api/v1/interests", {"keywords": ["y" * 2_000_000]}, headers)
+
+    assert response.status_code == 422
+    assert len(response.content) < 2048

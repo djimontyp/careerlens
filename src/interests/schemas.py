@@ -1,8 +1,18 @@
+import unicodedata
 from datetime import datetime
 from typing import Annotated, Any
 
 from ninja import Schema
-from pydantic import ConfigDict, Field, StringConstraints, ValidationInfo, field_validator, model_validator
+from pydantic import (
+    AfterValidator,
+    ConfigDict,
+    Field,
+    StrictBool,
+    StringConstraints,
+    ValidationInfo,
+    field_validator,
+    model_validator,
+)
 
 from interests.matching import normalize_tokens
 from interests.models import MAX_NAME_LENGTH, MAX_TOKEN_LENGTH, MAX_TOKENS
@@ -11,8 +21,37 @@ from vacancies.models import SOURCE_CODE_MAX_LENGTH
 from vacancies.schemas import SourceOut
 
 MAX_SOURCES = 30
-SourceCode = Annotated[str, Field(min_length=1, max_length=SOURCE_CODE_MAX_LENGTH)]
-InterestName = Annotated[str, StringConstraints(strip_whitespace=True, max_length=MAX_NAME_LENGTH)]
+MAX_ECHOED_CHARACTERS = 60
+MAX_RAW_TOKEN_LENGTH = MAX_TOKEN_LENGTH * 4
+FORBIDDEN_CATEGORIES = frozenset({"Cc", "Cf", "Cs", "Co"})
+
+
+def truncate_for_message(value: str) -> str:
+    if len(value) <= MAX_ECHOED_CHARACTERS:
+        return value
+    return f"{value[:MAX_ECHOED_CHARACTERS]}\u2026"
+
+
+def reject_invisible_characters(value: str) -> str:
+    """Rejects control, format, surrogate and private-use characters, which PostgreSQL or readers mishandle."""
+    for character in value:
+        if unicodedata.category(character) in FORBIDDEN_CATEGORIES:
+            raise ValueError(
+                f"Control, format, surrogate and private-use characters are not allowed: U+{ord(character):04X}"
+            )
+    return value
+
+
+SourceCode = Annotated[
+    str,
+    StringConstraints(strip_whitespace=True, min_length=1, max_length=SOURCE_CODE_MAX_LENGTH),
+    AfterValidator(reject_invisible_characters),
+]
+InterestName = Annotated[
+    str,
+    StringConstraints(strip_whitespace=True, max_length=MAX_NAME_LENGTH),
+    AfterValidator(reject_invisible_characters),
+]
 
 INTEREST_EXAMPLE: dict[str, Any] = {
     "id": 7,
@@ -26,14 +65,18 @@ INTEREST_EXAMPLE: dict[str, Any] = {
 
 
 def validate_tokens(values: list[str]) -> list[str]:
+    for value in values:
+        if len(value) > MAX_RAW_TOKEN_LENGTH:
+            raise ValueError(f"Token is longer than {MAX_TOKEN_LENGTH} characters: {truncate_for_message(value)}")
     tokens = normalize_tokens(values)
     if len(tokens) > MAX_TOKENS:
         raise ValueError(f"At most {MAX_TOKENS} tokens are allowed")
     for token in tokens:
         if len(token) > MAX_TOKEN_LENGTH:
-            raise ValueError(f"Token is longer than {MAX_TOKEN_LENGTH} characters: {token}")
+            raise ValueError(f"Token is longer than {MAX_TOKEN_LENGTH} characters: {truncate_for_message(token)}")
+        reject_invisible_characters(token)
         if not any(character.isalnum() for character in token):
-            raise ValueError(f"Token must contain a letter or digit: {token}")
+            raise ValueError(f"Token must contain a letter or digit: {truncate_for_message(token)}")
     return tokens
 
 
@@ -136,7 +179,16 @@ class InterestPatchIn(Schema):
         max_length=MAX_SOURCES,
         description="Replacement source codes when supplied; an empty list means every source.",
     )
-    is_active: bool | None = Field(None, description="False pauses the interest, true resumes it.")
+    is_active: StrictBool | None = Field(
+        None, description="False pauses the interest, true resumes it; must be a JSON boolean when supplied."
+    )
+
+    @field_validator("name", "keywords", "stop_words", "sources", "is_active", mode="before")
+    @classmethod
+    def reject_explicit_null(cls, value: object) -> object:
+        if value is None:
+            raise ValueError("Null is not allowed; omit the field to leave it unchanged")
+        return value
 
     @field_validator("keywords")
     @classmethod

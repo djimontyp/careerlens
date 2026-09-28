@@ -2520,7 +2520,7 @@
                 "type": "null"
               }
             ],
-            "description": "False pauses the interest, true resumes it.",
+            "description": "False pauses the interest, true resumes it; must be a JSON boolean when supplied.",
             "title": "Is Active"
           }
         },
