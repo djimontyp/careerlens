@@ -72,6 +72,7 @@ Before changing any scoped area, read its `AGENTS.md`. After the change, re-read
 - Reusable ORM composition and user scoping belong in custom QuerySets. Class-based services own use cases, permissions, transactions and business invariants. Routers and views only adapt HTTP.
 - Keep services cohesive and named after one domain responsibility; do not create generic service bases, factories or interfaces until a second real implementation requires them.
 - Apply SOLID at actual change boundaries without replacing direct framework contracts with speculative layers.
+- The external vacancy collector writes `vacancies_source`, `vacancies_company` and `vacancies_vacancy` with raw SQL. A new non-null column there needs a `db_default`; removing or renaming a column the collector writes needs a coordinated collector change.
 
 ## API contracts
 
