@@ -79,6 +79,7 @@ class Vacancy(models.Model):
     description_format = models.CharField(
         choices=DescriptionFormat.choices,
         default=DescriptionFormat.SOURCE,
+        db_default=DescriptionFormat.SOURCE,
         max_length=8,
     )
 
