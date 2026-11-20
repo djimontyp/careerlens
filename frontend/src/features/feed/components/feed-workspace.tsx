@@ -17,8 +17,16 @@ import {
   FilterHorizontalIcon,
 } from "@hugeicons/core-free-icons"
 import { HugeiconsIcon } from "@hugeicons/react"
-import { Fragment, type ReactNode, useCallback, useState } from "react"
 import {
+  Fragment,
+  type ReactNode,
+  useCallback,
+  useState,
+  useLayoutEffect,
+  useRef,
+} from "react"
+import {
+  Link,
   NavLink,
   useLocation,
   useNavigate,
@@ -26,6 +34,7 @@ import {
 } from "react-router-dom"
 
 import { Button } from "@/components/ui/button"
+import { buttonVariants } from "@/components/ui/button-variants"
 import { WorkspaceHeader } from "@/components/workspace-header"
 import {
   Popover,
@@ -49,13 +58,15 @@ import { VacancyDetail } from "@/features/feed/components/vacancy-detail"
 import { PanelVisibilityControls } from "@/features/feed/components/panel-visibility-controls"
 import {
   DEFAULT_PANEL_ORDER,
+  fitPanels,
   PANEL_MIN_WIDTH,
   type FeedPanel,
 } from "@/features/feed/layout/geometry"
 import { useFeedLayoutStore } from "@/features/feed/layout/store"
 import type { FeedMode, Vacancy } from "@/features/feed/api"
+import { InterestsCallout } from "@/features/interests/components/interests-callout"
+import { useInterests } from "@/features/interests/use-interests"
 import { useIsMobile } from "@/hooks/use-mobile"
-import { useMediaQuery } from "@/hooks/use-media-query"
 import { cn } from "@/lib/utils"
 
 const PANEL_LABELS: Record<FeedPanel, string> = {
@@ -66,7 +77,22 @@ const PANEL_LABELS: Record<FeedPanel, string> = {
 
 export function FeedWorkspace() {
   const isMobile = useIsMobile()
-  const canPinFilters = useMediaQuery("(min-width: 1024px)")
+  const containerRef = useRef<HTMLDivElement>(null)
+  const [space, setSpace] = useState({ width: 0, gap: 0 })
+  const [showCompactList, setShowCompactList] = useState(false)
+  useLayoutEffect(() => {
+    const container = containerRef.current
+    if (!container) return
+    const measure = () =>
+      setSpace({
+        width: container.getBoundingClientRect().width,
+        gap: Number.parseFloat(getComputedStyle(container).columnGap) || 0,
+      })
+    measure()
+    const observer = new ResizeObserver(measure)
+    observer.observe(container)
+    return () => observer.disconnect()
+  }, [isMobile])
   const { pathname } = useLocation()
   const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
@@ -84,6 +110,31 @@ export function FeedWorkspace() {
     (loading: boolean) => setRefreshing(loading),
     [],
   )
+  const interestsState = useInterests()
+  const activeInterests = interestsState.interests.filter(
+    (interest) => interest.is_active,
+  ).length
+  const showInterestsNotice =
+    interestsState.status === "ready" &&
+    activeInterests === 0 &&
+    mode === "active"
+  const interestsCalloutVariant = interestsState.interests.length
+    ? "paused"
+    : "none"
+  const interestsFallback =
+    mode !== "active" ? undefined : interestsState.status === "failed" ? (
+      <InterestsLoadFailure onRetry={() => void interestsState.reload()} />
+    ) : interestsState.status === "loading" ? (
+      <p role="status">Завантажуємо інтереси…</p>
+    ) : undefined
+  const activeEmptyState = showInterestsNotice ? (
+    <InterestsCallout variant={interestsCalloutVariant} />
+  ) : (
+    interestsFallback
+  )
+  const activeBanner = showInterestsNotice ? (
+    <InterestsCallout compact variant={interestsCalloutVariant} />
+  ) : undefined
   const order = useFeedLayoutStore((state) => state.order)
   const visibility = useFeedLayoutStore((state) => state.visibility)
   const widths = useFeedLayoutStore((state) => state.widths)
@@ -99,18 +150,26 @@ export function FeedWorkspace() {
 
   function handleSelect(id: number) {
     const next = new URLSearchParams(searchParams)
-    if (id === selectedId) {
+    if (id === selectedId && !showCompactList) {
       next.delete("vacancy")
       if (!isMobile && visibility.detail) togglePanel("detail")
       setSearchParams(next)
       return
     }
+    setShowCompactList(false)
     next.set("vacancy", String(id))
     if (isMobile) navigate(`/feed/detail?${next}`)
     else {
       if (!visibility.detail) togglePanel("detail")
       setSearchParams(next)
     }
+  }
+
+  function handleSelectionReplace(id: number | null) {
+    const next = new URLSearchParams(searchParams)
+    if (id === null) next.delete("vacancy")
+    else next.set("vacancy", String(id))
+    setSearchParams(next)
   }
 
   function handleStateChange(
@@ -137,13 +196,27 @@ export function FeedWorkspace() {
         onStateChange={handleStateChange}
       />
     ) : (
-      <MobileList selectedId={selectedId} onSelect={handleSelect} mode={mode} />
+      <MobileList
+        selectedId={selectedId}
+        onSelect={handleSelect}
+        mode={mode}
+        activeEmptyState={activeEmptyState}
+        activeBanner={activeBanner}
+      />
     )
   }
 
-  const visibleOrder = order.filter(
-    (panel) => visibility[panel] && (panel !== "filters" || canPinFilters),
+  const layout = fitPanels(
+    space.width,
+    space.gap,
+    order,
+    visibility,
+    widths,
+    selectedId !== null && !showCompactList,
   )
+  const visibleOrder = layout.order
+  const compactDetail =
+    visibleOrder.length === 1 && visibleOrder[0] === "detail" && visibility.list
   function handleDragEnd({ active, over }: DragEndEvent) {
     if (
       over &&
@@ -156,7 +229,10 @@ export function FeedWorkspace() {
   }
 
   return (
-    <div className="flex h-full min-h-0">
+    <div
+      ref={containerRef}
+      className="flex h-full min-h-0 min-w-0 gap-(--workspace-gap)"
+    >
       <DndContext
         sensors={sensors}
         collisionDetection={closestCenter}
@@ -175,9 +251,8 @@ export function FeedWorkspace() {
                     id={panel}
                     disabled={visibleOrder.length < 2}
                     style={{
-                      width: panel === "detail" ? undefined : widths[panel],
-                      flex: panel === "detail" ? "1 1 0" : undefined,
-                      minWidth: PANEL_MIN_WIDTH[panel],
+                      width: layout.widths[panel],
+                      minWidth: 0,
                     }}
                   >
                     {(handle) => (
@@ -185,9 +260,17 @@ export function FeedWorkspace() {
                         panel={panel}
                         mode={mode}
                         action={handle}
+                        onBack={
+                          compactDetail
+                            ? () => setShowCompactList(true)
+                            : undefined
+                        }
                         selectedId={selectedId}
                         onSelect={handleSelect}
+                        onSelectionReplace={handleSelectionReplace}
                         onStateChange={handleStateChange}
+                        activeEmptyState={activeEmptyState}
+                        activeBanner={activeBanner}
                         refreshVersion={refreshVersion}
                         refreshing={refreshing}
                         onRefresh={() =>
@@ -204,10 +287,16 @@ export function FeedWorkspace() {
                   {next && (
                     <ResizeHandle
                       label={`Змінити межу ${PANEL_LABELS[panel]} — ${PANEL_LABELS[next]}`}
-                      value={widths[panel]}
+                      value={layout.widths[panel]}
                       min={PANEL_MIN_WIDTH[panel]}
-                      max={widths[panel] + widths[next] - PANEL_MIN_WIDTH[next]}
-                      onChange={(value) => resizeBoundary(panel, next, value)}
+                      max={
+                        layout.widths[panel] +
+                        layout.widths[next] -
+                        PANEL_MIN_WIDTH[next]
+                      }
+                      onChange={(value) =>
+                        resizeBoundary(panel, next, value, layout.widths)
+                      }
                     />
                   )}
                 </Fragment>
@@ -216,6 +305,28 @@ export function FeedWorkspace() {
           </div>
         </SortableContext>
       </DndContext>
+    </div>
+  )
+}
+
+function InterestsLoadFailure({ onRetry }: { onRetry: () => void }) {
+  return (
+    <div className="space-y-3 px-4 py-8 text-center text-sm">
+      <p role="alert" className="font-medium text-foreground">
+        Не вдалося завантажити інтереси
+      </p>
+      <p>Вакансії за інтересами можуть не відображатися.</p>
+      <div className="flex flex-wrap items-center justify-center gap-2">
+        <Button variant="outline" size="sm" onClick={onRetry}>
+          Повторити
+        </Button>
+        <Link
+          to="/interests"
+          className={buttonVariants({ variant: "ghost", size: "sm" })}
+        >
+          До інтересів
+        </Link>
+      </div>
     </div>
   )
 }
@@ -249,7 +360,11 @@ function EmptyPanel({
   action,
   selectedId,
   onSelect,
+  onSelectionReplace,
+  onBack,
   onStateChange,
+  activeEmptyState,
+  activeBanner,
   refreshVersion,
   refreshing,
   onRefresh,
@@ -264,7 +379,11 @@ function EmptyPanel({
   action?: ReactNode
   selectedId: number | null
   onSelect: (id: number) => void
+  onSelectionReplace: (id: number | null) => void
+  onBack?: () => void
   onStateChange: (state: Partial<Pick<Vacancy, "saved" | "hidden">>) => void
+  activeEmptyState?: ReactNode
+  activeBanner?: ReactNode
   refreshVersion: number
   refreshing: boolean
   onRefresh: () => void
@@ -279,6 +398,14 @@ function EmptyPanel({
       aria-label={PANEL_LABELS[panel]}
       className="relative flex h-full min-h-0 flex-col overflow-hidden rounded-2xl border border-surface-border bg-background"
     >
+      {onBack && (
+        <WorkspaceHeader className="flex h-12 shrink-0 items-center border-b px-2">
+          <Button variant="ghost" onClick={onBack}>
+            <HugeiconsIcon icon={ArrowLeft02Icon} data-icon="inline-start" />
+            До списку
+          </Button>
+        </WorkspaceHeader>
+      )}
       {panel !== "detail" && (
         <WorkspaceHeader
           className={cn(
@@ -310,11 +437,14 @@ function EmptyPanel({
           mode={mode}
           selectedId={selectedId}
           onSelect={onSelect}
+          onSelectionReplace={onSelectionReplace}
           onLoadingChange={onLoadingChange}
           onVisibleDateChange={onVisibleDateChange}
           jumpDate={jumpDate}
           onJumpComplete={() => onJump(null)}
           headerInset
+          activeEmptyState={activeEmptyState}
+          activeBanner={activeBanner}
         />
       ) : panel === "detail" ? (
         <VacancyDetail
@@ -339,10 +469,14 @@ function MobileList({
   selectedId,
   onSelect,
   mode,
+  activeEmptyState,
+  activeBanner,
 }: {
   selectedId: number | null
   onSelect: (id: number) => void
   mode: FeedMode
+  activeEmptyState?: ReactNode
+  activeBanner?: ReactNode
 }) {
   return (
     <section
@@ -355,6 +489,8 @@ function MobileList({
         selectedId={selectedId}
         onSelect={onSelect}
         titleLevel={2}
+        activeEmptyState={activeEmptyState}
+        activeBanner={activeBanner}
       />
     </section>
   )

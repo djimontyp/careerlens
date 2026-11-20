@@ -27,6 +27,31 @@ const preview: Preview = {
   parameters: {
     viewport: {
       options: {
+        narrowMobile: {
+          name: "320×568",
+          styles: { width: "320px", height: "568px" },
+          type: "mobile",
+        },
+        shortLandscape: {
+          name: "844×390",
+          styles: { width: "844px", height: "390px" },
+          type: "mobile",
+        },
+        heightBoundary: {
+          name: "844×480",
+          styles: { width: "844px", height: "480px" },
+          type: "mobile",
+        },
+        aboveHeightBoundary: {
+          name: "844×481",
+          styles: { width: "844px", height: "481px" },
+          type: "mobile",
+        },
+        narrowWorkspace: {
+          name: "768×800",
+          styles: { width: "768px", height: "800px" },
+          type: "mobile",
+        },
         mobile: {
           name: "Mobile 390×844",
           styles: { width: "390px", height: "844px" },

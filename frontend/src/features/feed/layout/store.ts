@@ -33,6 +33,7 @@ type FeedLayoutState = {
     left: FeedPanel,
     right: FeedPanel,
     nextLeftWidth: number,
+    renderedWidths: Record<FeedPanel, number>,
   ) => void
   togglePanel: (panel: FeedPanel) => void
   reset: () => void
@@ -46,18 +47,18 @@ export const useFeedLayoutStore = create<FeedLayoutState>()(
       widths: DEFAULT_WIDTHS,
       movePanel: (active, over) =>
         set((state) => ({ order: reorderPanels(state.order, active, over) })),
-      resizeBoundary: (left, right, nextLeftWidth) =>
-        set((state) => {
+      resizeBoundary: (left, right, nextLeftWidth, renderedWidths) =>
+        set(() => {
           const resized = resizeAdjacentPanels(
-            state.widths[left],
-            state.widths[right],
+            renderedWidths[left],
+            renderedWidths[right],
             nextLeftWidth,
             PANEL_MIN_WIDTH[left],
             PANEL_MIN_WIDTH[right],
           )
           return {
             widths: {
-              ...state.widths,
+              ...renderedWidths,
               [left]: resized.left,
               [right]: resized.right,
             },

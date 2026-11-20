@@ -40,7 +40,7 @@ export function PanelVisibilityControls({
           <Button
             variant="ghost"
             size="sm"
-            className="hidden lg:inline-flex"
+            className="hidden md:inline-flex"
             aria-label="Налаштувати вигляд"
           />
         }

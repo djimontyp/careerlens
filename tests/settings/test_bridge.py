@@ -6,6 +6,7 @@ from typing import Never
 
 import psycopg
 import pytest
+from pydantic import ValidationError
 
 TEST_SECRET = "test-only-secret-key-with-at-least-32-characters"
 
@@ -58,6 +59,25 @@ def test_bridge_maps_validated_configuration(monkeypatch: pytest.MonkeyPatch) ->
         "HOST": "db.invalid",
         "PORT": 5432,
     }
+    assert module.INTERESTS_MAX_PER_USER == 10
+    assert "django.contrib.postgres" in module.INSTALLED_APPS
+    assert "interests" in module.INSTALLED_APPS
+
+
+def test_bridge_maps_interest_limit_from_the_environment(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("APP__INTERESTS__MAX_PER_USER", "7")
+    module = import_settings(monkeypatch)
+
+    assert module.INTERESTS_MAX_PER_USER == 7
+
+
+def test_bridge_accepts_the_interest_limit_ceiling_and_rejects_above_it(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("APP__INTERESTS__MAX_PER_USER", "16")
+    assert import_settings(monkeypatch).INTERESTS_MAX_PER_USER == 16
+
+    monkeypatch.setenv("APP__INTERESTS__MAX_PER_USER", "17")
+    with pytest.raises(ValidationError, match="max_per_user"):
+        import_settings(monkeypatch)
 
 
 def test_bridge_enables_production_transport_security(monkeypatch: pytest.MonkeyPatch) -> None:

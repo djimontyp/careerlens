@@ -2,11 +2,13 @@ const BASE = "/api/v1"
 
 export class ApiError extends Error {
   readonly status: number
+  readonly detail: unknown
 
-  constructor(status: number, message: string) {
+  constructor(status: number, message: string, detail?: unknown) {
     super(message)
     this.name = "ApiError"
     this.status = status
+    this.detail = detail
   }
 }
 
@@ -25,9 +27,15 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   })
 
   if (!response.ok) {
+    const detail = response.headers
+      .get("Content-Type")
+      ?.includes("application/json")
+      ? await response.json().catch(() => undefined)
+      : undefined
     throw new ApiError(
       response.status,
       `${response.status} ${response.statusText}`,
+      detail,
     )
   }
 
@@ -84,6 +92,17 @@ export function apiPutJson<T, B>(
     headers,
     body: JSON.stringify(body),
     ...init,
+  })
+}
+
+export function apiPostJson<T, B>(path: string, body: B): Promise<T> {
+  const headers = new Headers({ "Content-Type": "application/json" })
+  const token = csrfToken()
+  if (token) headers.set("X-CSRFToken", decodeURIComponent(token))
+  return request<T>(path, {
+    method: "POST",
+    headers,
+    body: JSON.stringify(body),
   })
 }
 

@@ -4,12 +4,15 @@
 
 - Durable UI preferences live in a versioned Zustand store; primitives do not access storage.
 - Vacancy note drafts and pending writes belong to the session-scoped feature store, not the Sheet/editor lifecycle. Keep private drafts out of persistent browser storage. Reopening an editor must reuse its pending operation and recover errors.
+- Active feed membership (active interest, saved or applied, never hidden) is decided by the server. When a confirmed unsave or withdrawn application drops a listed vacancy's saved/applied reason, the list refetches the loaded pages and moves selection to the nearest remaining neighbour; the client never guesses interest matches. Saved/hidden modes filter locally.
 - Confirmed note/application changes update shared feed metadata. A GET may refresh cached values only if those fields have not changed since the request started.
 
 ## UI changes
 
 - Use the existing components and spacing, color and motion tokens. Preserve approved layout decisions; inspect the rendered result in Storybook at relevant desktop and mobile sizes before claiming visual completion.
+- Every enter/exit animation and non-essential transition must have a `motion-reduce:` variant that removes it; on elements styled by `data-*` animation classes stack it (`motion-reduce:data-open:animate-none`). Cover it with a story that emulates `prefers-reduced-motion` through `cdp()` and asserts the computed `animationName`.
 - Keep reference comparisons and intentional departures in the feature documentation, not only in chat. A screenshot or old implementation is evidence to inspect, not an instruction to copy everything.
+- Size resizable layouts from their actual container, including shell space and gaps. Define each region's scroll owner; keep content and actions reachable when data or viewport changes. Cover the affected composition in Storybook using rendered bounds and reachability, not only CSS visibility or outer scroll dimensions. Use the shared Textarea with finite size bounds.
 
 ## Tests
 
@@ -22,4 +25,11 @@
 - Keep Playwright UI available for interactive development, locator inspection, browser manipulation and debugging; using the tool does not make a mocked browser check integration evidence.
 - Do not automate real WorkOS credentials or provider redirects in CI. Verify that path with the explicit release smoke check.
 - Add page objects, shared fixtures, browser projects or retained artifacts only when current repetition or diagnosis requires them.
-- Run Storybook tests with `npx vitest --project=storybook`; run selected E2E with `npm run test:e2e -- <path-or-grep>`.
+- Run Storybook tests with `npx vitest --project=storybook`; run `npm run test:unit` for `node:test` coverage; run selected E2E with `npm run test:e2e -- <path-or-grep>`.
+
+## Forms
+
+- Compose forms from the shadcn `Field` primitives and wire `aria-describedby` and `aria-invalid` on the control by hand; the base-nova `Field` does not do it.
+- Map API 422 issues to fields by `loc[2]`; anything without a known field falls back to a form-level `role="alert"` message.
+- Client-side token normalisation mirrors the server (`parseTokens` ↔ `normalize_tokens`) and is covered by `node:test`.
+- Stories that exercise mutations set the `csrftoken` cookie in `beforeEach` and assert method, path, headers and body.

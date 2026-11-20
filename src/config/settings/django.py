@@ -10,6 +10,7 @@ DEV_AUTOLOGIN = app_config.dev_autologin
 SITE_URL = app_config.core.site_url_value
 CSRF_TRUSTED_ORIGINS = [SITE_URL]
 DATABASES = {"default": app_config.database.django_config}
+INTERESTS_MAX_PER_USER = app_config.interests.max_per_user
 
 AUTH_WORKOS_ENABLED = app_config.auth.workos.enabled
 WORKOS_CLIENT_ID = app_config.auth.workos.client_id or ""
@@ -20,8 +21,10 @@ INSTALLED_APPS = [
     "django.contrib.auth",
     "django.contrib.contenttypes",
     "django.contrib.sessions",
+    "django.contrib.postgres",
     "accounts",
     "vacancies",
+    "interests",
 ]
 
 AUTH_USER_MODEL = "accounts.User"

@@ -46,6 +46,22 @@ def test_openapi_contract_is_complete_and_current() -> None:
     for component in schema["components"]["schemas"].values():
         assert all(property_schema.get("description") for property_schema in component["properties"].values())
 
+    public = {
+        (path, method)
+        for path, operations in schema["paths"].items()
+        for method, operation in operations.items()
+        if {"SessionAuth": []} not in operation.get("security", [])
+    }
+    assert public == {("/health", "get")}
+
+    interests = schema["paths"]["/api/v1/interests"]
+    assert set(interests["get"]["responses"]) == {200, 401}
+    assert set(interests["post"]["responses"]) == {201, 401, 403, 409, 422}
+    interest = schema["paths"]["/api/v1/interests/{interest_id}"]
+    assert set(interest["patch"]["responses"]) == {200, 401, 403, 404, 422}
+    assert set(interest["delete"]["responses"]) == {204, 401, 403, 404, 422}
+    assert set(schema["paths"]["/api/v1/sources"]["get"]["responses"]) == {200, 401}
+
     me = schema["paths"]["/api/v1/me"]["get"]
     assert set(me["responses"]) == {200, 401}
     assert "Set-Cookie" in me["responses"][200]["headers"]

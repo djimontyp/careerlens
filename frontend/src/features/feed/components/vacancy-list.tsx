@@ -1,4 +1,10 @@
-import { type KeyboardEvent, useEffect, useRef, useState } from "react"
+import {
+  type KeyboardEvent,
+  type ReactNode,
+  useEffect,
+  useRef,
+  useState,
+} from "react"
 
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -7,6 +13,7 @@ import {
   type FeedMode,
   type FeedResponse,
 } from "@/features/feed/api"
+import { useActiveMembershipLoss } from "@/features/feed/hooks/use-active-membership-loss"
 import { useFeedStateStore } from "@/features/feed/state/store"
 import { SourceIdentity } from "@/features/vacancies/components/source-identity"
 import { VacancyUpdatedLabel } from "@/features/vacancies/components/vacancy-updated-label"
@@ -21,24 +28,30 @@ type VacancyListProps = {
   mode?: FeedMode
   selectedId: number | null
   onSelect: (id: number) => void
+  onSelectionReplace?: (id: number | null) => void
   onLoadingChange?: (loading: boolean) => void
   onVisibleDateChange?: (date: string | null) => void
   jumpDate?: string | null
   onJumpComplete?: () => void
   titleLevel?: 2 | 3
   headerInset?: boolean
+  activeEmptyState?: ReactNode
+  activeBanner?: ReactNode
 }
 
 export function VacancyList({
   mode = "active",
   selectedId,
   onSelect,
+  onSelectionReplace,
   onLoadingChange,
   onVisibleDateChange,
   jumpDate,
   onJumpComplete,
   titleLevel = 3,
   headerInset = false,
+  activeEmptyState,
+  activeBanner,
 }: VacancyListProps) {
   const VacancyTitle = `h${titleLevel}` as const
   const listRef = useRef<HTMLUListElement>(null)
@@ -46,7 +59,15 @@ export function VacancyList({
   const [cursor, setCursor] = useState<string | null>(null)
   const [attempt, setAttempt] = useState(0)
   const overrides = useFeedStateStore((store) => store.overrides)
-  const requestKey = `${cursor ?? "initial"}:${attempt}`
+  const [reload, setReload] = useState(0)
+  const loadedPages = useRef(0)
+  const wantedPages = useRef(0)
+  const lostSelection = useRef<{
+    id: number
+    order: number[]
+    since: string
+  } | null>(null)
+  const requestKey = `${cursor ?? "initial"}:${attempt}:${reload}`
   const [state, setState] = useState<{
     key: string
     items: FeedResponse["items"]
@@ -69,6 +90,7 @@ export function VacancyList({
               application_submitted_at: item.application_submitted_at,
             })
         }
+        loadedPages.current = cursor ? loadedPages.current + 1 : 1
         setState((current) => ({
           key: requestKey,
           items: cursor ? [...current.items, ...feed.items] : feed.items,
@@ -86,6 +108,66 @@ export function VacancyList({
     )
     return () => controller.abort()
   }, [cursor, mode, onLoadingChange, requestKey])
+
+  const visibleItems = state.items.filter((vacancy) => {
+    const override = overrides[vacancy.id]
+    const saved = override?.saved ?? vacancy.saved
+    const hidden = override?.hidden ?? vacancy.hidden
+    if (mode === "active") return !hidden
+    if (mode === "saved") return saved
+    return hidden
+  })
+
+  useActiveMembershipLoss(mode, state.items, overrides, () => {
+    if (selectedId !== null && !lostSelection.current) {
+      lostSelection.current = {
+        id: selectedId,
+        order: visibleItems.map((vacancy) => vacancy.id),
+        since: requestKey,
+      }
+    }
+    wantedPages.current = Math.max(loadedPages.current, 1)
+    setCursor(null)
+    setReload((value) => value + 1)
+  })
+
+  useEffect(() => {
+    if (
+      state.key !== requestKey ||
+      state.failed ||
+      !state.nextCursor ||
+      loadedPages.current >= wantedPages.current
+    )
+      return
+    setCursor(state.nextCursor)
+  }, [requestKey, state.failed, state.key, state.nextCursor])
+
+  useEffect(() => {
+    const lost = lostSelection.current
+    if (
+      !lost ||
+      requestKey === lost.since ||
+      state.key !== requestKey ||
+      (state.nextCursor &&
+        !state.failed &&
+        loadedPages.current < wantedPages.current)
+    )
+      return
+    lostSelection.current = null
+    const remaining = new Set(visibleItems.map((vacancy) => vacancy.id))
+    if (selectedId !== lost.id || remaining.has(lost.id)) return
+    const at = lost.order.indexOf(lost.id)
+    let replacement: number | null = visibleItems[0]?.id ?? null
+    for (let distance = 1; distance < lost.order.length; distance += 1) {
+      const nearest = [lost.order[at + distance], lost.order[at - distance]]
+      const found = nearest.find((id) => id !== undefined && remaining.has(id))
+      if (found !== undefined) {
+        replacement = found
+        break
+      }
+    }
+    onSelectionReplace?.(replacement)
+  })
 
   useEffect(() => {
     const sentinel = sentinelRef.current
@@ -200,15 +282,6 @@ export function VacancyList({
     )
   }
 
-  const visibleItems = state.items.filter((vacancy) => {
-    const override = overrides[vacancy.id]
-    const saved = override?.saved ?? vacancy.saved
-    const hidden = override?.hidden ?? vacancy.hidden
-    if (mode === "active") return !hidden
-    if (mode === "saved") return saved
-    return hidden
-  })
-
   if (visibleItems.length === 0 && !state.nextCursor) {
     return (
       <div
@@ -219,7 +292,7 @@ export function VacancyList({
           ? "Немає збережених вакансій"
           : mode === "hidden"
             ? "Немає прихованих вакансій"
-            : "Вакансій поки немає"}
+            : (activeEmptyState ?? "Вакансій поки немає")}
       </div>
     )
   }
@@ -261,11 +334,17 @@ export function VacancyList({
       data-testid="feed-scroll-region"
       className="flex min-h-0 flex-1 flex-col"
     >
+      {activeBanner && (
+        <div className={cn(headerInset && "pt-12")}>{activeBanner}</div>
+      )}
       <ul
         ref={listRef}
         role="listbox"
         aria-label="Вакансії"
-        className={cn("min-h-0 flex-1 overflow-y-auto", headerInset && "pt-12")}
+        className={cn(
+          "min-h-0 flex-1 overflow-y-auto",
+          !activeBanner && headerInset && "pt-12",
+        )}
         onKeyDown={handleListKeyDown}
       >
         {groups.map((group) => (
@@ -377,7 +456,7 @@ export function VacancyList({
               Повторити завантаження
             </Button>
           ) : state.key !== requestKey ? (
-            "Завантажуємо старіші вакансії…"
+            cursor && "Завантажуємо старіші вакансії…"
           ) : state.nextCursor ? null : (
             "Ви переглянули всю стрічку"
           )}

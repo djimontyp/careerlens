@@ -21,9 +21,7 @@ const meta = {
     )!
 
     await expect(background).toHaveAttribute("aria-hidden", "true")
-    await expect(background.firstElementChild).toHaveClass(
-      "motion-reduce:animate-none",
-    )
+    await expect(background.getAnimations({ subtree: true })).toHaveLength(0)
   },
 } satisfies Meta<typeof AuroraBackground>
 
